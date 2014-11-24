@@ -33,10 +33,12 @@
 #define FW_NAME_TI1271_PRELE	"ti1273_prele.bin"
 #define FW_NAME_TI1271_LE	"ti1273_le.bin"
 #define FW_NAME_TI1271		"ti1273.bin"
-#define FW_NAME_BCM2048		"bcmfw.bin"
+#define FW_NAME_BCM2048		"bcmfw.bin"	/* In nokia n900 */
 #define FW_NAME_CSR		"bc4fw.bin"
 
 static int fw_pos;
+
+#define BT_DBG printk
 
 /* Firmware handling */
 static int hci_h4p_open_firmware(struct hci_h4p_info *info,
@@ -71,7 +73,7 @@ static int hci_h4p_open_firmware(struct hci_h4p_info *info,
 		err = request_firmware(fw_entry, FW_NAME_BCM2048, info->dev);
 		break;
 	default:
-		dev_err(info->dev, "Invalid chip type\n");
+		dev_err(info->dev, "Invalid chip type: %x\n", info->man_id);
 		*fw_entry = NULL;
 		err = -EINVAL;
 	}

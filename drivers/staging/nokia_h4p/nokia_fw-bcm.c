@@ -30,25 +30,17 @@ static int hci_h4p_bcm_set_bdaddr(struct hci_h4p_info *info,
 {
 	int i;
 	static const u8 nokia_oui[3] = {0x00, 0x1f, 0xdf};
-	int not_valid;
-
-	not_valid = 1;
-	for (i = 0; i < 6; i++) {
-		if (info->bd_addr[i] != 0x00) {
-			not_valid = 0;
-			break;
-		}
-	}
+	int not_valid = !bacmp(&info->bd_addr, BDADDR_ANY);
 
 	if (not_valid) {
 		dev_info(info->dev, "Valid bluetooth address not found, setting some random\n");
 		/* When address is not valid, use some random but Nokia MAC */
-		memcpy(info->bd_addr, nokia_oui, 3);
-		get_random_bytes(info->bd_addr + 3, 3);
+		memcpy(info->bd_addr.b, nokia_oui, 3);
+		get_random_bytes(info->bd_addr.b + 3, 3);
 	}
 
 	for (i = 0; i < 6; i++)
-		skb->data[9 - i] = info->bd_addr[i];
+		skb->data[9 - i] = info->bd_addr.b[i];
 
 	return 0;
 }

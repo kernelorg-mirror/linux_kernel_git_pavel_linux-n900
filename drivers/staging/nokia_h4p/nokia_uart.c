@@ -19,7 +19,6 @@
  *
  */
 
-#include <linux/serial_reg.h>
 #include <linux/delay.h>
 #include <linux/clk.h>
 
@@ -27,27 +26,7 @@
 
 #include "hci_h4p.h"
 
-inline void hci_h4p_outb(struct hci_h4p_info *info, unsigned int offset, u8 val)
-{
-	__raw_writeb(val, info->uart_base + (offset << 2));
-}
 
-inline u8 hci_h4p_inb(struct hci_h4p_info *info, unsigned int offset)
-{
-	return __raw_readb(info->uart_base + (offset << 2));
-}
-
-void hci_h4p_set_rts(struct hci_h4p_info *info, int active)
-{
-	u8 b;
-
-	b = hci_h4p_inb(info, UART_MCR);
-	if (active)
-		b |= UART_MCR_RTS;
-	else
-		b &= ~UART_MCR_RTS;
-	hci_h4p_outb(info, UART_MCR, b);
-}
 
 int hci_h4p_wait_for_cts(struct hci_h4p_info *info, int active,
 			 int timeout_ms)

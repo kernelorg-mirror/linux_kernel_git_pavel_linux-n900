@@ -51,6 +51,8 @@
 
 #include "hci_h4p.h"
 
+#define BT_DBG printk
+
 /* This should be used in function that cannot release clocks */
 static void hci_h4p_set_clk(struct hci_h4p_info *info, int *clock, int enable)
 {
@@ -281,9 +283,11 @@ static int hci_h4p_send_negotiation(struct hci_h4p_info *info)
 
 	hci_h4p_change_speed(info, INIT_SPEED);
 
+	printk("Setting up packet\n");
 	hci_h4p_set_rts(info, 1);
 	info->init_error = 0;
 	init_completion(&info->init_completion);
+	printk("skb_queue_tail\n");
 	skb_queue_tail(&info->txq, skb);
 	spin_lock_irqsave(&info->lock, flags);
 	hci_h4p_outb(info, UART_IER, hci_h4p_inb(info, UART_IER) |
@@ -291,8 +295,10 @@ static int hci_h4p_send_negotiation(struct hci_h4p_info *info)
 	spin_unlock_irqrestore(&info->lock, flags);
 
 	if (!wait_for_completion_interruptible_timeout(&info->init_completion,
-				msecs_to_jiffies(1000)))
+						       msecs_to_jiffies(1000))) {
+		printk("h4p: negotiation did not return\n");
 		return -ETIMEDOUT;
+	}
 
 	if (info->init_error < 0)
 		return info->init_error;
@@ -345,6 +351,7 @@ static void hci_h4p_negotiation_packet(struct hci_h4p_info *info,
 
 	info->man_id = evt->man_id;
 	info->ver_id = evt->ver_id;
+	printk("Negotiation finished.\n");
 
 finish_neg:
 
@@ -510,6 +517,7 @@ static void hci_h4p_rx_tasklet(unsigned long data)
 
 	while (hci_h4p_inb(info, UART_LSR) & UART_LSR_DR) {
 		byte = hci_h4p_inb(info, UART_RX);
+		printk("[in: %02x]", byte);
 		if (info->garbage_bytes) {
 			info->garbage_bytes--;
 			continue;
@@ -594,6 +602,7 @@ static void hci_h4p_tx_tasklet(unsigned long data)
 	/* Copy data to tx fifo */
 	while (!(hci_h4p_inb(info, UART_OMAP_SSR) & UART_OMAP_SSR_TXFULL) &&
 	       (sent < skb->len)) {
+		printk("[Out: %02x]", skb->data[sent]);
 		hci_h4p_outb(info, UART_TX, skb->data[sent]);
 		sent++;
 	}
@@ -624,6 +633,8 @@ static irqreturn_t hci_h4p_interrupt(int irq, void *data)
 	int ret;
 
 	ret = IRQ_NONE;
+
+	printk("h4p_interrupt\n");
 
 	iir = hci_h4p_inb(info, UART_IIR);
 	if (iir & UART_IIR_NO_INT)
@@ -993,7 +1004,7 @@ static ssize_t hci_h4p_store_bdaddr(struct device *dev,
 	for (i = 0; i < 6; i++) {
 		if (bdaddr[i] > 0xff)
 			return -EINVAL;
-		info->bd_addr[i] = bdaddr[i] & 0xff;
+		info->bd_addr.b[i] = bdaddr[i] & 0xff;
 	}
 
 	return count;
@@ -1004,7 +1015,7 @@ static ssize_t hci_h4p_show_bdaddr(struct device *dev,
 {
 	struct hci_h4p_info *info = dev_get_drvdata(dev);
 
-	return sprintf(buf, "%pMR\n", info->bd_addr);
+	return sprintf(buf, "%pMR\n", info->bd_addr.b);
 }
 
 static DEVICE_ATTR(bdaddr, S_IRUGO | S_IWUSR, hci_h4p_show_bdaddr,
@@ -1113,7 +1124,7 @@ static int hci_h4p_probe(struct platform_device *pdev)
 				    GPIOF_OUT_INIT_LOW, "bt_wakeup");
 
 	if (err < 0) {
-		dev_err(info->dev, "Cannot get GPIO line 0x%x",
+		dev_err(info->dev, "Cannot get GPIO line 0x%d",
 			info->bt_wakeup_gpio);
 		return err;
 	}
@@ -1190,6 +1201,7 @@ static int hci_h4p_remove(struct platform_device *pdev)
 
 	return 0;
 }
+
 
 static struct platform_driver hci_h4p_driver = {
 	.probe		= hci_h4p_probe,

@@ -26,6 +26,8 @@
 #include <net/bluetooth/hci_core.h>
 #include <net/bluetooth/hci.h>
 
+#include <linux/serial_reg.h>
+
 #define UART_SYSC_OMAP_RESET	0x03
 #define UART_SYSS_RESETDONE	0x01
 #define UART_OMAP_SCR_EMPTY_THR	0x08
@@ -77,7 +79,7 @@ struct hci_h4p_info {
 	unsigned long rx_state;
 	unsigned long garbage_bytes;
 
-	u8 bd_addr[6];
+	bdaddr_t bd_addr;
 	struct sk_buff_head *fw_q;
 
 	int pm_enabled;
@@ -100,12 +102,12 @@ struct hci_h4p_info {
 };
 
 struct hci_h4p_radio_hdr {
-	__u8 evt;
-	__u8 dlen;
+	u8 evt;
+	u8 dlen;
 } __packed;
 
 struct hci_h4p_neg_hdr {
-	__u8 dlen;
+	u8 dlen;
 } __packed;
 #define H4P_NEG_HDR_SIZE 1
 
@@ -121,36 +123,36 @@ struct hci_h4p_neg_hdr {
 #define H4P_ID_TI1271	0x31
 
 struct hci_h4p_neg_cmd {
-	__u8	ack;
-	__u16	baud;
-	__u16	unused1;
-	__u8	proto;
-	__u16	sys_clk;
-	__u16	unused2;
+	u8	ack;
+	u16	baud;
+	u16	unused1;
+	u8	proto;
+	u16	sys_clk;
+	u16	unused2;
 } __packed;
 
 struct hci_h4p_neg_evt {
-	__u8	ack;
-	__u16	baud;
-	__u16	unused1;
-	__u8	proto;
-	__u16	sys_clk;
-	__u16	unused2;
-	__u8	man_id;
-	__u8	ver_id;
+	u8	ack;
+	u16	baud;
+	u16	unused1;
+	u8	proto;
+	u16	sys_clk;
+	u16	unused2;
+	u8	man_id;
+	u8	ver_id;
 } __packed;
 
 #define H4P_ALIVE_REQ	0x55
 #define H4P_ALIVE_RESP	0xcc
 
 struct hci_h4p_alive_hdr {
-	__u8	dlen;
+	u8	dlen;
 } __packed;
 #define H4P_ALIVE_HDR_SIZE 1
 
 struct hci_h4p_alive_pkt {
-	__u8	mid;
-	__u8	unused;
+	u8	mid;
+	u8	unused;
 } __packed;
 
 #define MAX_BAUD_RATE		921600
@@ -205,9 +207,30 @@ int hci_h4p_read_fw(struct hci_h4p_info *info, struct sk_buff_head *fw_queue);
 int hci_h4p_send_fw(struct hci_h4p_info *info, struct sk_buff_head *fw_queue);
 void hci_h4p_parse_fw_event(struct hci_h4p_info *info, struct sk_buff *skb);
 
-void hci_h4p_outb(struct hci_h4p_info *info, unsigned int offset, u8 val);
-u8 hci_h4p_inb(struct hci_h4p_info *info, unsigned int offset);
-void hci_h4p_set_rts(struct hci_h4p_info *info, int active);
+static inline void hci_h4p_outb(struct hci_h4p_info *info, unsigned int offset, u8 val)
+{
+	__raw_writeb(val, info->uart_base + (offset << 2));
+}
+
+static inline u8 hci_h4p_inb(struct hci_h4p_info *info, unsigned int offset)
+{
+	u8 val;
+	val = __raw_readb(info->uart_base + (offset << 2));
+	return val;
+}
+
+static inline void hci_h4p_set_rts(struct hci_h4p_info *info, int active)
+{
+	u8 b;
+
+	b = hci_h4p_inb(info, UART_MCR);
+	if (active)
+		b |= UART_MCR_RTS;
+	else
+		b &= ~UART_MCR_RTS;
+	hci_h4p_outb(info, UART_MCR, b);
+}
+
 int hci_h4p_wait_for_cts(struct hci_h4p_info *info, int active, int timeout_ms);
 void __hci_h4p_set_auto_ctsrts(struct hci_h4p_info *info, int on, u8 which);
 void hci_h4p_set_auto_ctsrts(struct hci_h4p_info *info, int on, u8 which);
