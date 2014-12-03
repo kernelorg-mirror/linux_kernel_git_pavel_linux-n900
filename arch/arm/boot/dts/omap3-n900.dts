@@ -122,6 +122,12 @@
 		eci-switch-gpios = <&gpio6 22 GPIO_ACTIVE_HIGH>; /* 182 */
 		speaker-amplifier-gpios = <&twl_gpio 7 GPIO_ACTIVE_HIGH>;
 	};
+
+	battery: n900-battery {
+		 compatible = "nokia,n900-battery";
+		 io-channels = <&twl_madc 0>, <&twl_madc 4>, <&twl_madc 12>;
+		 io-channel-names = "temp", "bsi", "vbat";
+	};
 };
 
 &omap3_pmx_core {
@@ -567,13 +573,13 @@
 		reg = <0x30>;
 		gpios = <&gpio3 24 GPIO_ACTIVE_HIGH>; /* 88 */
 
-		flash@0 {
+		flash {
 			flash-timeout-microsec = <500000>;
 			flash-max-microamp = <320000>;
 			max-microamp = <50000>;
 		};
 
-		indicator@1 {
+		indicator {
 			max-microamp = <17500>;
 		};
 	};

@@ -450,13 +450,8 @@ static int adp1653_of_init(struct i2c_client *client, struct adp1653_flash *flas
 		return -ENOMEM;
 	flash->platform_data = pd;
 
-	printk("Probing...\n");
-
 	child = of_get_child_by_name(node, "flash");
 	if (!child) return -EINVAL;
-
-	printk("Got flash child\n");
-
 	if (of_property_read_u32(child, "flash-timeout-microsec", &val)) return -EINVAL;
 	pd->max_flash_timeout = val;
 	if (of_property_read_u32(child, "flash-max-microamp", &val)) return -EINVAL;
@@ -466,9 +461,6 @@ static int adp1653_of_init(struct i2c_client *client, struct adp1653_flash *flas
 
 	child = of_get_child_by_name(node, "indicator");
 	if (!child) return -EINVAL;
-
-	printk("Got indicator child.\n");
-
 	if (of_property_read_u32(child, "max-microamp", &val)) return -EINVAL;
 	pd->max_indicator_intensity = val;
 
@@ -483,7 +475,6 @@ static int adp1653_of_init(struct i2c_client *client, struct adp1653_flash *flas
 		return -EINVAL;
 	}
 
-	printk("All ok.\n");
 	pd->power_gpio = gpio;
 	return 0;
 }
