@@ -565,13 +565,17 @@
 	adp1653: led-controller@30 {
 		compatible = "adi,adp1653";
 		reg = <0x30>;
-
-		max-flash-timeout-usec = <500000>;
-		max-flash-intensity-uA     = <320000>;
-		max-torch-intensity-uA     =  <50000>;
-		max-indicator-intensity-uA =  <17500>;
-
 		gpios = <&gpio3 24 GPIO_ACTIVE_HIGH>; /* 88 */
+
+		flash@0 {
+			flash-timeout-microsec = <500000>;
+			flash-max-microamp = <320000>;
+			max-microamp = <50000>;
+		};
+
+		indicator@1 {
+			max-microamp = <17500>;
+		};
 	};
 };
 

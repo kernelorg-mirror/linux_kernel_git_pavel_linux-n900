@@ -440,6 +440,7 @@ static int adp1653_of_init(struct i2c_client *client, struct adp1653_flash *flas
 	struct adp1653_platform_data *pd;
 	enum of_gpio_flags flags;
 	int gpio;
+	struct device_node *child;
 
 	if (!node)
 		return -EINVAL;
@@ -449,13 +450,26 @@ static int adp1653_of_init(struct i2c_client *client, struct adp1653_flash *flas
 		return -ENOMEM;
 	flash->platform_data = pd;
 
-	if (of_property_read_u32(node, "max-flash-timeout-usec", &val)) return -EINVAL;
+	printk("Probing...\n");
+
+	child = of_get_child_by_name(node, "flash");
+	if (!child) return -EINVAL;
+
+	printk("Got flash child\n");
+
+	if (of_property_read_u32(child, "flash-timeout-microsec", &val)) return -EINVAL;
 	pd->max_flash_timeout = val;
-	if (of_property_read_u32(node, "max-flash-intensity-uA", &val)) return -EINVAL;
+	if (of_property_read_u32(child, "flash-max-microamp", &val)) return -EINVAL;
 	pd->max_flash_intensity = val/1000;
-	if (of_property_read_u32(node, "max-torch-intensity-uA", &val)) return -EINVAL;
+	if (of_property_read_u32(child, "max-microamp", &val)) return -EINVAL;
 	pd->max_torch_intensity = val/1000;
-	if (of_property_read_u32(node, "max-indicator-intensity-uA", &val)) return -EINVAL;
+
+	child = of_get_child_by_name(node, "indicator");
+	if (!child) return -EINVAL;
+
+	printk("Got indicator child.\n");
+
+	if (of_property_read_u32(child, "max-microamp", &val)) return -EINVAL;
 	pd->max_indicator_intensity = val;
 
 	if (!of_find_property(node, "gpios", NULL)) {
@@ -469,6 +483,7 @@ static int adp1653_of_init(struct i2c_client *client, struct adp1653_flash *flas
 		return -EINVAL;
 	}
 
+	printk("All ok.\n");
 	pd->power_gpio = gpio;
 	return 0;
 }
