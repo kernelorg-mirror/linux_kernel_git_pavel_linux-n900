@@ -634,13 +634,12 @@ static irqreturn_t hci_h4p_interrupt(int irq, void *data)
 
 	ret = IRQ_NONE;
 
-	printk("h4p_interrupt\n");
-
 	iir = hci_h4p_inb(info, UART_IIR);
 	if (iir & UART_IIR_NO_INT)
 		return IRQ_HANDLED;
 
-	BT_DBG("In interrupt handler iir 0x%.2x", iir);
+	BT_DBG("[iir 0x%.2x]", iir);
+	udelay(1000);
 
 	iir &= UART_IIR_ID;
 
@@ -1172,7 +1171,9 @@ static int hci_h4p_probe(struct platform_device *pdev)
 	info->lazy_release.function = hci_h4p_lazy_clock_release;
 	info->lazy_release.data = (unsigned long)info;
 	hci_h4p_set_clk(info, &info->tx_clocks_en, 1);
+	printk("resetting uart....\n");
 	err = hci_h4p_reset_uart(info);
+	printk("reset ok....\n");
 	if (err < 0)
 		return err;
 	gpio_set_value(info->reset_gpio, 0);
