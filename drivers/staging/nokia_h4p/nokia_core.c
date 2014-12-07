@@ -638,8 +638,7 @@ static irqreturn_t hci_h4p_interrupt(int irq, void *data)
 	if (iir & UART_IIR_NO_INT)
 		return IRQ_HANDLED;
 
-	BT_DBG("[iir 0x%.2x]", iir);
-	udelay(1000);
+	//BT_DBG("<%2x>", iir);
 
 	iir &= UART_IIR_ID;
 
@@ -672,6 +671,8 @@ static irqreturn_t hci_h4p_wakeup_interrupt(int irq, void *dev_inst)
 	int should_wakeup;
 	struct hci_dev *hdev;
 
+	printk("[wakeup irq]");
+	
 	if (!info->hdev)
 		return IRQ_HANDLED;
 
@@ -681,6 +682,8 @@ static irqreturn_t hci_h4p_wakeup_interrupt(int irq, void *dev_inst)
 	if (!test_bit(HCI_RUNNING, &hdev->flags)) {
 		if (should_wakeup == 1)
 			complete_all(&info->test_completion);
+
+		printk("wakeup irq handled\n");
 
 		return IRQ_HANDLED;
 	}
