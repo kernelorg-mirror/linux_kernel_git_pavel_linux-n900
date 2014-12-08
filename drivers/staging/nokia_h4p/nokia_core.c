@@ -51,7 +51,7 @@
 
 #include "hci_h4p.h"
 
-#define BT_DBG printk
+#define BT_DBG(a...) do {} while(0)
 
 /* This should be used in function that cannot release clocks */
 static void hci_h4p_set_clk(struct hci_h4p_info *info, int *clock, int enable)
@@ -517,7 +517,7 @@ static void hci_h4p_rx_tasklet(unsigned long data)
 
 	while (hci_h4p_inb(info, UART_LSR) & UART_LSR_DR) {
 		byte = hci_h4p_inb(info, UART_RX);
-		printk("[in: %02x]", byte);
+		BT_DBG("[in: %02x]", byte);
 		if (info->garbage_bytes) {
 			info->garbage_bytes--;
 			continue;
@@ -602,7 +602,7 @@ static void hci_h4p_tx_tasklet(unsigned long data)
 	/* Copy data to tx fifo */
 	while (!(hci_h4p_inb(info, UART_OMAP_SSR) & UART_OMAP_SSR_TXFULL) &&
 	       (sent < skb->len)) {
-		printk("[Out: %02x]", skb->data[sent]);
+		BT_DBG("[Out: %02x]", skb->data[sent]);
 		hci_h4p_outb(info, UART_TX, skb->data[sent]);
 		sent++;
 	}
@@ -671,7 +671,7 @@ static irqreturn_t hci_h4p_wakeup_interrupt(int irq, void *dev_inst)
 	int should_wakeup;
 	struct hci_dev *hdev;
 
-	printk("[wakeup irq]");
+	BT_DBG("[wakeup irq]");
 	
 	if (!info->hdev)
 		return IRQ_HANDLED;

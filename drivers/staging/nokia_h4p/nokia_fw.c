@@ -51,6 +51,7 @@ static int hci_h4p_open_firmware(struct hci_h4p_info *info,
 			info->man_id, info->ver_id);
 	switch (info->man_id) {
 	case H4P_ID_TI1271:
+		printk("Firmware: ti1271\n");
 		switch (info->ver_id) {
 		case 0xe1:
 			err = request_firmware(fw_entry, FW_NAME_TI1271_PRELE,
@@ -67,9 +68,12 @@ static int hci_h4p_open_firmware(struct hci_h4p_info *info,
 		}
 		break;
 	case H4P_ID_CSR:
+		printk("Firmware: CSR\n");
 		err = request_firmware(fw_entry, FW_NAME_CSR, info->dev);
 		break;
 	case H4P_ID_BCM2048:
+		/* We have this in N900 */
+		printk("Firmware: BCM2048\n");
 		err = request_firmware(fw_entry, FW_NAME_BCM2048, info->dev);
 		break;
 	default:
