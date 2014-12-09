@@ -252,7 +252,7 @@ static int hci_h4p_send_negotiation(struct hci_h4p_info *info)
 	int err, len;
 	u16 sysclk;
 
-	BT_DBG("Sending negotiation..");
+	printk("Sending negotiation..");
 
 	switch (info->bt_sysclk) {
 	case 1:
@@ -266,6 +266,8 @@ static int hci_h4p_send_negotiation(struct hci_h4p_info *info)
 	}
 
 	len = sizeof(*neg_cmd) + sizeof(*neg_hdr) + H4_TYPE_SIZE;
+#define OLD
+#ifdef OLD
 	skb = bt_skb_alloc(len, GFP_KERNEL);
 	if (!skb)
 		return -ENOMEM;
@@ -274,6 +276,16 @@ static int hci_h4p_send_negotiation(struct hci_h4p_info *info)
 	*skb_put(skb, 1) = H4_NEG_PKT;
 	neg_hdr = (struct hci_h4p_neg_hdr *)skb_put(skb, sizeof(*neg_hdr));
 	neg_cmd = (struct hci_h4p_neg_cmd *)skb_put(skb, sizeof(*neg_cmd));
+#else      
+	struct {
+		struct hci_h4p_neg_hdr neg_hdr;
+		struct hci_h4p_neg_cmd neg_cmd;
+	} data;
+
+	memset(&data, 0, len-1);
+	neg_hdr = &data.neg_hdr;
+	neg_cmd = &data.neg_cmd;
+#endif
 
 	neg_hdr->dlen = sizeof(*neg_cmd);
 	neg_cmd->ack = H4P_NEG_REQ;
@@ -288,7 +300,16 @@ static int hci_h4p_send_negotiation(struct hci_h4p_info *info)
 	info->init_error = 0;
 	init_completion(&info->init_completion);
 	printk("skb_queue_tail\n");
+
+#ifdef OLD
 	skb_queue_tail(&info->txq, skb);
+#else
+	printk("hci_cmd_sync\n");
+//	set_bit(HCI_RUNNING, &info->hdev->flags);
+	
+	skb = __hci_cmd_sync(info->hdev, H4_NEG_PKT, len, &data, 2000);
+	printk("done\n");
+#endif
 	spin_lock_irqsave(&info->lock, flags);
 	hci_h4p_outb(info, UART_IER, hci_h4p_inb(info, UART_IER) |
 		     UART_IER_THRI);
@@ -326,7 +347,7 @@ static int hci_h4p_send_negotiation(struct hci_h4p_info *info)
 	if (info->init_error < 0)
 		return info->init_error;
 
-	BT_DBG("Negotiation successful");
+	printk("Negotiation successful\n");
 	return 0;
 }
 
@@ -436,7 +457,8 @@ static unsigned int hci_h4p_get_data_len(struct hci_h4p_info *info,
 static inline void hci_h4p_recv_frame(struct hci_h4p_info *info,
 				      struct sk_buff *skb)
 {
-	if (unlikely(!test_bit(HCI_RUNNING, &info->hdev->flags))) {
+	if (info->initing)
+	/*if (unlikely(!test_bit(HCI_RUNNING, &info->hdev->flags))) */ {
 		switch (bt_cb(skb)->pkt_type) {
 		case H4_NEG_PKT:
 			hci_h4p_negotiation_packet(info, skb);
@@ -602,7 +624,7 @@ static void hci_h4p_tx_tasklet(unsigned long data)
 	/* Copy data to tx fifo */
 	while (!(hci_h4p_inb(info, UART_OMAP_SSR) & UART_OMAP_SSR_TXFULL) &&
 	       (sent < skb->len)) {
-		BT_DBG("[Out: %02x]", skb->data[sent]);
+		printk("[Out: %02x]", skb->data[sent]);
 		hci_h4p_outb(info, UART_TX, skb->data[sent]);
 		sent++;
 	}
@@ -833,38 +855,16 @@ out:
 	return ret;
 }
 
-static int hci_h4p_hci_open(struct hci_dev *hdev)
+static int hci_h4p_hci_setup(struct hci_dev *hdev)
 {
-	struct hci_h4p_info *info;
+	struct hci_h4p_info *info = hci_get_drvdata(hdev);
 	int err, retries = 0;
 	struct sk_buff_head fw_queue;
 	unsigned long flags;
 
-	info = hci_get_drvdata(hdev);
+	printk("hci_setup\n");
 
-	if (test_bit(HCI_RUNNING, &hdev->flags))
-		return 0;
-
-	/* TI1271 has HW bug and boot up might fail. Retry up to three times */
-again:
-
-	info->rx_enabled = 1;
-	info->rx_state = WAIT_FOR_PKT_TYPE;
-	info->rx_count = 0;
-	info->garbage_bytes = 0;
-	info->rx_skb = NULL;
-	info->pm_enabled = 0;
-	init_completion(&info->fw_completion);
-	hci_h4p_set_clk(info, &info->tx_clocks_en, 1);
-	hci_h4p_set_clk(info, &info->rx_clocks_en, 1);
 	skb_queue_head_init(&fw_queue);
-
-	err = hci_h4p_reset(info);
-	if (err < 0)
-		goto err_clean;
-
-	hci_h4p_set_auto_ctsrts(info, 1, UART_EFR_CTS | UART_EFR_RTS);
-	info->autorts = 1;
 
 	err = hci_h4p_send_negotiation(info);
 
@@ -897,12 +897,52 @@ again:
 
 	kfree_skb(info->alive_cmd_skb);
 	info->alive_cmd_skb = NULL;
-	set_bit(HCI_RUNNING, &hdev->flags);
-
-	BT_DBG("hci up and running");
+	info->initing = 0;
 	return 0;
 
 err_clean:
+	printk("hci_setup: something fialed, should do the clean up\n");
+	skb_queue_purge(&fw_queue);
+}
+
+static int hci_h4p_hci_open(struct hci_dev *hdev)
+{
+	struct hci_h4p_info *info;
+	int err, retries = 0;
+
+	info = hci_get_drvdata(hdev);
+
+	if (test_bit(HCI_RUNNING, &hdev->flags))
+		return 0;
+
+	/* TI1271 has HW bug and boot up might fail. Retry up to three times */
+again:
+
+	info->rx_enabled = 1;
+	info->rx_state = WAIT_FOR_PKT_TYPE;
+	info->rx_count = 0;
+	info->garbage_bytes = 0;
+	info->rx_skb = NULL;
+	info->pm_enabled = 0;
+	init_completion(&info->fw_completion);
+	hci_h4p_set_clk(info, &info->tx_clocks_en, 1);
+	hci_h4p_set_clk(info, &info->rx_clocks_en, 1);
+
+	err = hci_h4p_reset(info);
+	if (err < 0)
+		goto err_clean;
+
+	hci_h4p_set_auto_ctsrts(info, 1, UART_EFR_CTS | UART_EFR_RTS);
+	info->autorts = 1;
+
+	info->initing = 1;
+	set_bit(HCI_RUNNING, &hdev->flags);
+
+	printk("hci up and running");
+	return 0;
+
+err_clean:
+	printk("hci_open: something failed\n");
 	hci_h4p_hci_flush(hdev);
 	hci_h4p_reset_uart(info);
 	del_timer_sync(&info->lazy_release);
@@ -910,7 +950,6 @@ err_clean:
 	hci_h4p_set_clk(info, &info->rx_clocks_en, 0);
 	gpio_set_value(info->reset_gpio, 0);
 	gpio_set_value(info->bt_wakeup_gpio, 0);
-	skb_queue_purge(&fw_queue);
 	kfree_skb(info->alive_cmd_skb);
 	info->alive_cmd_skb = NULL;
 	kfree_skb(info->rx_skb);
@@ -1050,9 +1089,11 @@ static int hci_h4p_register_hdev(struct hci_h4p_info *info)
 	hci_set_drvdata(hdev, info);
 
 	hdev->open = hci_h4p_hci_open;
+	hdev->setup = hci_h4p_hci_setup;
 	hdev->close = hci_h4p_hci_close;
 	hdev->flush = hci_h4p_hci_flush;
 	hdev->send = hci_h4p_hci_send_frame;
+
 	set_bit(HCI_QUIRK_RESET_ON_CLOSE, &hdev->quirks);
 
 	SET_HCIDEV_DEV(hdev, info->dev);
