@@ -1000,7 +1000,7 @@ static int hci_h4p_hci_send_frame(struct hci_dev *hdev, struct sk_buff *skb)
 		return -EIO;
 	}
 
-	if (info->initing != 2) {
+	if (1) {
 
 	switch (bt_cb(skb)->pkt_type) {
 	case HCI_COMMAND_PKT:
