@@ -128,6 +128,14 @@ void hci_h4p_enable_tx(struct hci_h4p_info *info)
 {
 	unsigned long flags;
 
+	if (info->initing == 2) {
+		spin_lock_irqsave(&info->lock, flags);
+		hci_h4p_outb(info, UART_IER, hci_h4p_inb(info, UART_IER) |
+		     UART_IER_THRI);
+		spin_unlock_irqrestore(&info->lock, flags);
+		return;
+	}
+
 	if (!info->pm_enabled)
 		return;
 
@@ -1000,8 +1008,6 @@ static int hci_h4p_hci_send_frame(struct hci_dev *hdev, struct sk_buff *skb)
 		return -EIO;
 	}
 
-	if (1) {
-
 	switch (bt_cb(skb)->pkt_type) {
 	case HCI_COMMAND_PKT:
 		hdev->stat.cmd_tx++;
@@ -1025,25 +1031,8 @@ static int hci_h4p_hci_send_frame(struct hci_dev *hdev, struct sk_buff *skb)
 	if (err)
 		return err;
 
-	}
-
-	printk("hci_send_frame: queue_tail\n");
 	skb_queue_tail(&info->txq, skb);
-	printk("hci_send_frame: queue_tail done\n");
 	hci_h4p_enable_tx(info);
-
-	if (info->initing == 2) {
-		unsigned long flags;
-		printk("hci_send_frame: it was initialization frame, kicking\n");
-
-	spin_lock_irqsave(&info->lock, flags);
-	hci_h4p_outb(info, UART_IER, hci_h4p_inb(info, UART_IER) |
-		     UART_IER_THRI);
-	spin_unlock_irqrestore(&info->lock, flags);
-
-		printk("hci_send_frame: it was initialization frame, kicked\n");	
-	}
-		
 
 	return 0;
 }
