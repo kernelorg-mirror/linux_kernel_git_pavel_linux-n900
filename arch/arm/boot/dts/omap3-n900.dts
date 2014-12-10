@@ -137,7 +137,6 @@
 		  bluetooth-wakeup-gpios = <&gpio2 5 GPIO_ACTIVE_HIGH>; /* want 37 */
 		  chip-type = <3>;
 		  bt-sysclk = <2>;
-		  reset-gpio-shared = <0>;
 	};
 };
 

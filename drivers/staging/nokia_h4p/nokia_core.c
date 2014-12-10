@@ -1168,19 +1168,16 @@ static int hci_h4p_probe(struct platform_device *pdev)
 	init_completion(&info->test_completion);
 	complete_all(&info->test_completion);
 
-	if (!info->reset_gpio_shared) {
-		err = devm_gpio_request_one(&pdev->dev, info->reset_gpio,
-					    GPIOF_OUT_INIT_LOW, "bt_reset");
-		if (err < 0) {
-			dev_err(&pdev->dev, "Cannot get GPIO line %d\n",
-				info->reset_gpio);
-			return err;
-		}
+	err = devm_gpio_request_one(&pdev->dev, info->reset_gpio,
+				    GPIOF_OUT_INIT_LOW, "bt_reset");
+	if (err < 0) {
+		dev_err(&pdev->dev, "Cannot get GPIO line %d\n",
+			info->reset_gpio);
+		return err;
 	}
 
 	err = devm_gpio_request_one(&pdev->dev, info->bt_wakeup_gpio,
 				    GPIOF_OUT_INIT_LOW, "bt_wakeup");
-
 	if (err < 0) {
 		dev_err(info->dev, "Cannot get GPIO line 0x%d",
 			info->bt_wakeup_gpio);
@@ -1285,7 +1282,7 @@ static struct platform_driver hci_h4p_driver = {
 	.probe		= hci_h4p_probe,
 	.remove		= hci_h4p_remove,
 	.driver		= {
-		.name	= /* "disabled" */ "hci_h4p",
+		.name	= "disabled" "hci_h4p",
 		.owner  = THIS_MODULE,
 		.of_match_table = of_match_ptr(hci_h4p_of_match),
 	},
