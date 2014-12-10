@@ -89,10 +89,10 @@ int hci_h4p_bcm_send_fw(struct hci_h4p_info *info,
 
 	info->fw_error = 0;
 
-	BT_DBG("Sending firmware");
+	printk("Sending firmware (not really)\n");
 
 	time = jiffies;
-
+#if 0
 	info->fw_q = fw_queue;
 	skb = skb_dequeue(fw_queue);
 	if (!skb)
@@ -121,14 +121,16 @@ int hci_h4p_bcm_send_fw(struct hci_h4p_info *info,
 		dev_err(info->dev, "FW error\n");
 		return -EPROTO;
 	}
-
-	BT_DBG("Firmware sent in %d msecs",
+#endif
+	printk("Firmware sent in %d msec\n",
 		   jiffies_to_msecs(jiffies-time));
 
 	hci_h4p_set_auto_ctsrts(info, 0, UART_EFR_RTS);
 	hci_h4p_set_rts(info, 0);
 	hci_h4p_change_speed(info, BC4_MAX_BAUD_RATE);
 	hci_h4p_set_auto_ctsrts(info, 1, UART_EFR_RTS);
+
+	printk("Going to final parameters\n");
 
 	return 0;
 }

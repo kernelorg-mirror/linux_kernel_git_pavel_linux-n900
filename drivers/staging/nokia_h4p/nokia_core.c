@@ -632,7 +632,7 @@ static void hci_h4p_tx_tasklet(unsigned long data)
 	while (!(hci_h4p_inb(info, UART_OMAP_SSR) & UART_OMAP_SSR_TXFULL) &&
 	       (sent < skb->len)) {
 		//printk("[Out: %02x]", skb->data[sent]);
-		printk("%02x ", skb->data[sent]);
+		//printk("%02x ", skb->data[sent]);
 		hci_h4p_outb(info, UART_TX, skb->data[sent]);
 		sent++;
 	}
@@ -963,11 +963,12 @@ err_clean:
 	kfree_skb(info->rx_skb);
 	info->rx_skb = NULL;
 
+#if 0
 	if (retries++ < 3) {
 		dev_err(info->dev, "FW loading try %d fail. Retry.\n", retries);
 		goto again;
 	}
-
+#endif
 	return err;
 }
 

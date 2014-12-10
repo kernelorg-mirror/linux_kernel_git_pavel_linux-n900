@@ -109,11 +109,9 @@ static int hci_h4p_read_fw_cmd(struct hci_h4p_info *info, struct sk_buff **skb,
 		int cmd = fw_entry->data[fw_pos+1] + (fw_entry->data[fw_pos+2] << 8);
 		int len = fw_entry->data[fw_pos+3];
 		printk("Sending cmd %x, len %d\n", cmd, len);
-		mdelay(1000);
-		mdelay(1000);
-		mdelay(1000);		
-		__hci_cmd_sync(info->hdev, cmd, len, fw_entry->data+fw_pos+4, 2000);
-		mdelay(1000);
+		*skb = __hci_cmd_sync(info->hdev, cmd, len, fw_entry->data+fw_pos+4, 200);
+		if (IS_ERR(*skb))
+			printk("...sending cmd failed %d\n", PTR_ERR(*skb));
 	}
 	num++;
 #endif
@@ -133,6 +131,12 @@ int hci_h4p_read_fw(struct hci_h4p_info *info, struct sk_buff_head *fw_queue)
 	struct sk_buff *skb = NULL;
 	int err;
 
+	/*
+	 * Disable smart-idle as UART TX interrupts
+	 * are not wake-up capable
+	 */
+	hci_h4p_smart_idle(info, 0);
+	
 	err = hci_h4p_open_firmware(info, &fw_entry);
 	if (err < 0 || !fw_entry)
 		goto err_clean;
