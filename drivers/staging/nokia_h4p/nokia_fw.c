@@ -76,6 +76,7 @@ static int hci_h4p_read_fw_cmd(struct hci_h4p_info *info, struct sk_buff **skb,
 			       const struct firmware *fw_entry, gfp_t how)
 {
 	unsigned int cmd_len;
+	static int num = 0;
 
 	if (fw_pos >= fw_entry->size)
 		return 0;
@@ -95,16 +96,35 @@ static int hci_h4p_read_fw_cmd(struct hci_h4p_info *info, struct sk_buff **skb,
 		return -EMSGSIZE;
 	}
 
+#ifdef OLD
 	*skb = bt_skb_alloc(cmd_len, how);
 	if (!*skb) {
 		dev_err(info->dev, "Cannot reserve memory for buffer\n");
 		return -ENOMEM;
 	}
 	memcpy(skb_put(*skb, cmd_len), &fw_entry->data[fw_pos], cmd_len);
+#else
+	printk("Packet %d\n", num);
+	if (num > 1) {
+		int cmd = fw_entry->data[fw_pos+1] + (fw_entry->data[fw_pos+2] << 8);
+		int len = fw_entry->data[fw_pos+3];
+		printk("Sending cmd %x, len %d\n", cmd, len);
+		mdelay(1000);
+		mdelay(1000);
+		mdelay(1000);		
+		__hci_cmd_sync(info->hdev, cmd, len, fw_entry->data+fw_pos+4, 2000);
+		mdelay(1000);
+	}
+	num++;
+#endif
 
 	fw_pos += cmd_len;
 
+#ifdef OLD
 	return (*skb)->len;
+#else
+	return 1;
+#endif	       
 }
 
 int hci_h4p_read_fw(struct hci_h4p_info *info, struct sk_buff_head *fw_queue)
@@ -117,13 +137,19 @@ int hci_h4p_read_fw(struct hci_h4p_info *info, struct sk_buff_head *fw_queue)
 	if (err < 0 || !fw_entry)
 		goto err_clean;
 
+	printk("read firmware\n");
 	while ((err = hci_h4p_read_fw_cmd(info, &skb, fw_entry, GFP_KERNEL))) {
+#ifdef OLD		
 		if (err < 0 || !skb)
 			goto err_clean;
 
 		skb_queue_tail(fw_queue, skb);
+#endif
 	}
 
+	printk("done read firmware\n");
+
+#ifdef OLD       
 	/* Chip detection code does neg and alive stuff
 	 * discard two first skbs */
 	skb = skb_dequeue(fw_queue);
@@ -138,6 +164,7 @@ int hci_h4p_read_fw(struct hci_h4p_info *info, struct sk_buff_head *fw_queue)
 		goto err_clean;
 	}
 	kfree_skb(skb);
+#endif
 
 err_clean:
 	hci_h4p_close_firmware(fw_entry);
@@ -162,6 +189,9 @@ int hci_h4p_send_fw(struct hci_h4p_info *info, struct sk_buff_head *fw_queue)
 
 void hci_h4p_parse_fw_event(struct hci_h4p_info *info, struct sk_buff *skb)
 {
+	printk("incoming parse fw event\n");
+	return;
+	
 	switch (info->man_id) {
 	case H4P_ID_BCM2048:
 		hci_h4p_bcm_parse_fw_event(info, skb);

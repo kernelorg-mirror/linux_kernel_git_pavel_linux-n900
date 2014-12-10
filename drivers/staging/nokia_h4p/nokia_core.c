@@ -475,12 +475,13 @@ static inline void hci_h4p_recv_frame(struct hci_h4p_info *info,
 			info->rx_state = WAIT_FOR_PKT_TYPE;
 			return;
 		}
-
+#if 0
 		if (!test_bit(HCI_UP, &info->hdev->flags)) {
 			BT_DBG("fw_event");
 			hci_h4p_parse_fw_event(info, skb);
 			return;
 		}
+#endif
 	}
 
 	hci_recv_frame(info->hdev, skb);
@@ -630,7 +631,8 @@ static void hci_h4p_tx_tasklet(unsigned long data)
 	/* Copy data to tx fifo */
 	while (!(hci_h4p_inb(info, UART_OMAP_SSR) & UART_OMAP_SSR_TXFULL) &&
 	       (sent < skb->len)) {
-		printk("[Out: %02x]", skb->data[sent]);
+		//printk("[Out: %02x]", skb->data[sent]);
+		printk("%02x ", skb->data[sent]);
 		hci_h4p_outb(info, UART_TX, skb->data[sent]);
 		sent++;
 	}
@@ -1028,7 +1030,10 @@ static int hci_h4p_hci_send_frame(struct hci_dev *hdev, struct sk_buff *skb)
 		return err;
 
 	skb_queue_tail(&info->txq, skb);
-	hci_h4p_enable_tx(info);
+	if (!info->initing)
+		hci_h4p_enable_tx(info);
+	else
+		hci_h4p_enable_tx_nopm(info);
 
 	return 0;
 }

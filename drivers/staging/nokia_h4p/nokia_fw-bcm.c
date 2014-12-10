@@ -77,7 +77,7 @@ void hci_h4p_bcm_parse_fw_event(struct hci_h4p_info *info, struct sk_buff *skb)
 		}
 	}
 
-	hci_h4p_simple_send_frame(info, fw_skb);
+//	hci_h4p_simple_send_frame(info, fw_skb);
 }
 
 
