@@ -475,13 +475,6 @@ static inline void hci_h4p_recv_frame(struct hci_h4p_info *info,
 			info->rx_state = WAIT_FOR_PKT_TYPE;
 			return;
 		}
-#if 0
-		if (!test_bit(HCI_UP, &info->hdev->flags)) {
-			BT_DBG("fw_event");
-			hci_h4p_parse_fw_event(info, skb);
-			return;
-		}
-#endif
 	}
 
 	hci_recv_frame(info->hdev, skb);
@@ -735,7 +728,6 @@ static irqreturn_t hci_h4p_wakeup_interrupt(int irq, void *dev_inst)
 static inline void hci_h4p_set_pm_limits(struct hci_h4p_info *info, bool set)
 {
 	struct hci_h4p_platform_data *bt_plat_data = info->dev->platform_data;
-	const char *sset = set ? "set" : "clear";
 
 	if (unlikely(!bt_plat_data || !bt_plat_data->set_pm_limits))
 		return;
@@ -746,11 +738,11 @@ static inline void hci_h4p_set_pm_limits(struct hci_h4p_info *info, bool set)
 			set_bit(H4P_ACTIVE_MODE, &info->pm_flags);
 		else
 			clear_bit(H4P_ACTIVE_MODE, &info->pm_flags);
-		BT_DBG("Change pm constraints to: %s", sset);
+		BT_DBG("Change pm constraints to: %s", set ? "set" : "clear");
 		return;
 	}
 
-	BT_DBG("pm constraints remains: %s", sset);
+	BT_DBG("pm constraints remains: %s", set ? "set" : "clear");
 }
 
 static int hci_h4p_reset(struct hci_h4p_info *info)
@@ -866,7 +858,7 @@ out:
 static int hci_h4p_hci_setup(struct hci_dev *hdev)
 {
 	struct hci_h4p_info *info = hci_get_drvdata(hdev);
-	int err, retries = 0;
+	int err;
 	struct sk_buff_head fw_queue;
 	unsigned long flags;
 
@@ -909,22 +901,23 @@ static int hci_h4p_hci_setup(struct hci_dev *hdev)
 	return 0;
 
 err_clean:
-	printk("hci_setup: something fialed, should do the clean up\n");
+	printk("hci_setup: something failed, should do the clean up\n");
 	skb_queue_purge(&fw_queue);
+	return err;
 }
 
 static int hci_h4p_hci_open(struct hci_dev *hdev)
 {
 	struct hci_h4p_info *info;
-	int err, retries = 0;
+	int err;
 
 	info = hci_get_drvdata(hdev);
 
 	if (test_bit(HCI_RUNNING, &hdev->flags))
 		return 0;
 
-	/* TI1271 has HW bug and boot up might fail. Retry up to three times */
-again:
+	/* TI1271 has HW bug and boot up might fail. Original code retried 
+	   up to three times, but we removed TI1271 support. */
 
 	info->rx_enabled = 1;
 	info->rx_state = WAIT_FOR_PKT_TYPE;
@@ -963,12 +956,6 @@ err_clean:
 	kfree_skb(info->rx_skb);
 	info->rx_skb = NULL;
 
-#if 0
-	if (retries++ < 3) {
-		dev_err(info->dev, "FW loading try %d fail. Retry.\n", retries);
-		goto again;
-	}
-#endif
 	return err;
 }
 
@@ -998,7 +985,7 @@ static int hci_h4p_hci_send_frame(struct hci_dev *hdev, struct sk_buff *skb)
 	struct hci_h4p_info *info;
 	int err = 0;
 
-	printk("hci_send_frame: dev %p, skb %p\n", hdev, skb);
+	BT_DBG("hci_send_frame: dev %p, skb %p\n", hdev, skb);
 
 	info = hci_get_drvdata(hdev);
 

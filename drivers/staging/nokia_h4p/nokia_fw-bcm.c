@@ -45,83 +45,16 @@ static int hci_h4p_bcm_set_bdaddr(struct hci_h4p_info *info,
 	return 0;
 }
 
-void hci_h4p_bcm_parse_fw_event(struct hci_h4p_info *info, struct sk_buff *skb)
-{
-	struct sk_buff *fw_skb;
-	int err;
-	unsigned long flags;
-
-	if (skb->data[5] != 0x00) {
-		dev_err(info->dev, "Firmware sending command failed 0x%.2x\n",
-			skb->data[5]);
-		info->fw_error = -EPROTO;
-	}
-
-	kfree_skb(skb);
-
-	fw_skb = skb_dequeue(info->fw_q);
-	if (fw_skb == NULL || info->fw_error) {
-		complete(&info->fw_completion);
-		return;
-	}
-
-	if (fw_skb->data[1] == 0x01 && fw_skb->data[2] == 0xfc &&
-			fw_skb->len >= 10) {
-		BT_DBG("Setting bluetooth address");
-		err = hci_h4p_bcm_set_bdaddr(info, fw_skb);
-		if (err < 0) {
-			kfree_skb(fw_skb);
-			info->fw_error = err;
-			complete(&info->fw_completion);
-			return;
-		}
-	}
-
-//	hci_h4p_simple_send_frame(info, fw_skb);
-}
-
-
 int hci_h4p_bcm_send_fw(struct hci_h4p_info *info,
 			struct sk_buff_head *fw_queue)
 {
-	struct sk_buff *skb;
-	unsigned long flags, time;
+	unsigned long time;
 
 	info->fw_error = 0;
 
 	printk("Sending firmware (not really)\n");
 
 	time = jiffies;
-#if 0
-	info->fw_q = fw_queue;
-	skb = skb_dequeue(fw_queue);
-	if (!skb)
-		return -ENODATA;
-
-	BT_DBG("Sending commands");
-
-	/*
-	 * Disable smart-idle as UART TX interrupts
-	 * are not wake-up capable
-	 */
-	hci_h4p_smart_idle(info, 0);
-
-	/* Check if this is bd_address packet */
-	init_completion(&info->fw_completion);
-
-	hci_h4p_simple_send_frame(info, skb);
-
-	if (!wait_for_completion_timeout(&info->fw_completion,
-				msecs_to_jiffies(2000))) {
-		dev_err(info->dev, "No reply to fw command\n");
-		return -ETIMEDOUT;
-	}
-
-	if (info->fw_error) {
-		dev_err(info->dev, "FW error\n");
-		return -EPROTO;
-	}
-#endif
 	printk("Firmware sent in %d msec\n",
 		   jiffies_to_msecs(jiffies-time));
 

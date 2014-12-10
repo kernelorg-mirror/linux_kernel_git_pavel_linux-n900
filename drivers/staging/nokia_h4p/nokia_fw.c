@@ -30,11 +30,7 @@
 
 #include "hci_h4p.h"
 
-#define FW_NAME_TI1271_PRELE	"ti1273_prele.bin"
-#define FW_NAME_TI1271_LE	"ti1273_le.bin"
-#define FW_NAME_TI1271		"ti1273.bin"
 #define FW_NAME_BCM2048		"bcmfw.bin"	/* In nokia n900 */
-#define FW_NAME_CSR		"bc4fw.bin"
 
 static int fw_pos;
 
@@ -96,33 +92,24 @@ static int hci_h4p_read_fw_cmd(struct hci_h4p_info *info, struct sk_buff **skb,
 		return -EMSGSIZE;
 	}
 
-#ifdef OLD
-	*skb = bt_skb_alloc(cmd_len, how);
-	if (!*skb) {
-		dev_err(info->dev, "Cannot reserve memory for buffer\n");
-		return -ENOMEM;
-	}
-	memcpy(skb_put(*skb, cmd_len), &fw_entry->data[fw_pos], cmd_len);
-#else
-	printk("Packet %d\n", num);
+	/* Note that this is timing-critical. If sending packets takes too
+	   long, initialization will fail. */
+	printk("Packet %d...", num);
 	if (num > 1) {
 		int cmd = fw_entry->data[fw_pos+1] + (fw_entry->data[fw_pos+2] << 8);
 		int len = fw_entry->data[fw_pos+3];
-		printk("Sending cmd %x, len %d\n", cmd, len);
-		*skb = __hci_cmd_sync(info->hdev, cmd, len, fw_entry->data+fw_pos+4, 200);
-		if (IS_ERR(*skb))
+		printk("cmd %x, len %d.", cmd, len);
+		*skb = __hci_cmd_sync(info->hdev, cmd, len, fw_entry->data+fw_pos+4, 500);
+		if (IS_ERR(*skb)) {
 			printk("...sending cmd failed %d\n", PTR_ERR(*skb));
+			return -EIO;
+		}
 	}
 	num++;
-#endif
 
 	fw_pos += cmd_len;
 
-#ifdef OLD
-	return (*skb)->len;
-#else
 	return 1;
-#endif	       
 }
 
 int hci_h4p_read_fw(struct hci_h4p_info *info, struct sk_buff_head *fw_queue)
@@ -142,33 +129,11 @@ int hci_h4p_read_fw(struct hci_h4p_info *info, struct sk_buff_head *fw_queue)
 		goto err_clean;
 
 	printk("read firmware\n");
+	/* FIXME: remove skb... */
 	while ((err = hci_h4p_read_fw_cmd(info, &skb, fw_entry, GFP_KERNEL))) {
-#ifdef OLD		
-		if (err < 0 || !skb)
-			goto err_clean;
-
-		skb_queue_tail(fw_queue, skb);
-#endif
 	}
 
 	printk("done read firmware\n");
-
-#ifdef OLD       
-	/* Chip detection code does neg and alive stuff
-	 * discard two first skbs */
-	skb = skb_dequeue(fw_queue);
-	if (!skb) {
-		err = -EMSGSIZE;
-		goto err_clean;
-	}
-	kfree_skb(skb);
-	skb = skb_dequeue(fw_queue);
-	if (!skb) {
-		err = -EMSGSIZE;
-		goto err_clean;
-	}
-	kfree_skb(skb);
-#endif
 
 err_clean:
 	hci_h4p_close_firmware(fw_entry);
@@ -191,23 +156,4 @@ int hci_h4p_send_fw(struct hci_h4p_info *info, struct sk_buff_head *fw_queue)
 	return err;
 }
 
-void hci_h4p_parse_fw_event(struct hci_h4p_info *info, struct sk_buff *skb)
-{
-	printk("incoming parse fw event\n");
-	return;
-	
-	switch (info->man_id) {
-	case H4P_ID_BCM2048:
-		hci_h4p_bcm_parse_fw_event(info, skb);
-		break;
-	default:
-		dev_err(info->dev, "Don't know how to parse fw event\n");
-		info->fw_error = -EINVAL;
-	}
-}
-
-MODULE_FIRMWARE(FW_NAME_TI1271_PRELE);
-MODULE_FIRMWARE(FW_NAME_TI1271_LE);
-MODULE_FIRMWARE(FW_NAME_TI1271);
 MODULE_FIRMWARE(FW_NAME_BCM2048);
-MODULE_FIRMWARE(FW_NAME_CSR);
