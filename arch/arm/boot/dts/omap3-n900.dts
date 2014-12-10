@@ -147,14 +147,6 @@
 		>;
 	};
 
-	ethernet_pins: pinmux_ethernet_pins {
-		pinctrl-single,pins = <
-			OMAP3_CORE1_IOPAD(0x20b4, PIN_INPUT_PULLDOWN | MUX_MODE4)	/* gpmc_ncs3.gpio_54 */
-			OMAP3_CORE1_IOPAD(0x20fc, PIN_OUTPUT | MUX_MODE4)		/* dss_data16.gpio_86 */
-			OMAP3_CORE1_IOPAD(0x219c, PIN_OUTPUT | MUX_MODE4)		/* uart3_rts_sd.gpio_164 */
-		>;
-	};
-
 	i2c1_pins: pinmux_i2c1_pins {
 		pinctrl-single,pins = <
 			0x18a (PIN_INPUT | MUX_MODE0)		/* i2c1_scl */
@@ -264,6 +256,17 @@
 			0x0b6 (PIN_OUTPUT | MUX_MODE4)		/* gpio 75 => cmt_rst */
 			0x15e (PIN_OUTPUT | MUX_MODE4)		/* gpio 157 => cmt_bsi */
 		>;
+	};
+
+	bluetooth {
+		  compatible = "brcm,bcm2048";
+		  uart = <&uart2>;
+		  reset-gpios = <&gpio3 27 GPIO_ACTIVE_HIGH>; /* want 91 */
+		  host-wakeup-gpios = <&gpio4 5 GPIO_ACTIVE_HIGH>; /* want 101 */
+		  bluetooth-wakeup-gpios = <&gpio2 5 GPIO_ACTIVE_HIGH>; /* want 37 */
+		  chip-type = <3>;
+		  bt-sysclk = <2>;
+		  reset-gpio-shared = <0>;
 	};
 };
 
@@ -696,12 +699,6 @@
 			label = "rootfs";
 			reg = <0x004c0000 0x0fb40000>;
 		};
-	};
-
-	ethernet@gpmc {
-		compatible = "smsc,lan91c94";
-
-		status = "disabled";
 	};
 };
 
