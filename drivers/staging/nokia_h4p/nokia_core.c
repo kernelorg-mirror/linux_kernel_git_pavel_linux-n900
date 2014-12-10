@@ -1112,9 +1112,27 @@ free:
 	return -ENODEV;
 }
 
+static int hci_h4p_probe_pdata(struct platform_device *pdev, struct hci_h4p_info *info,
+			       struct hci_h4p_platform_data *bt_plat_data)
+{
+	info->chip_type = bt_plat_data->chip_type;
+	info->bt_wakeup_gpio = bt_plat_data->bt_wakeup_gpio;
+	info->host_wakeup_gpio = bt_plat_data->host_wakeup_gpio;
+	info->reset_gpio = bt_plat_data->reset_gpio;
+	info->reset_gpio_shared = bt_plat_data->reset_gpio_shared;
+	info->bt_sysclk = bt_plat_data->bt_sysclk;
+
+	info->irq = bt_plat_data->uart_irq;
+	info->uart_base = devm_ioremap(&pdev->dev, bt_plat_data->uart_base,
+					SZ_2K);
+	info->uart_iclk = devm_clk_get(&pdev->dev, bt_plat_data->uart_iclk);
+	info->uart_fclk = devm_clk_get(&pdev->dev, bt_plat_data->uart_fclk);
+	return 0;
+}
+
 static int hci_h4p_probe(struct platform_device *pdev)
 {
-	struct hci_h4p_platform_data *bt_plat_data;
+
 	struct hci_h4p_info *info;
 	int err;
 
@@ -1140,14 +1158,7 @@ static int hci_h4p_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "Could not get Bluetooth config data\n");
 		return -ENODATA;
 	}
-
-	bt_plat_data = pdev->dev.platform_data;
-	info->chip_type = bt_plat_data->chip_type;
-	info->bt_wakeup_gpio = bt_plat_data->bt_wakeup_gpio;
-	info->host_wakeup_gpio = bt_plat_data->host_wakeup_gpio;
-	info->reset_gpio = bt_plat_data->reset_gpio;
-	info->reset_gpio_shared = bt_plat_data->reset_gpio_shared;
-	info->bt_sysclk = bt_plat_data->bt_sysclk;
+	hci_h4p_probe_pdata(pdev, info, pdev->dev.platform_data);
 
 	BT_DBG("RESET gpio: %d", info->reset_gpio);
 	BT_DBG("BTWU gpio: %d", info->bt_wakeup_gpio);
@@ -1183,12 +1194,6 @@ static int hci_h4p_probe(struct platform_device *pdev)
 		       info->host_wakeup_gpio);
 		return err;
 	}
-
-	info->irq = bt_plat_data->uart_irq;
-	info->uart_base = devm_ioremap(&pdev->dev, bt_plat_data->uart_base,
-					SZ_2K);
-	info->uart_iclk = devm_clk_get(&pdev->dev, bt_plat_data->uart_iclk);
-	info->uart_fclk = devm_clk_get(&pdev->dev, bt_plat_data->uart_fclk);
 
 	err = devm_request_irq(&pdev->dev, info->irq, hci_h4p_interrupt,
 				IRQF_DISABLED, "hci_h4p", info);
@@ -1280,7 +1285,7 @@ static struct platform_driver hci_h4p_driver = {
 	.probe		= hci_h4p_probe,
 	.remove		= hci_h4p_remove,
 	.driver		= {
-		.name	= "disabled_hci_h4p",
+		.name	= /* "disabled" */ "hci_h4p",
 		.owner  = THIS_MODULE,
 		.of_match_table = of_match_ptr(hci_h4p_of_match),
 	},
