@@ -128,6 +128,17 @@
 		 io-channels = <&twl_madc 0>, <&twl_madc 4>, <&twl_madc 12>;
 		 io-channel-names = "temp", "bsi", "vbat";
 	};
+
+	bluetooth {
+		  compatible = "brcm,bcm2048";
+		  uart = <&uart2>;
+		  reset-gpios = <&gpio3 27 GPIO_ACTIVE_HIGH>; /* want 91 */
+		  host-wakeup-gpios = <&gpio4 5 GPIO_ACTIVE_HIGH>; /* want 101 */
+		  bluetooth-wakeup-gpios = <&gpio2 5 GPIO_ACTIVE_HIGH>; /* want 37 */
+		  chip-type = <3>;
+		  bt-sysclk = <2>;
+		  reset-gpio-shared = <0>;
+	};
 };
 
 &omap3_pmx_core {
@@ -256,17 +267,6 @@
 			0x0b6 (PIN_OUTPUT | MUX_MODE4)		/* gpio 75 => cmt_rst */
 			0x15e (PIN_OUTPUT | MUX_MODE4)		/* gpio 157 => cmt_bsi */
 		>;
-	};
-
-	bluetooth {
-		  compatible = "brcm,bcm2048";
-		  uart = <&uart2>;
-		  reset-gpios = <&gpio3 27 GPIO_ACTIVE_HIGH>; /* want 91 */
-		  host-wakeup-gpios = <&gpio4 5 GPIO_ACTIVE_HIGH>; /* want 101 */
-		  bluetooth-wakeup-gpios = <&gpio2 5 GPIO_ACTIVE_HIGH>; /* want 37 */
-		  chip-type = <3>;
-		  bt-sysclk = <2>;
-		  reset-gpio-shared = <0>;
 	};
 };
 

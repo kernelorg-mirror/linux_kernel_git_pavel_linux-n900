@@ -1118,6 +1118,11 @@ static int hci_h4p_probe(struct platform_device *pdev)
 	struct hci_h4p_info *info;
 	int err;
 
+	printk("HCI h4p probe\n");
+	if (pdev->dev.of_node) {
+		printk("Have platform data.\n");
+	}
+
 	dev_info(&pdev->dev, "Registering HCI H4P device\n");
 	info = devm_kzalloc(&pdev->dev, sizeof(struct hci_h4p_info),
 			GFP_KERNEL);
@@ -1246,12 +1251,38 @@ static int hci_h4p_remove(struct platform_device *pdev)
 	return 0;
 }
 
+#if 0
+struct hci_h4p_platform_data bt_plat_data = {
+	.chip_type              = 3,
+	.bt_sysclk              = 2,
+	.bt_wakeup_gpio         = RX51_HCI_H4P_BTWU_GPIO,
+	.host_wakeup_gpio       = RX51_HCI_H4P_HOSTWU_GPIO,
+	.reset_gpio             = RX51_HCI_H4P_RESET_GPIO,
+	.reset_gpio_shared      = 0,
+	//      .uart_irq               = 73 + OMAP_INTC_START,
+	/* It seems to be 223 in hci_h4p case */
+	.uart_irq               = 223,
+	.uart_base              = OMAP3_UART2_BASE,
+	.uart_iclk              = "uart2_ick",
+	.uart_fclk              = "uart2_fck",
+	.set_pm_limits          = rx51_bt_set_pm_limits,
+};
+#endif
+
+static const struct of_device_id hci_h4p_of_match[] = {
+	{ .compatible = "brcm,bcm2048" },
+	{},
+};
+MODULE_DEVICE_TABLE(of, hci_h4p_of_match);
+
 
 static struct platform_driver hci_h4p_driver = {
 	.probe		= hci_h4p_probe,
 	.remove		= hci_h4p_remove,
 	.driver		= {
-		.name	= "hci_h4p",
+		.name	= "disabled_hci_h4p",
+		.owner  = THIS_MODULE,
+		.of_match_table = of_match_ptr(hci_h4p_of_match),
 	},
 };
 
