@@ -124,6 +124,16 @@ static void hci_h4p_disable_tx(struct hci_h4p_info *info)
 	info->tx_enabled = 0;
 }
 
+void hci_h4p_enable_tx_nopm(struct hci_h4p_info *info)
+{
+	unsigned long flags;
+	
+	spin_lock_irqsave(&info->lock, flags);
+	hci_h4p_outb(info, UART_IER, hci_h4p_inb(info, UART_IER) |
+		     UART_IER_THRI);
+	spin_unlock_irqrestore(&info->lock, flags);
+}
+
 void hci_h4p_enable_tx(struct hci_h4p_info *info)
 {
 	unsigned long flags;
@@ -184,13 +194,18 @@ static void hci_h4p_enable_rx(struct hci_h4p_info *info)
 	info->autorts = 1;
 }
 
+void hci_h4p_simple_send_frame(struct hci_h4p_info *info, struct sk_buff *skb)
+{
+	skb_queue_tail(&info->txq, skb);
+	hci_h4p_enable_tx_nopm(info);
+}
+
 /* Negotiation functions */
 int hci_h4p_send_alive_packet(struct hci_h4p_info *info)
 {
 	struct hci_h4p_alive_hdr *hdr;
 	struct hci_h4p_alive_pkt *pkt;
 	struct sk_buff *skb;
-	unsigned long flags;
 	int len;
 
 	BT_DBG("Sending alive packet");
@@ -207,11 +222,7 @@ int hci_h4p_send_alive_packet(struct hci_h4p_info *info)
 	pkt = (struct hci_h4p_alive_pkt *)skb_put(skb, sizeof(*pkt));
 	pkt->mid = H4P_ALIVE_REQ;
 
-	skb_queue_tail(&info->txq, skb);
-	spin_lock_irqsave(&info->lock, flags);
-	hci_h4p_outb(info, UART_IER, hci_h4p_inb(info, UART_IER) |
-		     UART_IER_THRI);
-	spin_unlock_irqrestore(&info->lock, flags);
+	hci_h4p_simple_send_frame(info, skb);
 
 	BT_DBG("Alive packet sent");
 
@@ -248,7 +259,6 @@ static int hci_h4p_send_negotiation(struct hci_h4p_info *info)
 	struct hci_h4p_neg_cmd *neg_cmd;
 	struct hci_h4p_neg_hdr *neg_hdr;
 	struct sk_buff *skb;
-	unsigned long flags;
 	int err, len;
 	u16 sysclk;
 
@@ -302,7 +312,7 @@ static int hci_h4p_send_negotiation(struct hci_h4p_info *info)
 	printk("skb_queue_tail\n");
 
 #ifdef OLD
-	skb_queue_tail(&info->txq, skb);
+	hci_h4p_simple_send_frame(info, skb);
 #else
 	printk("hci_cmd_sync\n");
 //	set_bit(HCI_RUNNING, &info->hdev->flags);
@@ -310,10 +320,6 @@ static int hci_h4p_send_negotiation(struct hci_h4p_info *info)
 	skb = __hci_cmd_sync(info->hdev, H4_NEG_PKT, len, &data, 2000);
 	printk("done\n");
 #endif
-	spin_lock_irqsave(&info->lock, flags);
-	hci_h4p_outb(info, UART_IER, hci_h4p_inb(info, UART_IER) |
-		     UART_IER_THRI);
-	spin_unlock_irqrestore(&info->lock, flags);
 
 	if (!wait_for_completion_interruptible_timeout(&info->init_completion,
 						       msecs_to_jiffies(1000))) {

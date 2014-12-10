@@ -77,11 +77,7 @@ void hci_h4p_bcm_parse_fw_event(struct hci_h4p_info *info, struct sk_buff *skb)
 		}
 	}
 
-	skb_queue_tail(&info->txq, fw_skb);
-	spin_lock_irqsave(&info->lock, flags);
-	hci_h4p_outb(info, UART_IER, hci_h4p_inb(info, UART_IER) |
-			UART_IER_THRI);
-	spin_unlock_irqrestore(&info->lock, flags);
+	hci_h4p_simple_send_frame(info, fw_skb);
 }
 
 
@@ -112,11 +108,8 @@ int hci_h4p_bcm_send_fw(struct hci_h4p_info *info,
 
 	/* Check if this is bd_address packet */
 	init_completion(&info->fw_completion);
-	skb_queue_tail(&info->txq, skb);
-	spin_lock_irqsave(&info->lock, flags);
-	hci_h4p_outb(info, UART_IER, hci_h4p_inb(info, UART_IER) |
-			UART_IER_THRI);
-	spin_unlock_irqrestore(&info->lock, flags);
+
+	hci_h4p_simple_send_frame(info, skb);
 
 	if (!wait_for_completion_timeout(&info->fw_completion,
 				msecs_to_jiffies(2000))) {

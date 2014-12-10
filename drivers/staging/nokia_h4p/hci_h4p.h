@@ -188,6 +188,8 @@ struct hci_fw_event {
 	u8 status;
 } __packed;
 
+void hci_h4p_simple_send_frame(struct hci_h4p_info *info, struct sk_buff *skb);
+
 int hci_h4p_send_alive_packet(struct hci_h4p_info *info);
 
 void hci_h4p_bcm_parse_fw_event(struct hci_h4p_info *info,
