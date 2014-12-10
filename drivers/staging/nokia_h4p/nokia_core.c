@@ -128,14 +128,6 @@ void hci_h4p_enable_tx(struct hci_h4p_info *info)
 {
 	unsigned long flags;
 
-	if (info->initing == 2) {
-		spin_lock_irqsave(&info->lock, flags);
-		hci_h4p_outb(info, UART_IER, hci_h4p_inb(info, UART_IER) |
-		     UART_IER_THRI);
-		spin_unlock_irqrestore(&info->lock, flags);
-		return;
-	}
-
 	if (!info->pm_enabled)
 		return;
 
@@ -274,7 +266,7 @@ static int hci_h4p_send_negotiation(struct hci_h4p_info *info)
 	}
 
 	len = sizeof(*neg_cmd) + sizeof(*neg_hdr) + H4_TYPE_SIZE;
-#undef OLD 
+#define OLD
 #ifdef OLD
 	skb = bt_skb_alloc(len, GFP_KERNEL);
 	if (!skb)
@@ -284,16 +276,18 @@ static int hci_h4p_send_negotiation(struct hci_h4p_info *info)
 	*skb_put(skb, 1) = H4_NEG_PKT;
 	neg_hdr = (struct hci_h4p_neg_hdr *)skb_put(skb, sizeof(*neg_hdr));
 	neg_cmd = (struct hci_h4p_neg_cmd *)skb_put(skb, sizeof(*neg_cmd));
-	neg_hdr->dlen = sizeof(*neg_cmd);
 #else      
 	struct {
+		struct hci_h4p_neg_hdr neg_hdr;
 		struct hci_h4p_neg_cmd neg_cmd;
 	} data;
 
 	memset(&data, 0, len-1);
+	neg_hdr = &data.neg_hdr;
 	neg_cmd = &data.neg_cmd;
 #endif
 
+	neg_hdr->dlen = sizeof(*neg_cmd);
 	neg_cmd->ack = H4P_NEG_REQ;
 	neg_cmd->baud = cpu_to_le16(BT_BAUDRATE_DIVIDER/MAX_BAUD_RATE);
 	neg_cmd->proto = H4P_PROTO_BYTE;
@@ -309,20 +303,17 @@ static int hci_h4p_send_negotiation(struct hci_h4p_info *info)
 
 #ifdef OLD
 	skb_queue_tail(&info->txq, skb);
-
+#else
+	printk("hci_cmd_sync\n");
+//	set_bit(HCI_RUNNING, &info->hdev->flags);
+	
+	skb = __hci_cmd_sync(info->hdev, H4_NEG_PKT, len, &data, 2000);
+	printk("done\n");
+#endif
 	spin_lock_irqsave(&info->lock, flags);
 	hci_h4p_outb(info, UART_IER, hci_h4p_inb(info, UART_IER) |
 		     UART_IER_THRI);
 	spin_unlock_irqrestore(&info->lock, flags);
-#else
-	printk("hci_cmd_sync\n");
-//	set_bit(HCI_RUNNING, &info->hdev->flags);
-
-	info->initing = 2;
-	
-	skb = __hci_cmd_sync(info->hdev, H4_NEG_PKT << 8, sizeof(*neg_cmd), ((void *) &data), 2000);
-	printk("done\n");
-#endif
 
 	if (!wait_for_completion_interruptible_timeout(&info->init_completion,
 						       msecs_to_jiffies(1000))) {
@@ -633,8 +624,7 @@ static void hci_h4p_tx_tasklet(unsigned long data)
 	/* Copy data to tx fifo */
 	while (!(hci_h4p_inb(info, UART_OMAP_SSR) & UART_OMAP_SSR_TXFULL) &&
 	       (sent < skb->len)) {
-		//printk("[Out: %02x]", skb->data[sent]);
-		printk("%02x ", skb->data[sent]);
+		printk("[Out: %02x]", skb->data[sent]);
 		hci_h4p_outb(info, UART_TX, skb->data[sent]);
 		sent++;
 	}
