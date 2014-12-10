@@ -50,27 +50,6 @@ static int hci_h4p_open_firmware(struct hci_h4p_info *info,
 	BT_DBG("Opening firmware man_id 0x%.2x ver_id 0x%.2x",
 			info->man_id, info->ver_id);
 	switch (info->man_id) {
-	case H4P_ID_TI1271:
-		printk("Firmware: ti1271\n");
-		switch (info->ver_id) {
-		case 0xe1:
-			err = request_firmware(fw_entry, FW_NAME_TI1271_PRELE,
-						info->dev);
-			break;
-		case 0xd1:
-		case 0xf1:
-			err = request_firmware(fw_entry, FW_NAME_TI1271_LE,
-						info->dev);
-			break;
-		default:
-			err = request_firmware(fw_entry, FW_NAME_TI1271,
-						info->dev);
-		}
-		break;
-	case H4P_ID_CSR:
-		printk("Firmware: CSR\n");
-		err = request_firmware(fw_entry, FW_NAME_CSR, info->dev);
-		break;
 	case H4P_ID_BCM2048:
 		/* We have this in N900 */
 		printk("Firmware: BCM2048\n");
@@ -170,12 +149,6 @@ int hci_h4p_send_fw(struct hci_h4p_info *info, struct sk_buff_head *fw_queue)
 	int err;
 
 	switch (info->man_id) {
-	case H4P_ID_CSR:
-		err = hci_h4p_bc4_send_fw(info, fw_queue);
-		break;
-	case H4P_ID_TI1271:
-		err = hci_h4p_ti1273_send_fw(info, fw_queue);
-		break;
 	case H4P_ID_BCM2048:
 		err = hci_h4p_bcm_send_fw(info, fw_queue);
 		break;
@@ -190,12 +163,6 @@ int hci_h4p_send_fw(struct hci_h4p_info *info, struct sk_buff_head *fw_queue)
 void hci_h4p_parse_fw_event(struct hci_h4p_info *info, struct sk_buff *skb)
 {
 	switch (info->man_id) {
-	case H4P_ID_CSR:
-		hci_h4p_bc4_parse_fw_event(info, skb);
-		break;
-	case H4P_ID_TI1271:
-		hci_h4p_ti1273_parse_fw_event(info, skb);
-		break;
 	case H4P_ID_BCM2048:
 		hci_h4p_bcm_parse_fw_event(info, skb);
 		break;
