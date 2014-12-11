@@ -37,6 +37,8 @@
 #include <linux/clk.h>
 #include <linux/interrupt.h>
 #include <linux/gpio.h>
+#include <linux/of_gpio.h>
+#include <linux/of_irq.h>
 #include <linux/timer.h>
 #include <linux/kthread.h>
 #include <linux/io.h>
@@ -1130,6 +1132,46 @@ static int hci_h4p_probe_pdata(struct platform_device *pdev, struct hci_h4p_info
 	return 0;
 }
 
+static int hci_h4p_probe_dt(struct platform_device *pdev, struct hci_h4p_info *info)
+{
+	struct device_node *node;
+	struct device_node *uart = pdev->dev.of_node;
+	u32 val;
+	struct resource *mem;	
+
+	node = of_get_child_by_name(uart, "device");
+
+	if (!node)
+		return -ENODATA;
+
+	if (of_property_read_u32(node, "chip-type", &val)) return -EINVAL;
+	info->chip_type = val;
+	
+	if (of_property_read_u32(node, "bt-sysclk", &val)) return -EINVAL;
+	info->bt_sysclk = val;
+
+	info->reset_gpio       = of_get_named_gpio(node, "reset-gpios", 0);
+	info->host_wakeup_gpio = of_get_named_gpio(node, "host-wakeup-gpios", 0);
+	info->bt_wakeup_gpio   = of_get_named_gpio(node, "bluetooth-wakeup-gpios", 0);	
+	//uart = of_parse_phandle(node, "uart", 0);
+	if (!uart) {
+		dev_err(&pdev->dev, "UART link not provided\n");
+		return -EINVAL;
+	}
+
+	info->irq = irq_of_parse_and_map(uart, 0);
+
+	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+	info->uart_base = devm_ioremap_resource(&pdev->dev, mem);
+
+	info->uart_iclk = of_clk_get_by_name(node, "ick");
+	info->uart_fclk = of_clk_get_by_name(node, "fck");	
+
+	printk("DT: have neccessary data\n");
+	return 0;
+}
+			  
+
 static int hci_h4p_probe(struct platform_device *pdev)
 {
 
@@ -1154,16 +1196,22 @@ static int hci_h4p_probe(struct platform_device *pdev)
 	spin_lock_init(&info->clocks_lock);
 	skb_queue_head_init(&info->txq);
 
-	if (pdev->dev.platform_data == NULL) {
+	if (pdev->dev.platform_data) {
+		err = hci_h4p_probe_pdata(pdev, info, pdev->dev.platform_data);
+	} else {
+		err = hci_h4p_probe_dt(pdev, info);
+	}
+	if (err) {
 		dev_err(&pdev->dev, "Could not get Bluetooth config data\n");
 		return -ENODATA;
 	}
-	hci_h4p_probe_pdata(pdev, info, pdev->dev.platform_data);
 
-	BT_DBG("RESET gpio: %d", info->reset_gpio);
-	BT_DBG("BTWU gpio: %d", info->bt_wakeup_gpio);
-	BT_DBG("HOSTWU gpio: %d", info->host_wakeup_gpio);
-	BT_DBG("sysclk: %d", info->bt_sysclk);
+	printk("base/irq gpio: %lx/%d/%d\n",
+	       info->uart_base, info->irq);
+	printk("RESET/BTWU/HOSTWU gpio: %d/%d/%d\n",
+	       info->reset_gpio, info->bt_wakeup_gpio, info->host_wakeup_gpio);
+	printk("chip type, sysclk: %d/%d\n", info->chip_type, info->bt_sysclk);
+	printk("clock i/f: %lx/%lx\n", info->uart_iclk, info->uart_fclk);	
 
 	init_completion(&info->test_completion);
 	complete_all(&info->test_completion);
@@ -1272,7 +1320,7 @@ struct hci_h4p_platform_data bt_plat_data = {
 #endif
 
 static const struct of_device_id hci_h4p_of_match[] = {
-	{ .compatible = "brcm,bcm2048" },
+	{ .compatible = "brcm,uart,bcm2048" },
 	{},
 };
 MODULE_DEVICE_TABLE(of, hci_h4p_of_match);
