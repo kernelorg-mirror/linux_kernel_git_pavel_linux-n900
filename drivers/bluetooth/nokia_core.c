@@ -1006,50 +1006,6 @@ static int h4p_hci_send_frame(struct hci_dev *hdev, struct sk_buff *skb)
 	return 0;
 }
 
-static ssize_t h4p_store_bdaddr(struct device *dev,
-				    struct device_attribute *attr,
-				    const char *buf, size_t count)
-{
-	struct h4p_info *info = dev_get_drvdata(dev);
-	unsigned int bdaddr[6];
-	int ret, i;
-
-	ret = sscanf(buf, "%2x:%2x:%2x:%2x:%2x:%2x\n",
-			&bdaddr[0], &bdaddr[1], &bdaddr[2],
-			&bdaddr[3], &bdaddr[4], &bdaddr[5]);
-
-	if (ret != 6)
-		return -EINVAL;
-
-	for (i = 0; i < 6; i++) {
-		if (bdaddr[i] > 0xff)
-			return -EINVAL;
-		info->bd_addr.b[i] = bdaddr[i] & 0xff;
-	}
-
-	return count;
-}
-
-static ssize_t h4p_show_bdaddr(struct device *dev,
-				   struct device_attribute *attr, char *buf)
-{
-	struct h4p_info *info = dev_get_drvdata(dev);
-
-	return sprintf(buf, "%pMR\n", info->bd_addr.b);
-}
-
-static DEVICE_ATTR(bdaddr, S_IRUGO | S_IWUSR, h4p_show_bdaddr,
-		   h4p_store_bdaddr);
-
-static int h4p_sysfs_create_files(struct device *dev)
-{
-	return device_create_file(dev, &dev_attr_bdaddr);
-}
-
-static void h4p_sysfs_remove_files(struct device *dev)
-{
-	device_remove_file(dev, &dev_attr_bdaddr);
-}
 
 static int h4p_register_hdev(struct h4p_info *info)
 {
@@ -1077,17 +1033,10 @@ static int h4p_register_hdev(struct h4p_info *info)
 
 	SET_HCIDEV_DEV(hdev, info->dev);
 
-	if (h4p_sysfs_create_files(info->dev) < 0) {
-		dev_err(info->dev, "failed to create sysfs files\n");
-		goto free;
-	}
-
 	if (hci_register_dev(hdev) >= 0)
 		return 0;
 
 	dev_err(info->dev, "hci_register failed %s.\n", hdev->name);
-	h4p_sysfs_remove_files(info->dev);
-free:
 	hci_free_dev(info->hdev);
 	return -ENODEV;
 }
@@ -1130,7 +1079,7 @@ static int h4p_probe_dt(struct platform_device *pdev, struct h4p_info *info)
 	info->reset_gpio       = of_get_named_gpio(node, "reset-gpios", 0);
 	info->host_wakeup_gpio = of_get_named_gpio(node, "host-wakeup-gpios", 0);
 	info->bt_wakeup_gpio   = of_get_named_gpio(node, "bluetooth-wakeup-gpios", 0);	
-	//uart = of_parse_phandle(node, "uart", 0);
+
 	if (!uart) {
 		dev_err(&pdev->dev, "UART link not provided\n");
 		return -EINVAL;
@@ -1154,11 +1103,6 @@ static int h4p_probe(struct platform_device *pdev)
 
 	struct h4p_info *info;
 	int err;
-
-	printk("HCI h4p probe\n");
-	if (pdev->dev.of_node) {
-		printk("Have platform data.\n");
-	}
 
 	dev_info(&pdev->dev, "Registering HCI H4P device\n");
 	info = devm_kzalloc(&pdev->dev, sizeof(struct h4p_info),
@@ -1270,7 +1214,6 @@ static int h4p_remove(struct platform_device *pdev)
 
 	info = platform_get_drvdata(pdev);
 
-	h4p_sysfs_remove_files(info->dev);
 	h4p_hci_close(info->hdev);
 	hci_unregister_dev(info->hdev);
 	hci_free_dev(info->hdev);
@@ -1278,30 +1221,11 @@ static int h4p_remove(struct platform_device *pdev)
 	return 0;
 }
 
-#if 0
-struct h4p_platform_data bt_plat_data = {
-	.chip_type              = 3,
-	.bt_sysclk              = 2,
-	.bt_wakeup_gpio         = RX51_H4P_BTWU_GPIO,
-	.host_wakeup_gpio       = RX51_H4P_HOSTWU_GPIO,
-	.reset_gpio             = RX51_H4P_RESET_GPIO,
-	.reset_gpio_shared      = 0,
-	//      .uart_irq               = 73 + OMAP_INTC_START,
-	/* It seems to be 223 in hci_h4p case */
-	.uart_irq               = 223,
-	.uart_base              = OMAP3_UART2_BASE,
-	.uart_iclk              = "uart2_ick",
-	.uart_fclk              = "uart2_fck",
-	.set_pm_limits          = rx51_bt_set_pm_limits,
-};
-#endif
-
 static const struct of_device_id h4p_of_match[] = {
 	{ .compatible = "brcm,uart,bcm2048" },
 	{},
 };
 MODULE_DEVICE_TABLE(of, h4p_of_match);
-
 
 static struct platform_driver h4p_driver = {
 	.probe		= h4p_probe,
