@@ -25,6 +25,11 @@
  * merging easier.
  */
 
+/*
+insmod hci_h4p.ko && hciconfig hci0 up && hcitool inq && hciconfig hci0 down && hciconfig hci0 up && hcitool inq && rmmod hci_h4p
+
+*/
+
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/init.h>
@@ -827,6 +832,11 @@ out:
 
 static int h4p_hci_setup(struct hci_dev *hdev)
 {
+	return 0;
+}
+
+static int h4p_setup(struct hci_dev *hdev)
+{
 	struct h4p_info *info = hci_get_drvdata(hdev);
 	int err;
 	struct sk_buff_head fw_queue; /* FIXME: remove? */
@@ -906,7 +916,9 @@ static int h4p_hci_open(struct hci_dev *hdev)
 	printk("hci_setup\n");
 
 	err = h4p_send_negotiation(info);
-	set_bit(HCI_RUNNING, &hdev->flags);	
+	set_bit(HCI_RUNNING, &hdev->flags);
+
+	h4p_setup(hdev);
 	
 	return 0;
 
