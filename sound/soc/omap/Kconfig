@@ -45,11 +45,7 @@ config SND_OMAP_SOC_RX51
 	depends on GPIOLIB
 	help
 	  Say Y if you want to add support for SoC audio on Nokia N900
-<<<<<<< HEAD
-	  (RX-51) cellphone.
-=======
 	  cellphone.
->>>>>>> 2756d373a3f45a3a9ebf4ac389f9e0e02bd35a93
 
 config SND_OMAP_SOC_AMS_DELTA
 	tristate "SoC Audio support for Amstrad E3 (Delta) videophone"

@@ -26,7 +26,6 @@
 
 #include "common.h"
 #include <linux/omap-dma.h>
-#include "gpmc-smc91x.h"
 #include <linux/platform_data/ssi.h>
 
 #include "board-rx51.h"
@@ -34,7 +33,6 @@
 
 #include <sound/tlv320aic3x.h>
 #include <sound/tpa6130a2-plat.h>
-#include <media/radio-si4713.h>
 #include <media/si4713.h>
 #include "../../../drivers/staging/media/bcm2048/radio-bcm2048.h"
 #include <linux/platform_data/leds-lp55xx.h>
@@ -60,7 +58,6 @@
 #include "hsmmc.h"
 #include "common-board-devices.h"
 #include "gpmc.h"
-#include "gpmc-onenand.h"
 #include "soc.h"
 #include "omap-secure.h"
 
