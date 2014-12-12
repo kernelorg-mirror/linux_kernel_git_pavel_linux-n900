@@ -830,11 +830,6 @@ out:
 	return ret;
 }
 
-static int h4p_hci_setup(struct hci_dev *hdev)
-{
-	return h4p_setup(hdev);
-}
-
 static int h4p_setup(struct hci_dev *hdev)
 {
 	struct h4p_info *info = hci_get_drvdata(hdev);
@@ -876,6 +871,11 @@ static int h4p_setup(struct hci_dev *hdev)
 err_clean:
 	printk("hci_setup: something failed, should do the clean up\n");
 	return err;
+}
+
+static int h4p_hci_setup(struct hci_dev *hdev)
+{
+	return h4p_setup(hdev);
 }
 
 static int h4p_hci_open(struct hci_dev *hdev)
