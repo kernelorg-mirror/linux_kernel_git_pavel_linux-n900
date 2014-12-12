@@ -267,8 +267,7 @@ static int h4p_send_negotiation(struct h4p_info *info)
 
 	printk("Sending negotiation..");
 	len = sizeof(*neg_cmd) + sizeof(*neg_hdr) + H4_TYPE_SIZE;
-#define OLD
-#ifdef OLD
+
 	skb = bt_skb_alloc(len, GFP_KERNEL);
 	if (!skb)
 		return -ENOMEM;
@@ -277,16 +276,6 @@ static int h4p_send_negotiation(struct h4p_info *info)
 	*skb_put(skb, 1) = H4_NEG_PKT;
 	neg_hdr = (struct h4p_neg_hdr *)skb_put(skb, sizeof(*neg_hdr));
 	neg_cmd = (struct h4p_neg_cmd *)skb_put(skb, sizeof(*neg_cmd));
-#else      
-	struct {
-		struct h4p_neg_hdr neg_hdr;
-		struct h4p_neg_cmd neg_cmd;
-	} data;
-
-	memset(&data, 0, len-1);
-	neg_hdr = &data.neg_hdr;
-	neg_cmd = &data.neg_cmd;
-#endif
 
 	neg_hdr->dlen = sizeof(*neg_cmd);
 	neg_cmd->ack = H4P_NEG_REQ;
@@ -296,21 +285,11 @@ static int h4p_send_negotiation(struct h4p_info *info)
 
 	h4p_change_speed(info, INIT_SPEED);
 
-	printk("Setting up packet\n");
 	h4p_set_rts(info, 1);
 	info->init_error = 0;
 	init_completion(&info->init_completion);
-	printk("skb_queue_tail\n");
 
-#ifdef OLD
 	h4p_simple_send_frame(info, skb);
-#else
-	printk("hci_cmd_sync\n");
-//	set_bit(HCI_RUNNING, &info->hdev->flags);
-	
-	skb = __hci_cmd_sync(info->hdev, H4_NEG_PKT, len, &data, 2000);
-	printk("done\n");
-#endif
 
 	if (!wait_for_completion_interruptible_timeout(&info->init_completion,
 						       msecs_to_jiffies(1000))) {
@@ -850,14 +829,10 @@ static int h4p_hci_setup(struct hci_dev *hdev)
 {
 	struct h4p_info *info = hci_get_drvdata(hdev);
 	int err;
-	struct sk_buff_head fw_queue;
+	struct sk_buff_head fw_queue; /* FIXME: remove? */
 	unsigned long flags;
 
-	printk("hci_setup\n");
-
 	skb_queue_head_init(&fw_queue);
-
-	err = h4p_send_negotiation(info);
 
 	err = h4p_read_fw(info, &fw_queue);
 	if (err < 0) {
@@ -928,9 +903,11 @@ static int h4p_hci_open(struct hci_dev *hdev)
 	info->autorts = 1;
 
 	info->initing = 1;
-	set_bit(HCI_RUNNING, &hdev->flags);
+	printk("hci_setup\n");
 
-	printk("hci up and running");
+	err = h4p_send_negotiation(info);
+	set_bit(HCI_RUNNING, &hdev->flags);	
+	
 	return 0;
 
 err_clean:
