@@ -836,6 +836,12 @@ static int h4p_setup(struct hci_dev *hdev)
 	int err;
 	unsigned long flags;
 
+	/*
+	 * Disable smart-idle as UART TX interrupts
+	 * are not wake-up capable
+	 */
+	h4p_smart_idle(info, 0);
+	
 	err = h4p_read_fw(info);
 	if (err < 0) {
 		dev_err(info->dev, "Cannot read firmware\n");

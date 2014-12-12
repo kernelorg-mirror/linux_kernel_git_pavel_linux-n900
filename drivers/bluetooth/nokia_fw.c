@@ -37,24 +37,6 @@ static int fw_pos;
 
 #define BT_DBG printk
 
-/* Firmware handling */
-static int h4p_open_firmware(struct h4p_info *info,
-				 const struct firmware **fw_entry)
-{
-	int err;
-
-	fw_pos = 0;
-	BT_DBG("Opening firmware man_id 0x%.2x ver_id 0x%.2x",
-			info->man_id, info->ver_id);
-
-	err = request_firmware(fw_entry, FW_NAME_BCM2048, info->dev);
-	return err;
-}
-
-static void h4p_close_firmware(const struct firmware *fw_entry)
-{
-	release_firmware(fw_entry);
-}
 
 /* Read fw. Return length of the command. If no more commands in
  * fw 0 is returned. In error case return value is negative.
@@ -108,13 +90,8 @@ int h4p_read_fw(struct h4p_info *info)
 	const struct firmware *fw_entry = NULL;
 	int err;
 
-	/*
-	 * Disable smart-idle as UART TX interrupts
-	 * are not wake-up capable
-	 */
-	h4p_smart_idle(info, 0);
-	
-	err = h4p_open_firmware(info, &fw_entry);
+	fw_pos = 0;	
+	err = request_firmware(&fw_entry, FW_NAME_BCM2048, info->dev);
 	if (err < 0 || !fw_entry)
 		goto err_clean;
 
@@ -125,7 +102,7 @@ int h4p_read_fw(struct h4p_info *info)
 	printk("done read firmware\n");
 
 err_clean:
-	h4p_close_firmware(fw_entry);
+	release_firmware(fw_entry);
 	return err;
 }
 
