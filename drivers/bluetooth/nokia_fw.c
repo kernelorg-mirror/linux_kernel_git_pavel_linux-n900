@@ -68,18 +68,8 @@ static int h4p_open_firmware(struct h4p_info *info,
 	fw_pos = 0;
 	BT_DBG("Opening firmware man_id 0x%.2x ver_id 0x%.2x",
 			info->man_id, info->ver_id);
-	switch (info->man_id) {
-	case H4P_ID_BCM2048:
-		/* We have this in N900 */
-		printk("Firmware: BCM2048\n");
-		err = request_firmware(fw_entry, FW_NAME_BCM2048, info->dev);
-		break;
-	default:
-		dev_err(info->dev, "Invalid chip type: %x\n", info->man_id);
-		*fw_entry = NULL;
-		err = -EINVAL;
-	}
 
+	err = request_firmware(fw_entry, FW_NAME_BCM2048, info->dev);
 	return err;
 }
 
@@ -91,11 +81,11 @@ static void h4p_close_firmware(const struct firmware *fw_entry)
 /* Read fw. Return length of the command. If no more commands in
  * fw 0 is returned. In error case return value is negative.
  */
-static int h4p_read_fw_cmd(struct h4p_info *info, struct sk_buff **skb,
-			       const struct firmware *fw_entry, gfp_t how)
+static int h4p_read_fw_cmd(struct h4p_info *info, const struct firmware *fw_entry)
 {
 	unsigned int cmd_len;
 	static int num = 0;
+	struct sk_buff *skb;
 
 	if (fw_pos >= fw_entry->size)
 		return 0;
@@ -122,9 +112,9 @@ static int h4p_read_fw_cmd(struct h4p_info *info, struct sk_buff **skb,
 		int cmd = fw_entry->data[fw_pos+1] + (fw_entry->data[fw_pos+2] << 8);
 		int len = fw_entry->data[fw_pos+3];
 		printk("cmd %x, len %d.", cmd, len);
-		*skb = __hci_cmd_sync(info->hdev, cmd, len, fw_entry->data+fw_pos+4, 500);
-		if (IS_ERR(*skb)) {
-			printk("...sending cmd failed %d\n", PTR_ERR(*skb));
+		skb = __hci_cmd_sync(info->hdev, cmd, len, fw_entry->data+fw_pos+4, 500);
+		if (IS_ERR(skb)) {
+			printk("...sending cmd failed %d\n", PTR_ERR(skb));
 			return -EIO;
 		}
 	}
@@ -138,7 +128,6 @@ static int h4p_read_fw_cmd(struct h4p_info *info, struct sk_buff **skb,
 int h4p_read_fw(struct h4p_info *info)
 {
 	const struct firmware *fw_entry = NULL;
-	struct sk_buff *skb = NULL;
 	int err;
 
 	/*
@@ -152,8 +141,7 @@ int h4p_read_fw(struct h4p_info *info)
 		goto err_clean;
 
 	printk("read firmware\n");
-	/* FIXME: remove skb... */
-	while ((err = h4p_read_fw_cmd(info, &skb, fw_entry, GFP_KERNEL))) {
+	while ((err = h4p_read_fw_cmd(info, fw_entry))) {
 	}
 
 	printk("done read firmware\n");
