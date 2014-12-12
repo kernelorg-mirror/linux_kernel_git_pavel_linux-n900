@@ -832,7 +832,7 @@ out:
 
 static int h4p_hci_setup(struct hci_dev *hdev)
 {
-	return 0;
+	return h4p_setup(hdev);
 }
 
 static int h4p_setup(struct hci_dev *hdev)
@@ -913,9 +913,13 @@ static int h4p_hci_open(struct hci_dev *hdev)
 
 	err = h4p_send_negotiation(info);
 	set_bit(HCI_RUNNING, &hdev->flags);
-
-	h4p_setup(hdev);
-	
+#if 0
+	err = h4p_setup(hdev);
+	if (err < 0) {
+		printk("h4p setup failed\n");
+		goto err_clean;
+	}
+#endif	
 	return 0;
 
 err_clean:
