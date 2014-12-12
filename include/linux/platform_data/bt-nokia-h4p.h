@@ -21,9 +21,9 @@
 
 
 /**
- * struct hci_h4p_platform data - hci_h4p Platform data structure
+ * struct h4p_platform data - hci_h4p Platform data structure
  */
-struct hci_h4p_platform_data {
+struct h4p_platform_data {
 	int chip_type;
 	int bt_sysclk;
 	unsigned int bt_wakeup_gpio;

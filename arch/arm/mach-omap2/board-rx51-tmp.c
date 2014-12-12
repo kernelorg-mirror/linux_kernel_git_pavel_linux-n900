@@ -77,7 +77,7 @@ static void rx51_bt_set_pm_limits(struct device *dev, bool set)
 #define RX51_HCI_H4P_HOSTWU_GPIO	101
 #define RX51_HCI_H4P_BTWU_GPIO		37
 
-struct hci_h4p_platform_data bt_plat_data = {
+struct h4p_platform_data bt_plat_data = {
 	.chip_type		= 3,
 	.bt_sysclk		= 2,
 	.bt_wakeup_gpio		= RX51_HCI_H4P_BTWU_GPIO,

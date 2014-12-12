@@ -1,7 +1,8 @@
 /*
  * This file is part of hci_h4p bluetooth driver
  *
- * Copyright (C) 2005, 2006 Nokia Corporation.
+ * Copyright (C) 2005-2008 Nokia Corporation.
+ * Copyright (C) 2014 Pavel Machek <pavel@ucw.cz>
  *
  * Contact: Ville Tervo <ville.tervo@nokia.com>
  *
@@ -36,8 +37,51 @@ static int fw_pos;
 
 #define BT_DBG printk
 
+static int h4p_bcm_set_bdaddr(struct h4p_info *info,
+				struct sk_buff *skb)
+{
+	int i;
+	static const u8 nokia_oui[3] = {0x00, 0x1f, 0xdf};
+	int not_valid = !bacmp(&info->bd_addr, BDADDR_ANY);
+
+	if (not_valid) {
+		dev_info(info->dev, "Valid bluetooth address not found, setting some random\n");
+		/* When address is not valid, use some random but Nokia MAC */
+		memcpy(info->bd_addr.b, nokia_oui, 3);
+		get_random_bytes(info->bd_addr.b + 3, 3);
+	}
+
+	for (i = 0; i < 6; i++)
+		skb->data[9 - i] = info->bd_addr.b[i];
+
+	return 0;
+}
+
+int h4p_bcm_send_fw(struct h4p_info *info,
+			struct sk_buff_head *fw_queue)
+{
+	unsigned long time;
+
+	info->fw_error = 0;
+
+	printk("Sending firmware (not really)\n");
+
+	time = jiffies;
+	printk("Firmware sent in %d msec\n",
+		   jiffies_to_msecs(jiffies-time));
+
+	h4p_set_auto_ctsrts(info, 0, UART_EFR_RTS);
+	h4p_set_rts(info, 0);
+	h4p_change_speed(info, BC4_MAX_BAUD_RATE);
+	h4p_set_auto_ctsrts(info, 1, UART_EFR_RTS);
+
+	printk("Going to final parameters\n");
+
+	return 0;
+}
+
 /* Firmware handling */
-static int hci_h4p_open_firmware(struct hci_h4p_info *info,
+static int h4p_open_firmware(struct h4p_info *info,
 				 const struct firmware **fw_entry)
 {
 	int err;
@@ -60,7 +104,7 @@ static int hci_h4p_open_firmware(struct hci_h4p_info *info,
 	return err;
 }
 
-static void hci_h4p_close_firmware(const struct firmware *fw_entry)
+static void h4p_close_firmware(const struct firmware *fw_entry)
 {
 	release_firmware(fw_entry);
 }
@@ -68,7 +112,7 @@ static void hci_h4p_close_firmware(const struct firmware *fw_entry)
 /* Read fw. Return length of the command. If no more commands in
  * fw 0 is returned. In error case return value is negative.
  */
-static int hci_h4p_read_fw_cmd(struct hci_h4p_info *info, struct sk_buff **skb,
+static int h4p_read_fw_cmd(struct h4p_info *info, struct sk_buff **skb,
 			       const struct firmware *fw_entry, gfp_t how)
 {
 	unsigned int cmd_len;
@@ -112,7 +156,7 @@ static int hci_h4p_read_fw_cmd(struct hci_h4p_info *info, struct sk_buff **skb,
 	return 1;
 }
 
-int hci_h4p_read_fw(struct hci_h4p_info *info, struct sk_buff_head *fw_queue)
+int h4p_read_fw(struct h4p_info *info, struct sk_buff_head *fw_queue)
 {
 	const struct firmware *fw_entry = NULL;
 	struct sk_buff *skb = NULL;
@@ -122,31 +166,31 @@ int hci_h4p_read_fw(struct hci_h4p_info *info, struct sk_buff_head *fw_queue)
 	 * Disable smart-idle as UART TX interrupts
 	 * are not wake-up capable
 	 */
-	hci_h4p_smart_idle(info, 0);
+	h4p_smart_idle(info, 0);
 	
-	err = hci_h4p_open_firmware(info, &fw_entry);
+	err = h4p_open_firmware(info, &fw_entry);
 	if (err < 0 || !fw_entry)
 		goto err_clean;
 
 	printk("read firmware\n");
 	/* FIXME: remove skb... */
-	while ((err = hci_h4p_read_fw_cmd(info, &skb, fw_entry, GFP_KERNEL))) {
+	while ((err = h4p_read_fw_cmd(info, &skb, fw_entry, GFP_KERNEL))) {
 	}
 
 	printk("done read firmware\n");
 
 err_clean:
-	hci_h4p_close_firmware(fw_entry);
+	h4p_close_firmware(fw_entry);
 	return err;
 }
 
-int hci_h4p_send_fw(struct hci_h4p_info *info, struct sk_buff_head *fw_queue)
+int h4p_send_fw(struct h4p_info *info, struct sk_buff_head *fw_queue)
 {
 	int err;
 
 	switch (info->man_id) {
 	case H4P_ID_BCM2048:
-		err = hci_h4p_bcm_send_fw(info, fw_queue);
+		err = h4p_bcm_send_fw(info, fw_queue);
 		break;
 	default:
 		dev_err(info->dev, "Don't know how to send firmware\n");

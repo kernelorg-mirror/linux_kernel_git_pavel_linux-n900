@@ -19,8 +19,8 @@
  *
  */
 
-#ifndef __DRIVERS_BLUETOOTH_HCI_H4P_H
-#define __DRIVERS_BLUETOOTH_HCI_H4P_H
+#ifndef __DRIVERS_BLUETOOTH_H4P_H
+#define __DRIVERS_BLUETOOTH_H4P_H
 
 #include <net/bluetooth/bluetooth.h>
 #include <net/bluetooth/hci_core.h>
@@ -46,7 +46,7 @@
 #define H4P_SCHED_TRANSFER_MODE		2
 #define H4P_ACTIVE_MODE			3
 
-struct hci_h4p_info {
+struct h4p_info {
 	struct timer_list lazy_release;
 	struct hci_dev *hdev;
 	spinlock_t lock;
@@ -103,12 +103,12 @@ struct hci_h4p_info {
 	int initing;
 };
 
-struct hci_h4p_radio_hdr {
+struct h4p_radio_hdr {
 	u8 evt;
 	u8 dlen;
 } __packed;
 
-struct hci_h4p_neg_hdr {
+struct h4p_neg_hdr {
 	u8 dlen;
 } __packed;
 #define H4P_NEG_HDR_SIZE 1
@@ -124,7 +124,7 @@ struct hci_h4p_neg_hdr {
 #define H4P_ID_BCM2048	0x04
 #define H4P_ID_TI1271	0x31
 
-struct hci_h4p_neg_cmd {
+struct h4p_neg_cmd {
 	u8	ack;
 	u16	baud;
 	u16	unused1;
@@ -133,7 +133,7 @@ struct hci_h4p_neg_cmd {
 	u16	unused2;
 } __packed;
 
-struct hci_h4p_neg_evt {
+struct h4p_neg_evt {
 	u8	ack;
 	u16	baud;
 	u16	unused1;
@@ -147,12 +147,12 @@ struct hci_h4p_neg_evt {
 #define H4P_ALIVE_REQ	0x55
 #define H4P_ALIVE_RESP	0xcc
 
-struct hci_h4p_alive_hdr {
+struct h4p_alive_hdr {
 	u8	dlen;
 } __packed;
 #define H4P_ALIVE_HDR_SIZE 1
 
-struct hci_h4p_alive_pkt {
+struct h4p_alive_pkt {
 	u8	mid;
 	u8	unused;
 } __packed;
@@ -188,62 +188,62 @@ struct hci_fw_event {
 	u8 status;
 } __packed;
 
-void hci_h4p_simple_send_frame(struct hci_h4p_info *info, struct sk_buff *skb);
+void h4p_simple_send_frame(struct h4p_info *info, struct sk_buff *skb);
 
-int hci_h4p_send_alive_packet(struct hci_h4p_info *info);
+int h4p_send_alive_packet(struct h4p_info *info);
 
-void hci_h4p_bcm_parse_fw_event(struct hci_h4p_info *info,
+void h4p_bcm_parse_fw_event(struct h4p_info *info,
 				struct sk_buff *skb);
-int hci_h4p_bcm_send_fw(struct hci_h4p_info *info,
+int h4p_bcm_send_fw(struct h4p_info *info,
 			struct sk_buff_head *fw_queue);
 
-void hci_h4p_bc4_parse_fw_event(struct hci_h4p_info *info,
+void h4p_bc4_parse_fw_event(struct h4p_info *info,
 				struct sk_buff *skb);
-int hci_h4p_bc4_send_fw(struct hci_h4p_info *info,
+int h4p_bc4_send_fw(struct h4p_info *info,
 			struct sk_buff_head *fw_queue);
 
-void hci_h4p_ti1273_parse_fw_event(struct hci_h4p_info *info,
+void h4p_ti1273_parse_fw_event(struct h4p_info *info,
 				    struct sk_buff *skb);
-int hci_h4p_ti1273_send_fw(struct hci_h4p_info *info,
+int h4p_ti1273_send_fw(struct h4p_info *info,
 			    struct sk_buff_head *fw_queue);
 
-int hci_h4p_read_fw(struct hci_h4p_info *info, struct sk_buff_head *fw_queue);
-int hci_h4p_send_fw(struct hci_h4p_info *info, struct sk_buff_head *fw_queue);
-void hci_h4p_parse_fw_event(struct hci_h4p_info *info, struct sk_buff *skb);
+int h4p_read_fw(struct h4p_info *info, struct sk_buff_head *fw_queue);
+int h4p_send_fw(struct h4p_info *info, struct sk_buff_head *fw_queue);
+void h4p_parse_fw_event(struct h4p_info *info, struct sk_buff *skb);
 
-static inline void hci_h4p_outb(struct hci_h4p_info *info, unsigned int offset, u8 val)
+static inline void h4p_outb(struct h4p_info *info, unsigned int offset, u8 val)
 {
 	__raw_writeb(val, info->uart_base + (offset << 2));
 }
 
-static inline u8 hci_h4p_inb(struct hci_h4p_info *info, unsigned int offset)
+static inline u8 h4p_inb(struct h4p_info *info, unsigned int offset)
 {
 	u8 val;
 	val = __raw_readb(info->uart_base + (offset << 2));
 	return val;
 }
 
-static inline void hci_h4p_set_rts(struct hci_h4p_info *info, int active)
+static inline void h4p_set_rts(struct h4p_info *info, int active)
 {
 	u8 b;
 
-	b = hci_h4p_inb(info, UART_MCR);
+	b = h4p_inb(info, UART_MCR);
 	if (active)
 		b |= UART_MCR_RTS;
 	else
 		b &= ~UART_MCR_RTS;
-	hci_h4p_outb(info, UART_MCR, b);
+	h4p_outb(info, UART_MCR, b);
 }
 
-int hci_h4p_wait_for_cts(struct hci_h4p_info *info, int active, int timeout_ms);
-void __hci_h4p_set_auto_ctsrts(struct hci_h4p_info *info, int on, u8 which);
-void hci_h4p_set_auto_ctsrts(struct hci_h4p_info *info, int on, u8 which);
-void hci_h4p_change_speed(struct hci_h4p_info *info, unsigned long speed);
-int hci_h4p_reset_uart(struct hci_h4p_info *info);
-void hci_h4p_init_uart(struct hci_h4p_info *info);
-void hci_h4p_enable_tx(struct hci_h4p_info *info);
-void hci_h4p_store_regs(struct hci_h4p_info *info);
-void hci_h4p_restore_regs(struct hci_h4p_info *info);
-void hci_h4p_smart_idle(struct hci_h4p_info *info, bool enable);
+int h4p_wait_for_cts(struct h4p_info *info, int active, int timeout_ms);
+void __h4p_set_auto_ctsrts(struct h4p_info *info, int on, u8 which);
+void h4p_set_auto_ctsrts(struct h4p_info *info, int on, u8 which);
+void h4p_change_speed(struct h4p_info *info, unsigned long speed);
+int h4p_reset_uart(struct h4p_info *info);
+void h4p_init_uart(struct h4p_info *info);
+void h4p_enable_tx(struct h4p_info *info);
+void h4p_store_regs(struct h4p_info *info);
+void h4p_restore_regs(struct h4p_info *info);
+void h4p_smart_idle(struct h4p_info *info, bool enable);
 
-#endif /* __DRIVERS_BLUETOOTH_HCI_H4P_H */
+#endif /* __DRIVERS_BLUETOOTH_H4P_H */
