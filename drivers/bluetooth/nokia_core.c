@@ -839,18 +839,15 @@ static int h4p_setup(struct hci_dev *hdev)
 {
 	struct h4p_info *info = hci_get_drvdata(hdev);
 	int err;
-	struct sk_buff_head fw_queue; /* FIXME: remove? */
 	unsigned long flags;
 
-	skb_queue_head_init(&fw_queue);
-
-	err = h4p_read_fw(info, &fw_queue);
+	err = h4p_read_fw(info);
 	if (err < 0) {
 		dev_err(info->dev, "Cannot read firmware\n");
 		goto err_clean;
 	}
 
-	err = h4p_send_fw(info, &fw_queue);
+	err = h4p_send_fw(info);
 	if (err < 0) {
 		dev_err(info->dev, "Sending firmware failed.\n");
 		goto err_clean;
@@ -878,7 +875,6 @@ static int h4p_setup(struct hci_dev *hdev)
 
 err_clean:
 	printk("hci_setup: something failed, should do the clean up\n");
-	skb_queue_purge(&fw_queue);
 	return err;
 }
 

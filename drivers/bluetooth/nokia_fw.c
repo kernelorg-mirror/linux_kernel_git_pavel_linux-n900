@@ -31,7 +31,7 @@
 
 #include "hci_h4p.h"
 
-#define FW_NAME_BCM2048		"bcmfw.bin"	/* In nokia n900 */
+#define FW_NAME_BCM2048		"bcmfw.bin"
 
 static int fw_pos;
 
@@ -57,8 +57,7 @@ static int h4p_bcm_set_bdaddr(struct h4p_info *info,
 	return 0;
 }
 
-int h4p_bcm_send_fw(struct h4p_info *info,
-			struct sk_buff_head *fw_queue)
+int h4p_send_fw(struct h4p_info *info)
 {
 	unsigned long time;
 
@@ -156,7 +155,7 @@ static int h4p_read_fw_cmd(struct h4p_info *info, struct sk_buff **skb,
 	return 1;
 }
 
-int h4p_read_fw(struct h4p_info *info, struct sk_buff_head *fw_queue)
+int h4p_read_fw(struct h4p_info *info)
 {
 	const struct firmware *fw_entry = NULL;
 	struct sk_buff *skb = NULL;
@@ -181,22 +180,6 @@ int h4p_read_fw(struct h4p_info *info, struct sk_buff_head *fw_queue)
 
 err_clean:
 	h4p_close_firmware(fw_entry);
-	return err;
-}
-
-int h4p_send_fw(struct h4p_info *info, struct sk_buff_head *fw_queue)
-{
-	int err;
-
-	switch (info->man_id) {
-	case H4P_ID_BCM2048:
-		err = h4p_bcm_send_fw(info, fw_queue);
-		break;
-	default:
-		dev_err(info->dev, "Don't know how to send firmware\n");
-		err = -EINVAL;
-	}
-
 	return err;
 }
 

@@ -192,23 +192,8 @@ void h4p_simple_send_frame(struct h4p_info *info, struct sk_buff *skb);
 
 int h4p_send_alive_packet(struct h4p_info *info);
 
-void h4p_bcm_parse_fw_event(struct h4p_info *info,
-				struct sk_buff *skb);
-int h4p_bcm_send_fw(struct h4p_info *info,
-			struct sk_buff_head *fw_queue);
-
-void h4p_bc4_parse_fw_event(struct h4p_info *info,
-				struct sk_buff *skb);
-int h4p_bc4_send_fw(struct h4p_info *info,
-			struct sk_buff_head *fw_queue);
-
-void h4p_ti1273_parse_fw_event(struct h4p_info *info,
-				    struct sk_buff *skb);
-int h4p_ti1273_send_fw(struct h4p_info *info,
-			    struct sk_buff_head *fw_queue);
-
-int h4p_read_fw(struct h4p_info *info, struct sk_buff_head *fw_queue);
-int h4p_send_fw(struct h4p_info *info, struct sk_buff_head *fw_queue);
+int h4p_read_fw(struct h4p_info *info);
+int h4p_send_fw(struct h4p_info *info);
 void h4p_parse_fw_event(struct h4p_info *info, struct sk_buff *skb);
 
 static inline void h4p_outb(struct h4p_info *info, unsigned int offset, u8 val)
