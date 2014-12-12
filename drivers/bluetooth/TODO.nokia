@@ -1,48 +1,16 @@
-a) Convert to using device tree for device detection
 c) Convert to using hdev->set_bdaddr and HCI_QUIRK_INVALID_BDADDR
 
 
 Few attempts to submission have been made, last review comments were received in
-
-Date: Wed, 15 Jan 2014 19:01:51 -0800
-From: Marcel Holtmann <marcel@holtmann.org>
-Subject: Re: [PATCH v6] Bluetooth: Add hci_h4p driver
-
-Some code refactoring is still needed.
-
-TODO:
 
 > +++ b/drivers/bluetooth/hci_h4p.h
 
 can we please get the naming straight. File names do not start with
 hci_ anymore. We moved away from it since that term is too generic.
 
-> +struct hci_h4p_info {
-
-Can we please get rid of the hci_ prefix for everything. Copying from
-drivers that are over 10 years old is not a good idea. Please look at
-recent ones.
-
 > +     struct timer_list lazy_release;
 
 Timer? Not delayed work?
-
-> +void hci_h4p_outb(struct hci_h4p_info *info, unsigned int offset, u8 val);
-> +u8 hci_h4p_inb(struct hci_h4p_info *info, unsigned int offset);
-> +void hci_h4p_set_rts(struct hci_h4p_info *info, int active);
-> +int hci_h4p_wait_for_cts(struct hci_h4p_info *info, int active, int timeout_ms);
-> +void __hci_h4p_set_auto_ctsrts(struct hci_h4p_info *info, int on, u8 which);
-> +void hci_h4p_set_auto_ctsrts(struct hci_h4p_info *info, int on, u8 which);
-> +void hci_h4p_change_speed(struct hci_h4p_info *info, unsigned long speed);
-> +int hci_h4p_reset_uart(struct hci_h4p_info *info);
-> +void hci_h4p_init_uart(struct hci_h4p_info *info);
-> +void hci_h4p_enable_tx(struct hci_h4p_info *info);
-> +void hci_h4p_store_regs(struct hci_h4p_info *info);
-> +void hci_h4p_restore_regs(struct hci_h4p_info *info);
-> +void hci_h4p_smart_idle(struct hci_h4p_info *info, bool enable);
-
-These are a lot of public functions. Are they all really needed or can
-the code be done smart.
 
 > +static ssize_t hci_h4p_store_bdaddr(struct device *dev,
 > +                                 struct device_attribute *attr,
