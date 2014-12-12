@@ -147,14 +147,6 @@
 		>;
 	};
 
-	ethernet_pins: pinmux_ethernet_pins {
-		pinctrl-single,pins = <
-			OMAP3_CORE1_IOPAD(0x20b4, PIN_INPUT_PULLDOWN | MUX_MODE4)	/* gpmc_ncs3.gpio_54 */
-			OMAP3_CORE1_IOPAD(0x20fc, PIN_OUTPUT | MUX_MODE4)		/* dss_data16.gpio_86 */
-			OMAP3_CORE1_IOPAD(0x219c, PIN_OUTPUT | MUX_MODE4)		/* uart3_rts_sd.gpio_164 */
-		>;
-	};
-
 	gpmc_pins: pinmux_gpmc_pins {
 		pinctrl-single,pins = <
 
@@ -510,30 +502,6 @@
 		clock-mode = /bits/ 8 <0>; /* LP55XX_CLOCK_AUTO */
 		enable-gpio = <&gpio2 9 GPIO_ACTIVE_HIGH>; /* 41 */
 
-		chan0 {
-			chan-name = "lp5523:kb1";
-			led-cur = /bits/ 8 <50>;
-			max-cur = /bits/ 8 <100>;
-		};
-
-		chan1 {
-			chan-name = "lp5523:kb2";
-			led-cur = /bits/ 8 <50>;
-			max-cur = /bits/ 8 <100>;
-		};
-
-		chan2 {
-			chan-name = "lp5523:kb3";
-			led-cur = /bits/ 8 <50>;
-			max-cur = /bits/ 8 <100>;
-		};
-
-		chan3 {
-			chan-name = "lp5523:kb4";
-			led-cur = /bits/ 8 <50>;
-			max-cur = /bits/ 8 <100>;
-		};
-
 		chan4 {
 			chan-name = "lp5523:b";
 			led-cur = /bits/ 8 <50>;
@@ -548,18 +516,6 @@
 
 		chan6 {
 			chan-name = "lp5523:r";
-			led-cur = /bits/ 8 <50>;
-			max-cur = /bits/ 8 <100>;
-		};
-
-		chan7 {
-			chan-name = "lp5523:kb5";
-			led-cur = /bits/ 8 <50>;
-			max-cur = /bits/ 8 <100>;
-		};
-
-		chan8 {
-			chan-name = "lp5523:kb6";
 			led-cur = /bits/ 8 <50>;
 			max-cur = /bits/ 8 <100>;
 		};
