@@ -262,21 +262,9 @@ static int hci_h4p_send_negotiation(struct hci_h4p_info *info)
 	struct hci_h4p_neg_hdr *neg_hdr;
 	struct sk_buff *skb;
 	int err, len;
-	u16 sysclk;
+	u16 sysclk = 38400;
 
 	printk("Sending negotiation..");
-
-	switch (info->bt_sysclk) {
-	case 1:
-		sysclk = 12000;
-		break;
-	case 2:
-		sysclk = 38400;
-		break;
-	default:
-		return -EINVAL;
-	}
-
 	len = sizeof(*neg_cmd) + sizeof(*neg_hdr) + H4_TYPE_SIZE;
 #define OLD
 #ifdef OLD
@@ -1144,8 +1132,7 @@ static int hci_h4p_probe_dt(struct platform_device *pdev, struct hci_h4p_info *i
 	if (!node)
 		return -ENODATA;
 
-	if (of_property_read_u32(node, "chip-type", &val)) return -EINVAL;
-	info->chip_type = val;
+	info->chip_type = 3;	/* Bcm2048 */
 	
 	if (of_property_read_u32(node, "bt-sysclk", &val)) return -EINVAL;
 	info->bt_sysclk = val;
@@ -1164,8 +1151,8 @@ static int hci_h4p_probe_dt(struct platform_device *pdev, struct hci_h4p_info *i
 	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	info->uart_base = devm_ioremap_resource(&pdev->dev, mem);
 
-	info->uart_iclk = of_clk_get_by_name(node, "ick");
-	info->uart_fclk = of_clk_get_by_name(node, "fck");	
+	info->uart_iclk = of_clk_get_by_name(uart, "ick");
+	info->uart_fclk = of_clk_get_by_name(uart, "fck");	
 
 	printk("DT: have neccessary data\n");
 	return 0;
