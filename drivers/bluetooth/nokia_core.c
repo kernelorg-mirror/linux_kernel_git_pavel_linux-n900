@@ -842,11 +842,10 @@ static int h4p_setup(struct hci_dev *hdev)
 		goto err_clean;
 	}
 
-	err = h4p_send_fw(info);
-	if (err < 0) {
-		dev_err(info->dev, "Sending firmware failed.\n");
-		goto err_clean;
-	}
+	h4p_set_auto_ctsrts(info, 0, UART_EFR_RTS);
+	h4p_set_rts(info, 0);
+	h4p_change_speed(info, BC4_MAX_BAUD_RATE);
+	h4p_set_auto_ctsrts(info, 1, UART_EFR_RTS);
 
 	info->pm_enabled = 1;
 

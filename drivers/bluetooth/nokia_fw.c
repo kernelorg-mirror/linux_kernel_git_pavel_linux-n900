@@ -37,28 +37,6 @@ static int fw_pos;
 
 #define BT_DBG printk
 
-int h4p_send_fw(struct h4p_info *info)
-{
-	unsigned long time;
-
-	info->fw_error = 0;
-
-	printk("Sending firmware (not really)\n");
-
-	time = jiffies;
-	printk("Firmware sent in %d msec\n",
-		   jiffies_to_msecs(jiffies-time));
-
-	h4p_set_auto_ctsrts(info, 0, UART_EFR_RTS);
-	h4p_set_rts(info, 0);
-	h4p_change_speed(info, BC4_MAX_BAUD_RATE);
-	h4p_set_auto_ctsrts(info, 1, UART_EFR_RTS);
-
-	printk("Going to final parameters\n");
-
-	return 0;
-}
-
 /* Firmware handling */
 static int h4p_open_firmware(struct h4p_info *info,
 				 const struct firmware **fw_entry)
