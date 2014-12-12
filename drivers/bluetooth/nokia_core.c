@@ -878,6 +878,20 @@ static int h4p_hci_setup(struct hci_dev *hdev)
 	return h4p_setup(hdev);
 }
 
+static void hci_uninit(struct hci_dev *hdev)
+{
+	struct h4p_info *info = hci_get_drvdata(hdev);
+
+	h4p_reset_uart(info);
+	del_timer_sync(&info->lazy_release);
+	h4p_set_clk(info, &info->tx_clocks_en, 0);
+	h4p_set_clk(info, &info->rx_clocks_en, 0);
+	gpio_set_value(info->reset_gpio, 0);
+	gpio_set_value(info->bt_wakeup_gpio, 0);
+	kfree_skb(info->rx_skb);
+	info->rx_skb = NULL;
+}
+
 static int h4p_hci_open(struct hci_dev *hdev)
 {
 	struct h4p_info *info;
@@ -925,16 +939,9 @@ static int h4p_hci_open(struct hci_dev *hdev)
 err_clean:
 	printk("hci_open: something failed\n");
 	h4p_hci_flush(hdev);
-	h4p_reset_uart(info);
-	del_timer_sync(&info->lazy_release);
-	h4p_set_clk(info, &info->tx_clocks_en, 0);
-	h4p_set_clk(info, &info->rx_clocks_en, 0);
-	gpio_set_value(info->reset_gpio, 0);
-	gpio_set_value(info->bt_wakeup_gpio, 0);
+	hci_uninit(hdev);
 	kfree_skb(info->alive_cmd_skb);
 	info->alive_cmd_skb = NULL;
-	kfree_skb(info->rx_skb);
-	info->rx_skb = NULL;
 
 	return err;
 }
@@ -949,14 +956,7 @@ static int h4p_hci_close(struct hci_dev *hdev)
 	h4p_hci_flush(hdev);
 	h4p_set_clk(info, &info->tx_clocks_en, 1);
 	h4p_set_clk(info, &info->rx_clocks_en, 1);
-	h4p_reset_uart(info);
-	del_timer_sync(&info->lazy_release);
-	h4p_set_clk(info, &info->tx_clocks_en, 0);
-	h4p_set_clk(info, &info->rx_clocks_en, 0);
-	gpio_set_value(info->reset_gpio, 0);
-	gpio_set_value(info->bt_wakeup_gpio, 0);
-	kfree_skb(info->rx_skb);
-
+	hci_uninit(hdev);
 	return 0;
 }
 
