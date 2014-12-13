@@ -880,7 +880,7 @@ err_clean:
 
 static int h4p_hci_setup(struct hci_dev *hdev)
 {
-	return h4p_setup(hdev);
+	return 0;
 }
 
 static void hci_uninit(struct hci_dev *hdev)
@@ -938,8 +938,12 @@ static int h4p_hci_open(struct hci_dev *hdev)
 		printk("h4p setup failed\n");
 		goto err_clean;
 	}
-#endif	
-	return 0;
+#endif
+
+	atomic_set(&hdev->cmd_cnt, 1);
+	set_bit(HCI_INIT, &hdev->flags);
+	
+	return h4p_setup(hdev);
 
 err_clean:
 	printk("hci_open: something failed\n");
@@ -1011,6 +1015,13 @@ static int h4p_hci_send_frame(struct hci_dev *hdev, struct sk_buff *skb)
 	return 0;
 }
 
+static ssize_t h4p_hci_set_bdaddr(struct hci_dev *hdev, const bdaddr_t *bdaddr)
+{
+	struct h4p_info *info = hci_get_drvdata(hdev);
+
+	printk("Set bdaddr... %pMR\n", bdaddr);
+	return 0;
+}
 
 static int h4p_register_hdev(struct h4p_info *info)
 {
@@ -1033,6 +1044,7 @@ static int h4p_register_hdev(struct h4p_info *info)
 	hdev->close = h4p_hci_close;
 	hdev->flush = h4p_hci_flush;
 	hdev->send = h4p_hci_send_frame;
+	hdev->set_bdaddr = h4p_hci_set_bdaddr;
 
 	set_bit(HCI_QUIRK_RESET_ON_CLOSE, &hdev->quirks);
 

@@ -1,8 +1,5 @@
 c) Convert to using hdev->set_bdaddr and HCI_QUIRK_INVALID_BDADDR
 
-
-Few attempts to submission have been made, last review comments were received in
-
 > +++ b/drivers/bluetooth/hci_h4p.h
 
 can we please get the naming straight. File names do not start with
@@ -11,20 +8,6 @@ hci_ anymore. We moved away from it since that term is too generic.
 > +     struct timer_list lazy_release;
 
 Timer? Not delayed work?
-
-> +static ssize_t hci_h4p_store_bdaddr(struct device *dev,
-> +                                 struct device_attribute *attr,
-> +                                 const char *buf, size_t count)
-> +{
-> +     struct hci_h4p_info *info = dev_get_drvdata(dev);
-
-Since none of these devices can function without having a valid
-address, the way this should work is that we should not register the
-HCI device when probing the platform device.
-    
-The HCI device should be registered once a valid address has been
-written into the sysfs file. I do not want to play the tricks with
-bringing up the device without a valid address.
 
 (apparently, in 3.17 it is easier.)
 
@@ -46,28 +29,6 @@ hdev->setup does. It gets executed once.
 
 Is this quirk really needed? Normally only Bluetooth 1.1 and early
 devices qualify for it.
-
-> +static int hci_h4p_bcm_set_bdaddr(struct hci_h4p_info *info, struct sk_buff *skb)
-> +{
-> +     int i;
-> +     static const u8 nokia_oui[3] = {0x00, 0x1f, 0xdf};
-> +     int not_valid;
-
-Has this actually been confirmed that we can just randomly set an
-address out of the Nokia range. I do not think so. This is a pretty
-bad idea.
-
-I have no interest in merging a driver with such a hack.
-
-> +     not_valid = 1;
-> +     for (i = 0; i < 6; i++) {
-> +             if (info->bd_addr[i] != 0x00) {
-> +                     not_valid = 0;
-> +                     break;
-> +             }   
-> +     }
-
-Anybody every heard of memcmp or bacmp and BDADDR_ANY?
 
 > +inline u8 hci_h4p_inb(struct hci_h4p_info *info, unsigned int offset)
 > +{ 
