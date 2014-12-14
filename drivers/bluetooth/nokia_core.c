@@ -56,6 +56,8 @@
 
 #define BT_DBG(a...) do {} while(0)
 
+static int hw_inited = 0;
+
 /* This should be used in function that cannot release clocks */
 static void h4p_set_clk(struct h4p_info *info, int *clock, int enable)
 {
@@ -847,6 +849,7 @@ static int h4p_setup(struct hci_dev *hdev)
 	int err;
 	unsigned long flags;
 
+	if (hw_inited) return 0;
 	/*
 	 * Disable smart-idle as UART TX interrupts
 	 * are not wake-up capable
@@ -890,6 +893,7 @@ static int h4p_setup(struct hci_dev *hdev)
 	kfree_skb(info->alive_cmd_skb);
 	info->alive_cmd_skb = NULL;
 	info->initing = 0;
+	hw_inited = 1;
 	return 0;
 
 err_clean:
@@ -902,18 +906,39 @@ static int h4p_hci_setup(struct hci_dev *hdev)
 	return 0;
 }
 
-static void hci_deinint(struct hci_dev *hdev)
+static void hci_deinit(struct hci_dev *hdev)
 {
 	struct h4p_info *info = hci_get_drvdata(hdev);
 
+#if 0	
 	h4p_reset_uart(info);
 	del_timer_sync(&info->lazy_release);
 	h4p_set_clk(info, &info->tx_clocks_en, 0);
 	h4p_set_clk(info, &info->rx_clocks_en, 0);
-	gpio_set_value(info->reset_gpio, 0);
+	gpio_set_value(info->reset_gpio, 0);	
 	gpio_set_value(info->bt_wakeup_gpio, 0);
 	kfree_skb(info->rx_skb);
 	info->rx_skb = NULL;
+#endif	
+}
+
+static int h4p_hci_boot(struct hci_dev *hdev)
+{
+	struct h4p_info *info = hci_get_drvdata(hdev);
+	int err;
+
+	info->rx_enabled = 1;
+	info->rx_state = WAIT_FOR_PKT_TYPE;
+	info->rx_count = 0;
+	info->garbage_bytes = 0;
+	info->rx_skb = NULL;
+	info->pm_enabled = 0;
+	init_completion(&info->fw_completion);
+	h4p_set_clk(info, &info->tx_clocks_en, 1);
+	h4p_set_clk(info, &info->rx_clocks_en, 1);
+
+	err = h4p_reset(info);
+	return err;
 }
 
 static int h4p_hci_open(struct hci_dev *hdev)
@@ -929,27 +954,20 @@ static int h4p_hci_open(struct hci_dev *hdev)
 	/* TI1271 has HW bug and boot up might fail. Original code retried 
 	   up to three times, but we removed TI1271 support. */
 
-	info->rx_enabled = 1;
-	info->rx_state = WAIT_FOR_PKT_TYPE;
-	info->rx_count = 0;
-	info->garbage_bytes = 0;
-	info->rx_skb = NULL;
-	info->pm_enabled = 0;
-	init_completion(&info->fw_completion);
 	h4p_set_clk(info, &info->tx_clocks_en, 1);
 	h4p_set_clk(info, &info->rx_clocks_en, 1);
 
-	err = h4p_reset(info);
-	if (err < 0)
-		goto err_clean;
-
+	if (!hw_inited) {
 	h4p_set_auto_ctsrts(info, 1, UART_EFR_CTS | UART_EFR_RTS);
 	info->autorts = 1;
 
 	info->initing = 1;
 	printk("hci_setup\n");
-
+		
 	err = h4p_send_negotiation(info);
+	if (err < 0)
+		goto err_clean;
+
 	set_bit(HCI_RUNNING, &hdev->flags);
 #if 0
 	err = h4p_setup(hdev);
@@ -961,13 +979,18 @@ static int h4p_hci_open(struct hci_dev *hdev)
 
 	atomic_set(&hdev->cmd_cnt, 1);
 	set_bit(HCI_INIT, &hdev->flags);
+	} else {
+		set_bit(HCI_RUNNING, &hdev->flags);
+		//	h4p_reset_uart(info);
+	}
 	
 	return h4p_setup(hdev);
+	
 
 err_clean:
 	printk("hci_open: something failed\n");
 	h4p_hci_flush(hdev);
-	hci_deinint(hdev);
+	hci_deinit(hdev);
 	kfree_skb(info->alive_cmd_skb);
 	info->alive_cmd_skb = NULL;
 
@@ -980,11 +1003,12 @@ static int h4p_hci_close(struct hci_dev *hdev)
 
 	if (!test_and_clear_bit(HCI_RUNNING, &hdev->flags))
 		return 0;
-
+#if 0
 	h4p_hci_flush(hdev);
 	h4p_set_clk(info, &info->tx_clocks_en, 1);
 	h4p_set_clk(info, &info->rx_clocks_en, 1);
-	hci_deinint(hdev);
+#endif	
+	hci_deinit(hdev);
 	return 0;
 }
 
@@ -1062,7 +1086,7 @@ static int h4p_register_hdev(struct h4p_info *info)
 	SET_HCIDEV_DEV(hdev, info->dev);
 
 	if (hci_register_dev(hdev) >= 0)
-		return 0;
+		return h4p_hci_boot(hdev);
 
 	dev_err(info->dev, "hci_register failed %s.\n", hdev->name);
 	hci_free_dev(info->hdev);
