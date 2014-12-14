@@ -25,11 +25,6 @@
  * merging easier.
  */
 
-/*
-insmod hci_h4p.ko && hciconfig hci0 up && hcitool inq && hciconfig hci0 down && hciconfig hci0 up && hcitool inq && rmmod hci_h4p
-
-*/
-
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/init.h>
@@ -599,8 +594,7 @@ static void h4p_tx_tasklet(unsigned long data)
 	/* Copy data to tx fifo */
 	while (!(h4p_inb(info, UART_OMAP_SSR) & UART_OMAP_SSR_TXFULL) &&
 	       (sent < skb->len)) {
-		//printk("[Out: %02x]", skb->data[sent]);
-		//printk("%02x ", skb->data[sent]);
+		BT_DBG("%02x ", skb->data[sent]);
 		h4p_outb(info, UART_TX, skb->data[sent]);
 		sent++;
 	}
@@ -635,8 +629,6 @@ static irqreturn_t h4p_interrupt(int irq, void *data)
 	iir = h4p_inb(info, UART_IIR);
 	if (iir & UART_IIR_NO_INT)
 		return IRQ_HANDLED;
-
-	//BT_DBG("<%2x>", iir);
 
 	iir &= UART_IIR_ID;
 
@@ -830,6 +822,25 @@ out:
 	return ret;
 }
 
+static int h4p_hci_set_bdaddr(struct hci_dev *hdev, const bdaddr_t *bdaddr)
+{
+	struct sk_buff *skb;
+	long ret;
+
+	printk("Set bdaddr... %pMR\n", bdaddr);
+	
+	skb = __hci_cmd_sync(hdev, 0xfc01, 6, bdaddr, HCI_INIT_TIMEOUT);
+	if (IS_ERR(skb)) {
+		ret = PTR_ERR(skb);
+		BT_ERR("%s: BCM: Change address command failed (%ld)",
+		       hdev->name, ret);
+		return ret;
+	}
+	kfree_skb(skb);
+
+	return 0;
+}
+
 static int h4p_setup(struct hci_dev *hdev)
 {
 	struct h4p_info *info = hci_get_drvdata(hdev);
@@ -841,12 +852,13 @@ static int h4p_setup(struct hci_dev *hdev)
 	 * are not wake-up capable
 	 */
 	h4p_smart_idle(info, 0);
-	
+
 	err = h4p_read_fw(info);
 	if (err < 0) {
 		dev_err(info->dev, "Cannot read firmware\n");
 		goto err_clean;
 	}
+
 
 	h4p_set_auto_ctsrts(info, 0, UART_EFR_RTS);
 	h4p_set_rts(info, 0);
@@ -868,6 +880,13 @@ static int h4p_setup(struct hci_dev *hdev)
 
 	h4p_set_clk(info, &info->tx_clocks_en, 0);
 
+#if 0
+	{
+		char bdaddr[] = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06 };
+		h4p_hci_set_bdaddr(hdev, bdaddr);
+	}
+#endif
+	
 	kfree_skb(info->alive_cmd_skb);
 	info->alive_cmd_skb = NULL;
 	info->initing = 0;
@@ -883,7 +902,7 @@ static int h4p_hci_setup(struct hci_dev *hdev)
 	return 0;
 }
 
-static void hci_uninit(struct hci_dev *hdev)
+static void hci_deinint(struct hci_dev *hdev)
 {
 	struct h4p_info *info = hci_get_drvdata(hdev);
 
@@ -948,7 +967,7 @@ static int h4p_hci_open(struct hci_dev *hdev)
 err_clean:
 	printk("hci_open: something failed\n");
 	h4p_hci_flush(hdev);
-	hci_uninit(hdev);
+	hci_deinint(hdev);
 	kfree_skb(info->alive_cmd_skb);
 	info->alive_cmd_skb = NULL;
 
@@ -965,7 +984,7 @@ static int h4p_hci_close(struct hci_dev *hdev)
 	h4p_hci_flush(hdev);
 	h4p_set_clk(info, &info->tx_clocks_en, 1);
 	h4p_set_clk(info, &info->rx_clocks_en, 1);
-	hci_uninit(hdev);
+	hci_deinint(hdev);
 	return 0;
 }
 
@@ -1015,14 +1034,6 @@ static int h4p_hci_send_frame(struct hci_dev *hdev, struct sk_buff *skb)
 	return 0;
 }
 
-static ssize_t h4p_hci_set_bdaddr(struct hci_dev *hdev, const bdaddr_t *bdaddr)
-{
-	struct h4p_info *info = hci_get_drvdata(hdev);
-
-	printk("Set bdaddr... %pMR\n", bdaddr);
-	return 0;
-}
-
 static int h4p_register_hdev(struct h4p_info *info)
 {
 	struct hci_dev *hdev;
@@ -1046,7 +1057,7 @@ static int h4p_register_hdev(struct h4p_info *info)
 	hdev->send = h4p_hci_send_frame;
 	hdev->set_bdaddr = h4p_hci_set_bdaddr;
 
-	set_bit(HCI_QUIRK_RESET_ON_CLOSE, &hdev->quirks);
+/*	set_bit(HCI_QUIRK_INVALID_BDADDR, &hdev->quirks); */
 
 	SET_HCIDEV_DEV(hdev, info->dev);
 

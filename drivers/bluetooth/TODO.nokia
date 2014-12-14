@@ -1,5 +1,3 @@
-c) Convert to using hdev->set_bdaddr and HCI_QUIRK_INVALID_BDADDR
-
 > +++ b/drivers/bluetooth/hci_h4p.h
 
 can we please get the naming straight. File names do not start with
@@ -8,34 +6,6 @@ hci_ anymore. We moved away from it since that term is too generic.
 > +     struct timer_list lazy_release;
 
 Timer? Not delayed work?
-
-(apparently, in 3.17 it is easier.)
-
-In addition with 3.17 you can also provide hdev->set_bdaddr to allow
-changing the public BD_ADDR. You can also set HCI_QUIRK_INVALID_BDADDR
-and bring up the controller in an unconfigured state. That way you can
-have userspace provide the address and avoid the hacking around the
-missing address issue.
-
-> +     hdev->close = hci_h4p_hci_close;
-> +     hdev->flush = hci_h4p_hci_flush;
-> +     hdev->send = hci_h4p_hci_send_frame;
-    
-It needs to use hdev->setup to load the firmware. I assume the
-firmware only needs to be loaded once. That is exactly what
-hdev->setup does. It gets executed once.
-    
-> +     set_bit(HCI_QUIRK_RESET_ON_CLOSE, &hdev->quirks);
-
-Is this quirk really needed? Normally only Bluetooth 1.1 and early
-devices qualify for it.
-
-> +inline u8 hci_h4p_inb(struct hci_h4p_info *info, unsigned int offset)
-> +{ 
-> +     return __raw_readb(info->uart_base + (offset << 2));
-> +}
-
-Inline in a *.c file for a non-static function. Makes no sense to me.
 
 > +/**
 > + * struct hci_h4p_platform data - hci_h4p Platform data structure
@@ -47,3 +17,4 @@ btnokia_h4p_platform_data.
 
 Please send patches to Greg Kroah-Hartman <greg@kroah.com> and Cc:
 Pavel Machek <pavel@ucw.cz>
+
