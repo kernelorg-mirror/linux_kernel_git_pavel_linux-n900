@@ -847,7 +847,6 @@ static void h4p_deinit(struct hci_dev *hdev)
 {
 	struct h4p_info *info = hci_get_drvdata(hdev);
 
-#if 1
 	h4p_hci_flush(hdev);
 	h4p_set_clk(info, &info->tx_clocks_en, 1);
 	h4p_set_clk(info, &info->rx_clocks_en, 1);
@@ -859,7 +858,6 @@ static void h4p_deinit(struct hci_dev *hdev)
 	gpio_set_value(info->bt_wakeup_gpio, 0);
 	kfree_skb(info->rx_skb);
 	info->rx_skb = NULL;
-#endif	
 }
 
 static int h4p_setup(struct hci_dev *hdev)
@@ -1065,24 +1063,6 @@ static int h4p_register_hdev(struct h4p_info *info)
 	return -ENODEV;
 }
 
-static int h4p_probe_pdata(struct platform_device *pdev, struct h4p_info *info,
-			       struct h4p_platform_data *bt_plat_data)
-{
-	info->chip_type = bt_plat_data->chip_type;
-	info->bt_wakeup_gpio = bt_plat_data->bt_wakeup_gpio;
-	info->host_wakeup_gpio = bt_plat_data->host_wakeup_gpio;
-	info->reset_gpio = bt_plat_data->reset_gpio;
-	info->reset_gpio_shared = bt_plat_data->reset_gpio_shared;
-	info->bt_sysclk = bt_plat_data->bt_sysclk;
-
-	info->irq = bt_plat_data->uart_irq;
-	info->uart_base = devm_ioremap(&pdev->dev, bt_plat_data->uart_base,
-					SZ_2K);
-	info->uart_iclk = devm_clk_get(&pdev->dev, bt_plat_data->uart_iclk);
-	info->uart_fclk = devm_clk_get(&pdev->dev, bt_plat_data->uart_fclk);
-	return 0;
-}
-
 static int h4p_probe_dt(struct platform_device *pdev, struct h4p_info *info)
 {
 	struct device_node *node;
@@ -1141,11 +1121,7 @@ static int h4p_probe(struct platform_device *pdev)
 	spin_lock_init(&info->clocks_lock);
 	skb_queue_head_init(&info->txq);
 
-	if (pdev->dev.platform_data) {
-		err = h4p_probe_pdata(pdev, info, pdev->dev.platform_data);
-	} else {
-		err = h4p_probe_dt(pdev, info);
-	}
+	err = h4p_probe_dt(pdev, info);
 	if (err) {
 		dev_err(&pdev->dev, "Could not get Bluetooth config data\n");
 		return -ENODATA;
