@@ -672,7 +672,7 @@ static irqreturn_t h4p_wakeup_interrupt(int irq, void *dev_inst)
 	should_wakeup = gpio_get_value(info->host_wakeup_gpio);
 	hdev = info->hdev;
 
-	if (!test_bit(HCI_RUNNING, &hdev->flags)) {
+	if (info->initing) /*  (!test_bit(HCI_RUNNING, &hdev->flags) */  {
 		if (should_wakeup == 1)
 			complete_all(&info->test_completion);
 
@@ -683,7 +683,7 @@ static irqreturn_t h4p_wakeup_interrupt(int irq, void *dev_inst)
 
 	BT_DBG("gpio interrupt %d", should_wakeup);
 
-	/* Check if wee have missed some interrupts */
+	/* Check if we have missed some interrupts */
 	if (info->rx_enabled == should_wakeup)
 		return IRQ_HANDLED;
 
@@ -850,7 +850,23 @@ static int h4p_setup(struct hci_dev *hdev)
 	int err;
 	unsigned long flags;
 
-	if (hw_inited) return 0;
+	/* TI1271 has HW bug and boot up might fail. Nokia retried up to 3x. */
+
+	h4p_set_clk(info, &info->tx_clocks_en, 1);
+	h4p_set_clk(info, &info->rx_clocks_en, 1);
+
+	if (!hw_inited) {
+		h4p_set_auto_ctsrts(info, 1, UART_EFR_CTS | UART_EFR_RTS);
+		info->autorts = 1;
+
+		info->initing = 1;
+		printk("hci_setup\n");
+		
+		err = h4p_send_negotiation(info);
+		if (err < 0)
+			goto err_clean;
+	}
+	
 	/*
 	 * Disable smart-idle as UART TX interrupts
 	 * are not wake-up capable
@@ -953,22 +969,6 @@ static int h4p_hci_open(struct hci_dev *hdev)
 	if (test_bit(HCI_RUNNING, &hdev->flags))
 		return 0;
 
-	/* TI1271 has HW bug and boot up might fail. Nokia retried up to 3x. */
-
-	h4p_set_clk(info, &info->tx_clocks_en, 1);
-	h4p_set_clk(info, &info->rx_clocks_en, 1);
-
-	if (!hw_inited) {
-		h4p_set_auto_ctsrts(info, 1, UART_EFR_CTS | UART_EFR_RTS);
-		info->autorts = 1;
-
-		info->initing = 1;
-		printk("hci_setup\n");
-		
-		err = h4p_send_negotiation(info);
-		if (err < 0)
-			goto err_clean;
-	}
 
 	set_bit(HCI_RUNNING, &hdev->flags);
 	return 0;
