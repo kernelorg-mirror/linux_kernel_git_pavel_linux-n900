@@ -436,8 +436,7 @@ static unsigned int h4p_get_data_len(struct h4p_info *info,
 static inline void h4p_recv_frame(struct h4p_info *info,
 				      struct sk_buff *skb)
 {
-	if (info->initing)
-	/*if (unlikely(!test_bit(HCI_RUNNING, &info->hdev->flags))) */ {
+	if (info->initing) {
 		switch (bt_cb(skb)->pkt_type) {
 		case H4_NEG_PKT:
 			h4p_negotiation_packet(info, skb);
@@ -672,7 +671,7 @@ static irqreturn_t h4p_wakeup_interrupt(int irq, void *dev_inst)
 	should_wakeup = gpio_get_value(info->host_wakeup_gpio);
 	hdev = info->hdev;
 
-	if (info->initing) /*  (!test_bit(HCI_RUNNING, &hdev->flags) */  {
+	if (info->initing) {
 		if (should_wakeup == 1)
 			complete_all(&info->test_completion);
 
@@ -844,6 +843,25 @@ static int h4p_hci_set_bdaddr(struct hci_dev *hdev, const bdaddr_t *bdaddr)
 	return 0;
 }
 
+static void h4p_deinit(struct hci_dev *hdev)
+{
+	struct h4p_info *info = hci_get_drvdata(hdev);
+
+#if 1
+	h4p_hci_flush(hdev);
+	h4p_set_clk(info, &info->tx_clocks_en, 1);
+	h4p_set_clk(info, &info->rx_clocks_en, 1);
+	h4p_reset_uart(info);
+	del_timer_sync(&info->lazy_release);
+	h4p_set_clk(info, &info->tx_clocks_en, 0);
+	h4p_set_clk(info, &info->rx_clocks_en, 0);
+	gpio_set_value(info->reset_gpio, 0);	
+	gpio_set_value(info->bt_wakeup_gpio, 0);
+	kfree_skb(info->rx_skb);
+	info->rx_skb = NULL;
+#endif	
+}
+
 static int h4p_setup(struct hci_dev *hdev)
 {
 	struct h4p_info *info = hci_get_drvdata(hdev);
@@ -907,14 +925,14 @@ static int h4p_setup(struct hci_dev *hdev)
 	}
 #endif
 	
-	kfree_skb(info->alive_cmd_skb);
-	info->alive_cmd_skb = NULL;
 	info->initing = 0;
 	hw_inited = 1;
 	return 0;
 
 err_clean:
 	printk("hci_setup: something failed, should do the clean up\n");
+	h4p_hci_flush(hdev);
+	h4p_deinit(hdev);
 	return err;
 }
 
@@ -923,24 +941,6 @@ static int h4p_hci_setup(struct hci_dev *hdev)
 	return h4p_setup(hdev);
 }
 
-static void h4p_deinit(struct hci_dev *hdev)
-{
-	struct h4p_info *info = hci_get_drvdata(hdev);
-
-#if 1
-	h4p_hci_flush(hdev);
-	h4p_set_clk(info, &info->tx_clocks_en, 1);
-	h4p_set_clk(info, &info->rx_clocks_en, 1);
-	h4p_reset_uart(info);
-	del_timer_sync(&info->lazy_release);
-	h4p_set_clk(info, &info->tx_clocks_en, 0);
-	h4p_set_clk(info, &info->rx_clocks_en, 0);
-	gpio_set_value(info->reset_gpio, 0);	
-	gpio_set_value(info->bt_wakeup_gpio, 0);
-	kfree_skb(info->rx_skb);
-	info->rx_skb = NULL;
-#endif	
-}
 
 static int h4p_boot(struct hci_dev *hdev)
 {
@@ -969,20 +969,8 @@ static int h4p_hci_open(struct hci_dev *hdev)
 	if (test_bit(HCI_RUNNING, &hdev->flags))
 		return 0;
 
-
 	set_bit(HCI_RUNNING, &hdev->flags);
 	return 0;
-
-err_clean:
-	printk("hci_open: something failed\n");
-#if 0	
-	h4p_hci_flush(hdev);
-	h4p_deinit(hdev);
-	kfree_skb(info->alive_cmd_skb);
-#endif	
-	info->alive_cmd_skb = NULL;
-
-	return err;
 }
 
 static int h4p_hci_close(struct hci_dev *hdev)
@@ -991,9 +979,7 @@ static int h4p_hci_close(struct hci_dev *hdev)
 
 	if (!test_and_clear_bit(HCI_RUNNING, &hdev->flags))
 		return 0;
-#if 0
-	h4p_deinit(hdev);
-#endif	
+
 	return 0;
 }
 
