@@ -54,6 +54,7 @@
 
 #include "hci_h4p.h"
 
+#define TEST
 #define BT_DBG(a...) do {} while(0)
 
 static int hw_inited = 0;
@@ -1066,8 +1067,9 @@ static int h4p_register_hdev(struct h4p_info *info)
 	hdev->send = h4p_hci_send_frame;
 	hdev->set_bdaddr = h4p_hci_set_bdaddr;
 
-/*	set_bit(HCI_QUIRK_INVALID_BDADDR, &hdev->quirks); */
-
+#ifndef TEST
+	set_bit(HCI_QUIRK_INVALID_BDADDR, &hdev->quirks);
+#endif
 	SET_HCIDEV_DEV(hdev, info->dev);
 
 	if (hci_register_dev(hdev) >= 0)
