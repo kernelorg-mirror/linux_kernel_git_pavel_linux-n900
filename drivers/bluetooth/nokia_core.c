@@ -903,7 +903,7 @@ err_clean:
 
 static int h4p_hci_setup(struct hci_dev *hdev)
 {
-	return 0;
+	return h4p_setup(hdev);
 }
 
 static void hci_deinit(struct hci_dev *hdev)
@@ -968,25 +968,10 @@ static int h4p_hci_open(struct hci_dev *hdev)
 	err = h4p_send_negotiation(info);
 	if (err < 0)
 		goto err_clean;
+	}
 
 	set_bit(HCI_RUNNING, &hdev->flags);
-#if 0
-	err = h4p_setup(hdev);
-	if (err < 0) {
-		printk("h4p setup failed\n");
-		goto err_clean;
-	}
-#endif
-
-	atomic_set(&hdev->cmd_cnt, 1);
-	set_bit(HCI_INIT, &hdev->flags);
-	} else {
-		set_bit(HCI_RUNNING, &hdev->flags);
-		//	h4p_reset_uart(info);
-	}
-	
-	return h4p_setup(hdev);
-	
+	return 0;
 
 err_clean:
 	printk("hci_open: something failed\n");
