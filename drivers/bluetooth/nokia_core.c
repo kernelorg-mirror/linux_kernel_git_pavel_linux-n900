@@ -953,22 +953,21 @@ static int h4p_hci_open(struct hci_dev *hdev)
 	if (test_bit(HCI_RUNNING, &hdev->flags))
 		return 0;
 
-	/* TI1271 has HW bug and boot up might fail. Original code retried 
-	   up to three times, but we removed TI1271 support. */
+	/* TI1271 has HW bug and boot up might fail. Nokia retried up to 3x. */
 
 	h4p_set_clk(info, &info->tx_clocks_en, 1);
 	h4p_set_clk(info, &info->rx_clocks_en, 1);
 
 	if (!hw_inited) {
-	h4p_set_auto_ctsrts(info, 1, UART_EFR_CTS | UART_EFR_RTS);
-	info->autorts = 1;
+		h4p_set_auto_ctsrts(info, 1, UART_EFR_CTS | UART_EFR_RTS);
+		info->autorts = 1;
 
-	info->initing = 1;
-	printk("hci_setup\n");
+		info->initing = 1;
+		printk("hci_setup\n");
 		
-	err = h4p_send_negotiation(info);
-	if (err < 0)
-		goto err_clean;
+		err = h4p_send_negotiation(info);
+		if (err < 0)
+			goto err_clean;
 	}
 
 	set_bit(HCI_RUNNING, &hdev->flags);
