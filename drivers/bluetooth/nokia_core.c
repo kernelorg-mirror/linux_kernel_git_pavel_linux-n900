@@ -50,8 +50,6 @@
 #include <net/bluetooth/hci_core.h>
 #include <net/bluetooth/hci.h>
 
-#include <linux/platform_data/bt-nokia-h4p.h>
-
 #include "hci_h4p.h"
 
 #define TEST
@@ -692,26 +690,6 @@ static irqreturn_t h4p_wakeup_interrupt(int irq, void *dev_inst)
 		h4p_disable_rx(info);
 
 	return IRQ_HANDLED;
-}
-
-static inline void h4p_set_pm_limits(struct h4p_info *info, bool set)
-{
-	struct h4p_platform_data *bt_plat_data = info->dev->platform_data;
-
-	if (unlikely(!bt_plat_data || !bt_plat_data->set_pm_limits))
-		return;
-
-	if (set != !!test_bit(H4P_ACTIVE_MODE, &info->pm_flags)) {
-		bt_plat_data->set_pm_limits(info->dev, set);
-		if (set)
-			set_bit(H4P_ACTIVE_MODE, &info->pm_flags);
-		else
-			clear_bit(H4P_ACTIVE_MODE, &info->pm_flags);
-		BT_DBG("Change pm constraints to: %s", set ? "set" : "clear");
-		return;
-	}
-
-	BT_DBG("pm constraints remains: %s", set ? "set" : "clear");
 }
 
 static int h4p_reset(struct h4p_info *info)
