@@ -910,7 +910,10 @@ static void hci_deinit(struct hci_dev *hdev)
 {
 	struct h4p_info *info = hci_get_drvdata(hdev);
 
-#if 0	
+#if 1
+	h4p_hci_flush(hdev);
+	h4p_set_clk(info, &info->tx_clocks_en, 1);
+	h4p_set_clk(info, &info->rx_clocks_en, 1);
 	h4p_reset_uart(info);
 	del_timer_sync(&info->lazy_release);
 	h4p_set_clk(info, &info->tx_clocks_en, 0);
@@ -922,7 +925,7 @@ static void hci_deinit(struct hci_dev *hdev)
 #endif	
 }
 
-static int h4p_hci_boot(struct hci_dev *hdev)
+static int hci_boot(struct hci_dev *hdev)
 {
 	struct h4p_info *info = hci_get_drvdata(hdev);
 	int err;
@@ -943,10 +946,8 @@ static int h4p_hci_boot(struct hci_dev *hdev)
 
 static int h4p_hci_open(struct hci_dev *hdev)
 {
-	struct h4p_info *info;
+	struct h4p_info *info = hci_get_drvdata(hdev);
 	int err;
-
-	info = hci_get_drvdata(hdev);
 
 	if (test_bit(HCI_RUNNING, &hdev->flags))
 		return 0;
@@ -989,9 +990,11 @@ static int h4p_hci_open(struct hci_dev *hdev)
 
 err_clean:
 	printk("hci_open: something failed\n");
+#if 0	
 	h4p_hci_flush(hdev);
 	hci_deinit(hdev);
 	kfree_skb(info->alive_cmd_skb);
+#endif	
 	info->alive_cmd_skb = NULL;
 
 	return err;
@@ -1004,11 +1007,8 @@ static int h4p_hci_close(struct hci_dev *hdev)
 	if (!test_and_clear_bit(HCI_RUNNING, &hdev->flags))
 		return 0;
 #if 0
-	h4p_hci_flush(hdev);
-	h4p_set_clk(info, &info->tx_clocks_en, 1);
-	h4p_set_clk(info, &info->rx_clocks_en, 1);
-#endif	
 	hci_deinit(hdev);
+#endif	
 	return 0;
 }
 
@@ -1086,7 +1086,7 @@ static int h4p_register_hdev(struct h4p_info *info)
 	SET_HCIDEV_DEV(hdev, info->dev);
 
 	if (hci_register_dev(hdev) >= 0)
-		return h4p_hci_boot(hdev);
+		return hci_boot(hdev);
 
 	dev_err(info->dev, "hci_register failed %s.\n", hdev->name);
 	hci_free_dev(info->hdev);
@@ -1267,6 +1267,7 @@ static int h4p_remove(struct platform_device *pdev)
 	info = platform_get_drvdata(pdev);
 
 	h4p_hci_close(info->hdev);
+	hci_deinit(info->hdev);
 	hci_unregister_dev(info->hdev);
 	hci_free_dev(info->hdev);
 
