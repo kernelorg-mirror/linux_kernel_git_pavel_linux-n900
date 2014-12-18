@@ -290,11 +290,9 @@ static int h4p_send_negotiation(struct h4p_info *info)
 	init_completion(&info->init_completion);
 
 	h4p_simple_send_frame(info, skb);
-	kfree_skb(skb);
 
 	if (!wait_for_completion_interruptible_timeout(&info->init_completion,
 						       msecs_to_jiffies(1000))) {
-		/* Who frees the skb here? */
 		printk("h4p: negotiation did not return\n");
 		return -ETIMEDOUT;
 	}
