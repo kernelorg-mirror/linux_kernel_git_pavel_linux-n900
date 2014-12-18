@@ -30,7 +30,7 @@
 
 #include "nokia_h4p.h"
 
-#define FW_NAME_BCM2048		"bcmfw.bin"
+#define FW_NAME_BCM2048		"nokia/bcmfw.bin"
 
 /* Read fw. Return length of the command. If no more commands in
  * fw 0 is returned. In error case return value is negative.
@@ -88,7 +88,7 @@ int h4p_read_fw(struct h4p_info *info)
 
 		skb = __hci_cmd_sync(info->hdev, cmd, len, fw_entry->data+fw_pos+4, 500);
 		if (IS_ERR(skb)) {
-			dev_err(info->dev, "...sending cmd failed %d\n", PTR_ERR(skb));
+			dev_err(info->dev, "...sending cmd failed %ld\n", PTR_ERR(skb));
 			err = -EIO;
 			break;
 		}
