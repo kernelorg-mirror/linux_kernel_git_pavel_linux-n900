@@ -291,6 +291,7 @@ static int h4p_send_negotiation(struct h4p_info *info)
 	init_completion(&info->init_completion);
 
 	h4p_simple_send_frame(info, skb);
+	kfree_skb(skb);
 
 	if (!wait_for_completion_interruptible_timeout(&info->init_completion,
 						       msecs_to_jiffies(1000))) {
@@ -504,7 +505,6 @@ static void h4p_rx_tasklet(unsigned long data)
 	u8 byte;
 	struct h4p_info *info = (struct h4p_info *)data;
 
-	BT_DBG("tasklet woke up");
 	BT_DBG("rx_tasklet woke up");
 
 	while (h4p_inb(info, UART_LSR) & UART_LSR_DR) {
@@ -550,7 +550,6 @@ static void h4p_tx_tasklet(unsigned long data)
 	struct sk_buff *skb;
 	struct h4p_info *info = (struct h4p_info *)data;
 
-	BT_DBG("tasklet woke up");
 	BT_DBG("tx_tasklet woke up");
 
 	if (info->autorts != info->rx_enabled) {
