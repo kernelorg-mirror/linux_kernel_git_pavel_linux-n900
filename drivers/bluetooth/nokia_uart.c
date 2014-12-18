@@ -25,7 +25,7 @@
 
 #include <linux/io.h>
 
-#include "hci_h4p.h"
+#include "nokia_h4p.h"
 
 
 

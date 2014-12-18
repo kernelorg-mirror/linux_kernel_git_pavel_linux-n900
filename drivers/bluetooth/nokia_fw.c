@@ -1,5 +1,5 @@
 /*
- * This file is part of hci_h4p bluetooth driver
+ * This file is part of nokia_h4p bluetooth driver
  *
  * Copyright (C) 2005-2008 Nokia Corporation.
  * Copyright (C) 2014 Pavel Machek <pavel@ucw.cz>
@@ -29,7 +29,7 @@
 
 #include <net/bluetooth/bluetooth.h>
 
-#include "hci_h4p.h"
+#include "nokia_h4p.h"
 
 #define FW_NAME_BCM2048		"bcmfw.bin"
 

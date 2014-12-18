@@ -19,9 +19,6 @@
  *
  */
 
-#ifndef __DRIVERS_BLUETOOTH_H4P_H
-#define __DRIVERS_BLUETOOTH_H4P_H
-
 #include <net/bluetooth/bluetooth.h>
 #include <net/bluetooth/hci_core.h>
 #include <net/bluetooth/hci.h>
@@ -230,5 +227,3 @@ void h4p_enable_tx(struct h4p_info *info);
 void h4p_store_regs(struct h4p_info *info);
 void h4p_restore_regs(struct h4p_info *info);
 void h4p_smart_idle(struct h4p_info *info, bool enable);
-
-#endif /* __DRIVERS_BLUETOOTH_H4P_H */

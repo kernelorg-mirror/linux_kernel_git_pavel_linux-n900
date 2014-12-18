@@ -245,7 +245,6 @@ config BT_WILINK
 
 config BT_NOKIA_H4P
 	tristate "HCI driver with H4 Nokia extensions"
-	depends on ARCH_OMAP
 	help
 	  Bluetooth HCI driver with H4 extensions.  This driver provides
 	  support for H4+ Bluetooth chip with vendor-specific H4 extensions.

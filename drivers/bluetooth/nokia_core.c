@@ -50,7 +50,7 @@
 #include <net/bluetooth/hci_core.h>
 #include <net/bluetooth/hci.h>
 
-#include "hci_h4p.h"
+#include "nokia_h4p.h"
 
 #define TEST
 #define BT_DBG(a...) do {} while(0)
