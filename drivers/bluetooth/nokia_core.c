@@ -53,7 +53,6 @@
 #include "nokia_h4p.h"
 
 #define TEST
-#define BT_DBG(a...) do {} while(0)
 
 static int hw_inited = 0;
 
@@ -249,7 +248,7 @@ static void h4p_alive_packet(struct h4p_info *info,
 
 	pkt = (struct h4p_alive_pkt *)skb_pull(skb, sizeof(*hdr));
 	if (pkt->mid != H4P_ALIVE_RESP) {
-		dev_err(info->dev, "Could not negotiate hci_h4p settings\n");
+		dev_err(info->dev, "Could not negotiate nokia_h4p settings\n");
 		info->init_error = -EINVAL;
 	}
 
@@ -295,6 +294,7 @@ static int h4p_send_negotiation(struct h4p_info *info)
 
 	if (!wait_for_completion_interruptible_timeout(&info->init_completion,
 						       msecs_to_jiffies(1000))) {
+		/* Who frees the skb here? */
 		printk("h4p: negotiation did not return\n");
 		return -ETIMEDOUT;
 	}
@@ -344,7 +344,7 @@ static void h4p_negotiation_packet(struct h4p_info *info,
 	evt = (struct h4p_neg_evt *)skb_pull(skb, sizeof(*hdr));
 
 	if (evt->ack != H4P_NEG_ACK) {
-		dev_err(info->dev, "Could not negotiate hci_h4p settings\n");
+		dev_err(info->dev, "Could not negotiate nokia_h4p settings\n");
 		info->init_error = -EINVAL;
 	}
 
@@ -1139,9 +1139,9 @@ static int h4p_probe(struct platform_device *pdev)
 	}
 
 	err = devm_request_irq(&pdev->dev, info->irq, h4p_interrupt,
-				IRQF_DISABLED, "hci_h4p", info);
+				IRQF_DISABLED, "nokia_h4p", info);
 	if (err < 0) {
-		dev_err(info->dev, "hci_h4p: unable to get IRQ %d\n",
+		dev_err(info->dev, "nokia_h4p: unable to get IRQ %d\n",
 			info->irq);
 		return err;
 	}
@@ -1151,14 +1151,14 @@ static int h4p_probe(struct platform_device *pdev)
 			  IRQF_TRIGGER_RISING | IRQF_DISABLED,
 			  "h4p_wkup", info);
 	if (err < 0) {
-		dev_err(info->dev, "hci_h4p: unable to get wakeup IRQ %d\n",
+		dev_err(info->dev, "nokia_h4p: unable to get wakeup IRQ %d\n",
 			  gpio_to_irq(info->host_wakeup_gpio));
 		return err;
 	}
 
 	err = irq_set_irq_wake(gpio_to_irq(info->host_wakeup_gpio), 1);
 	if (err < 0) {
-		dev_err(info->dev, "hci_h4p: unable to set wakeup for IRQ %d\n",
+		dev_err(info->dev, "nokia_h4p: unable to set wakeup for IRQ %d\n",
 				gpio_to_irq(info->host_wakeup_gpio));
 		return err;
 	}
@@ -1178,7 +1178,7 @@ static int h4p_probe(struct platform_device *pdev)
 	platform_set_drvdata(pdev, info);
 
 	if (h4p_register_hdev(info) < 0) {
-		dev_err(info->dev, "failed to register hci_h4p hci device\n");
+		dev_err(info->dev, "failed to register nokia_h4p hci device\n");
 		return -EINVAL;
 	}
 
@@ -1209,7 +1209,7 @@ static struct platform_driver h4p_driver = {
 	.probe		= h4p_probe,
 	.remove		= h4p_remove,
 	.driver		= {
-		.name	= "disabled" "hci_h4p",
+		.name	= "disabled" "nokia_h4p",
 		.owner  = THIS_MODULE,
 		.of_match_table = of_match_ptr(h4p_of_match),
 	},
@@ -1217,7 +1217,7 @@ static struct platform_driver h4p_driver = {
 
 module_platform_driver(h4p_driver);
 
-MODULE_ALIAS("platform:hci_h4p");
+MODULE_ALIAS("platform:nokia_h4p");
 MODULE_DESCRIPTION("Bluetooth h4 driver with nokia extensions");
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Ville Tervo");

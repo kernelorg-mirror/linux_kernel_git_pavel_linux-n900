@@ -76,7 +76,6 @@ struct h4p_info {
 	unsigned long rx_state;
 	unsigned long garbage_bytes;
 
-	bdaddr_t bd_addr;
 	struct sk_buff_head *fw_q;
 
 	int pm_enabled;

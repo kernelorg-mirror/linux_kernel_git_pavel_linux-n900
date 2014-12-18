@@ -111,7 +111,7 @@ int h4p_reset_uart(struct h4p_info *info)
 	h4p_outb(info, UART_OMAP_SYSC, UART_SYSC_OMAP_RESET);
 	while (!(h4p_inb(info, UART_OMAP_SYSS) & UART_SYSS_RESETDONE)) {
 		if (count++ > 100) {
-			dev_err(info->dev, "hci_h4p: UART reset timeout\n");
+			dev_err(info->dev, "nokia_h4p: UART reset timeout\n");
 			return -ENODEV;
 		}
 		udelay(1);
