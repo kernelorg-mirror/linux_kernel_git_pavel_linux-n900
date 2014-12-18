@@ -4,8 +4,6 @@
  * Copyright (C) 2005-2008 Nokia Corporation.
  * Copyright (C) 2014 Pavel Machek <pavel@ucw.cz>
  *
- * Contact: Ville Tervo <ville.tervo@nokia.com>
- *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * version 2 as published by the Free Software Foundation.
@@ -22,6 +20,7 @@
  *
  */
 
+#define DEBUG
 #include <linux/module.h>
 #include <linux/skbuff.h>
 #include <linux/firmware.h>
@@ -32,9 +31,6 @@
 #include "nokia_h4p.h"
 
 #define FW_NAME_BCM2048		"bcmfw.bin"
-
-#define BT_DBG printk
-
 
 /* Read fw. Return length of the command. If no more commands in
  * fw 0 is returned. In error case return value is negative.
@@ -49,10 +45,10 @@ int h4p_read_fw(struct h4p_info *info)
 	unsigned int cmd_len = 0;	
 
 	err = request_firmware(&fw_entry, FW_NAME_BCM2048, info->dev);
-	if (err != 0 || !fw_entry)
+	if (err != 0)
 		return err;
 
-	while(1) {
+	while (1) {
 		int cmd, len;
 
 		fw_pos += cmd_len;		

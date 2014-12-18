@@ -958,12 +958,10 @@ static int h4p_hci_close(struct hci_dev *hdev)
 
 static int h4p_hci_send_frame(struct hci_dev *hdev, struct sk_buff *skb)
 {
-	struct h4p_info *info;
+	struct h4p_info *info = hci_get_drvdata(hdev);
 	int err = 0;
 
 	BT_DBG("hci_send_frame: dev %p, skb %p\n", hdev, skb);
-
-	info = hci_get_drvdata(hdev);
 
 	if (!test_bit(HCI_RUNNING, &hdev->flags)) {
 		dev_warn(info->dev, "Frame for non-running device\n");
@@ -1185,9 +1183,7 @@ static int h4p_probe(struct platform_device *pdev)
 
 static int h4p_remove(struct platform_device *pdev)
 {
-	struct h4p_info *info;
-
-	info = platform_get_drvdata(pdev);
+	struct h4p_info *info = platform_get_drvdata(pdev);
 
 	h4p_hci_close(info->hdev);
 	h4p_deinit(info->hdev);
