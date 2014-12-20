@@ -197,7 +197,7 @@ static int cpufreq_init(struct cpufreq_policy *policy)
 
 	ret = allocate_resources(policy->cpu, &cpu_dev, &cpu_reg, &cpu_clk);
 	if (ret) {
-		pr_err("%s: Failed to allocate resources\n: %d", __func__, ret);
+		pr_err("%s: Failed to allocate resources: %d\n", __func__, ret);
 		return ret;
 	}
 
@@ -400,7 +400,6 @@ static int dt_cpufreq_remove(struct platform_device *pdev)
 static struct platform_driver dt_cpufreq_platdrv = {
 	.driver = {
 		.name	= "cpufreq-dt",
-		.owner	= THIS_MODULE,
 	},
 	.probe		= dt_cpufreq_probe,
 	.remove		= dt_cpufreq_remove,
