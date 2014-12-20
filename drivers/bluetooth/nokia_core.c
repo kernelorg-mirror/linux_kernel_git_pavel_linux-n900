@@ -936,23 +936,13 @@ static int h4p_boot(struct hci_dev *hdev)
 
 static int h4p_hci_open(struct hci_dev *hdev)
 {
-	struct h4p_info *info = hci_get_drvdata(hdev);
-	int err;
-
-	if (test_bit(HCI_RUNNING, &hdev->flags))
-		return 0;
-
 	set_bit(HCI_RUNNING, &hdev->flags);
 	return 0;
 }
 
 static int h4p_hci_close(struct hci_dev *hdev)
 {
-	struct h4p_info *info = hci_get_drvdata(hdev);
-
-	if (!test_and_clear_bit(HCI_RUNNING, &hdev->flags))
-		return 0;
-
+	clear_bit(HCI_RUNNING, &hdev->flags);
 	return 0;
 }
 
@@ -1000,42 +990,6 @@ static int h4p_hci_send_frame(struct hci_dev *hdev, struct sk_buff *skb)
 	return 0;
 }
 
-static int h4p_register_hdev(struct h4p_info *info)
-{
-	struct hci_dev *hdev;
-
-	/* Initialize and register HCI device */
-
-	hdev = hci_alloc_dev();
-	if (!hdev) {
-		dev_err(info->dev, "Can't allocate memory for device\n");
-		return -ENOMEM;
-	}
-	info->hdev = hdev;
-
-	hdev->bus = HCI_UART;
-	hci_set_drvdata(hdev, info);
-
-	hdev->open = h4p_hci_open;
-	hdev->setup = h4p_hci_setup;
-	hdev->close = h4p_hci_close;
-	hdev->flush = h4p_hci_flush;
-	hdev->send = h4p_hci_send_frame;
-	hdev->set_bdaddr = h4p_hci_set_bdaddr;
-
-#ifndef TEST
-	set_bit(HCI_QUIRK_INVALID_BDADDR, &hdev->quirks);
-#endif
-	SET_HCIDEV_DEV(hdev, info->dev);
-
-	if (hci_register_dev(hdev) >= 0)
-		return h4p_boot(hdev);
-
-	dev_err(info->dev, "hci_register failed %s.\n", hdev->name);
-	hci_free_dev(info->hdev);
-	return -ENODEV;
-}
-
 static int h4p_probe_dt(struct platform_device *pdev, struct h4p_info *info)
 {
 	struct device_node *node;
@@ -1077,7 +1031,7 @@ static int h4p_probe_dt(struct platform_device *pdev, struct h4p_info *info)
 
 static int h4p_probe(struct platform_device *pdev)
 {
-
+	struct hci_dev *hdev;
 	struct h4p_info *info;
 	int err;
 
@@ -1100,12 +1054,12 @@ static int h4p_probe(struct platform_device *pdev)
 		return -ENODATA;
 	}
 
-	printk("base/irq gpio: %lx/%d/%d\n",
+	BT_DBG("base/irq gpio: %p/%d",
 	       info->uart_base, info->irq);
-	printk("RESET/BTWU/HOSTWU gpio: %d/%d/%d\n",
+	BT_DBG("RESET/BTWU/HOSTWU gpio: %d/%d/%d",
 	       info->reset_gpio, info->bt_wakeup_gpio, info->host_wakeup_gpio);
-	printk("chip type, sysclk: %d/%d\n", info->chip_type, info->bt_sysclk);
-	printk("clock i/f: %lx/%lx\n", info->uart_iclk, info->uart_fclk);	
+	BT_DBG("chip type, sysclk: %d/%d", info->chip_type, info->bt_sysclk);
+	BT_DBG("clock i/f: %p/%p", info->uart_iclk, info->uart_fclk);	
 
 	init_completion(&info->test_completion);
 	complete_all(&info->test_completion);
@@ -1173,12 +1127,36 @@ static int h4p_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, info);
 
-	if (h4p_register_hdev(info) < 0) {
-		dev_err(info->dev, "failed to register nokia_h4p hci device\n");
-		return -EINVAL;
-	}
+	/* Initialize and register HCI device */
 
-	return 0;
+	hdev = hci_alloc_dev();
+	if (!hdev) {
+		dev_err(info->dev, "Can't allocate memory for device\n");
+		return -ENOMEM;
+	}
+	info->hdev = hdev;
+
+	hdev->bus = HCI_UART;
+	hci_set_drvdata(hdev, info);
+
+	hdev->open = h4p_hci_open;
+	hdev->setup = h4p_hci_setup;
+	hdev->close = h4p_hci_close;
+	hdev->flush = h4p_hci_flush;
+	hdev->send = h4p_hci_send_frame;
+	hdev->set_bdaddr = h4p_hci_set_bdaddr;
+
+#ifndef TEST
+	set_bit(HCI_QUIRK_INVALID_BDADDR, &hdev->quirks);
+#endif
+	SET_HCIDEV_DEV(hdev, info->dev);
+
+	if (hci_register_dev(hdev) >= 0)
+		return h4p_boot(hdev);
+
+	dev_err(info->dev, "hci_register failed %s.\n", hdev->name);
+	hci_free_dev(info->hdev);
+	return -ENODEV;	
 }
 
 static int h4p_remove(struct platform_device *pdev)
