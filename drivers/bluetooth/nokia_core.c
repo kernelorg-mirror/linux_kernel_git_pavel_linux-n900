@@ -52,7 +52,7 @@
 
 #include "nokia_h4p.h"
 
-#define TEST
+#undef TEST
 
 static int hw_inited = 0;
 
@@ -1163,11 +1163,11 @@ static int h4p_probe(struct platform_device *pdev)
 	info->lazy_release.function = h4p_lazy_clock_release;
 	info->lazy_release.data = (unsigned long)info;
 	h4p_set_clk(info, &info->tx_clocks_en, 1);
-	printk("resetting uart....\n");
+
 	err = h4p_reset_uart(info);
-	printk("reset ok....\n");
 	if (err < 0)
 		return err;
+
 	gpio_set_value(info->reset_gpio, 0);
 	h4p_set_clk(info, &info->tx_clocks_en, 0);
 
