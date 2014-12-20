@@ -42,7 +42,7 @@ int h4p_read_fw(struct h4p_info *info)
 	struct sk_buff *skb;
 	const struct firmware *fw_entry = NULL;
 	int err = -ENOENT;
-	unsigned int cmd_len = 0;	
+	unsigned int cmd_len = 0;
 
 	err = request_firmware(&fw_entry, FW_NAME_BCM2048, info->dev);
 	if (err != 0)
@@ -51,8 +51,8 @@ int h4p_read_fw(struct h4p_info *info)
 	while (1) {
 		int cmd, len;
 
-		fw_pos += cmd_len;		
-		
+		fw_pos += cmd_len;
+
 		if (fw_pos >= fw_entry->size)
 			break;
 

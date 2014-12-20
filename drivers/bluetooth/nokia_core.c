@@ -1027,7 +1027,6 @@ static int h4p_probe_dt(struct platform_device *pdev, struct h4p_info *info)
 	printk("DT: have neccessary data\n");
 	return 0;
 }
-			  
 
 static int h4p_probe(struct platform_device *pdev)
 {
@@ -1059,7 +1058,7 @@ static int h4p_probe(struct platform_device *pdev)
 	BT_DBG("RESET/BTWU/HOSTWU gpio: %d/%d/%d",
 	       info->reset_gpio, info->bt_wakeup_gpio, info->host_wakeup_gpio);
 	BT_DBG("chip type, sysclk: %d/%d", info->chip_type, info->bt_sysclk);
-	BT_DBG("clock i/f: %p/%p", info->uart_iclk, info->uart_fclk);	
+	BT_DBG("clock i/f: %p/%p", info->uart_iclk, info->uart_fclk);
 
 	init_completion(&info->test_completion);
 	complete_all(&info->test_completion);
@@ -1156,7 +1155,7 @@ static int h4p_probe(struct platform_device *pdev)
 
 	dev_err(info->dev, "hci_register failed %s.\n", hdev->name);
 	hci_free_dev(info->hdev);
-	return -ENODEV;	
+	return -ENODEV;
 }
 
 static int h4p_remove(struct platform_device *pdev)
