@@ -123,7 +123,7 @@ static void h4p_disable_tx(struct h4p_info *info)
 	info->tx_enabled = false;
 }
 
-void h4p_enable_tx_nopm(struct h4p_info *info)
+static void h4p_enable_tx_nopm(struct h4p_info *info)
 {
 	unsigned long flags;
 
@@ -979,7 +979,7 @@ static int h4p_probe_dt(struct platform_device *pdev, struct h4p_info *info)
 	info->uart_iclk = of_clk_get_by_name(uart, "ick");
 	info->uart_fclk = of_clk_get_by_name(uart, "fck");
 
-	printk("DT: have neccessary data\n");
+	BT_DBG("DT: have neccessary data");
 	return 0;
 }
 
