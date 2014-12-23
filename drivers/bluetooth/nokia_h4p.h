@@ -96,7 +96,7 @@ struct h4p_info {
 	u16 mdr1;
 	u16 efr;
 
-	int initing;
+	int init_phase;
 };
 
 struct h4p_radio_hdr {
@@ -216,9 +216,9 @@ static inline void h4p_set_rts(struct h4p_info *info, int active)
 	h4p_outb(info, UART_MCR, b);
 }
 
-int h4p_wait_for_cts(struct h4p_info *info, int active, int timeout_ms);
-void __h4p_set_auto_ctsrts(struct h4p_info *info, int on, u8 which);
-void h4p_set_auto_ctsrts(struct h4p_info *info, int on, u8 which);
+int h4p_wait_for_cts(struct h4p_info *info, bool active, int timeout_ms);
+void __h4p_set_auto_ctsrts(struct h4p_info *info, bool on, u8 which);
+void h4p_set_auto_ctsrts(struct h4p_info *info, bool on, u8 which);
 void h4p_change_speed(struct h4p_info *info, unsigned long speed);
 int h4p_reset_uart(struct h4p_info *info);
 void h4p_init_uart(struct h4p_info *info);

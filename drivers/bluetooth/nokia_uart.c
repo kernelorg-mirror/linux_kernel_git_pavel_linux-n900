@@ -27,8 +27,7 @@
 
 #include "nokia_h4p.h"
 
-int h4p_wait_for_cts(struct h4p_info *info, int active,
-			 int timeout_ms)
+int h4p_wait_for_cts(struct h4p_info *info, bool active, int timeout_ms)
 {
 	unsigned long timeout;
 	int state;
@@ -36,20 +35,15 @@ int h4p_wait_for_cts(struct h4p_info *info, int active,
 	timeout = jiffies + msecs_to_jiffies(timeout_ms);
 	for (;;) {
 		state = h4p_inb(info, UART_MSR) & UART_MSR_CTS;
-		if (active) {
-			if (state)
-				return 0;
-		} else {
-			if (!state)
-				return 0;
-		}
+		if (active == !!state)
+			return 0;
 		if (time_after(jiffies, timeout))
 			return -ETIMEDOUT;
 		msleep(1);
 	}
 }
 
-void __h4p_set_auto_ctsrts(struct h4p_info *info, int on, u8 which)
+void __h4p_set_auto_ctsrts(struct h4p_info *info, bool on, u8 which)
 {
 	u8 lcr, b;
 
@@ -64,7 +58,7 @@ void __h4p_set_auto_ctsrts(struct h4p_info *info, int on, u8 which)
 	h4p_outb(info, UART_LCR, lcr);
 }
 
-void h4p_set_auto_ctsrts(struct h4p_info *info, int on, u8 which)
+void h4p_set_auto_ctsrts(struct h4p_info *info, bool on, u8 which)
 {
 	unsigned long flags;
 

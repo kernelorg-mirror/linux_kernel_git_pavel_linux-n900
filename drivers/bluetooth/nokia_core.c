@@ -302,7 +302,7 @@ static int h4p_send_negotiation(struct h4p_info *info)
 	h4p_set_rts(info, 0);
 	h4p_change_speed(info, MAX_BAUD_RATE);
 
-	err = h4p_wait_for_cts(info, 1, 100);
+	err = h4p_wait_for_cts(info, true, 100);
 	if (err < 0)
 		return err;
 
@@ -419,7 +419,7 @@ h4p_get_data_len(struct h4p_info *info, struct sk_buff *skb)
 
 static inline void h4p_recv_frame(struct h4p_info *info, struct sk_buff *skb)
 {
-	if (info->initing) {
+	if (info->init_phase) {
 		switch (bt_cb(skb)->pkt_type) {
 		case H4_NEG_PKT:
 			h4p_negotiation_packet(info, skb);
@@ -649,7 +649,7 @@ static irqreturn_t h4p_wakeup_interrupt(int irq, void *dev_inst)
 
 	should_wakeup = !!gpio_get_value(info->host_wakeup_gpio);
 
-	if (info->initing) {
+	if (info->init_phase) {
 		if (should_wakeup == 1)
 			complete_all(&info->test_completion);
 
@@ -703,7 +703,7 @@ static int h4p_reset(struct h4p_info *info)
 		return -EPROTO;
 	}
 
-	err = h4p_wait_for_cts(info, 1, 100);
+	err = h4p_wait_for_cts(info, true, 100);
 	if (err < 0) {
 		dev_err(info->dev, "No cts from bt chip\n");
 		return err;
@@ -745,7 +745,7 @@ static int h4p_bt_wakeup_test(struct h4p_info *info)
 	disable_irq(gpio_to_irq(info->host_wakeup_gpio));
 
 	gpio_set_value(info->bt_wakeup_gpio, 0);
-	err = h4p_wait_for_cts(info, 0, 100);
+	err = h4p_wait_for_cts(info, false, 100);
 	if (err) {
 		dev_warn(info->dev,
 			 "bt_wakeup_test: fail: CTS low timed out: %d\n", err);
@@ -753,7 +753,7 @@ static int h4p_bt_wakeup_test(struct h4p_info *info)
 	}
 
 	gpio_set_value(info->bt_wakeup_gpio, 1);
-	err = h4p_wait_for_cts(info, 1, 100);
+	err = h4p_wait_for_cts(info, true, 100);
 	if (err) {
 		dev_warn(info->dev,
 			 "bt_wakeup_test: fail: CTS high timed out: %d\n",
@@ -762,7 +762,7 @@ static int h4p_bt_wakeup_test(struct h4p_info *info)
 	}
 
 	gpio_set_value(info->bt_wakeup_gpio, 0);
-	err = h4p_wait_for_cts(info, 0, 100);
+	err = h4p_wait_for_cts(info, false, 100);
 	if (err) {
 		dev_warn(info->dev,
 			 "bt_wakeup_test: fail: CTS re-low timed out: %d\n",
@@ -819,8 +819,6 @@ static int h4p_setup(struct hci_dev *hdev)
 	int err;
 	unsigned long flags;
 
-	/* TI1271 has HW bug and boot up might fail. Nokia retried up to 3x. */
-
 	h4p_set_clk(info, &info->tx_clocks_en, true);
 	h4p_set_clk(info, &info->rx_clocks_en, true);
 
@@ -828,7 +826,7 @@ static int h4p_setup(struct hci_dev *hdev)
 		h4p_set_auto_ctsrts(info, 1, UART_EFR_CTS | UART_EFR_RTS);
 		info->autorts = 1;
 
-		info->initing = 1;
+		info->init_phase = 1;
 		BT_DBG("hci_setup");
 
 		err = h4p_send_negotiation(info);
@@ -868,7 +866,7 @@ static int h4p_setup(struct hci_dev *hdev)
 
 	h4p_set_clk(info, &info->tx_clocks_en, 0);
 
-	info->initing = 0;
+	info->init_phase = 0;
 	hw_inited = 1;
 	return 0;
 
@@ -949,7 +947,7 @@ static int h4p_hci_send_frame(struct hci_dev *hdev, struct sk_buff *skb)
 		return err;
 
 	skb_queue_tail(&info->txq, skb);
-	if (!info->initing)
+	if (!info->init_phase)
 		h4p_enable_tx(info);
 	else
 		h4p_enable_tx_nopm(info);
@@ -1144,11 +1142,11 @@ static const struct of_device_id h4p_of_match[] = {
 };
 MODULE_DEVICE_TABLE(of, h4p_of_match);
 
-static const struct platform_driver h4p_driver = {
+static struct platform_driver h4p_driver = {
 	.probe		= h4p_probe,
 	.remove		= h4p_remove,
 	.driver		= {
-		.name	= "disabled" "nokia_h4p",
+		.name	= "nokia_h4p",
 		.owner  = THIS_MODULE,
 		.of_match_table = of_match_ptr(h4p_of_match),
 	},

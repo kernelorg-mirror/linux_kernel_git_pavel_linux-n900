@@ -29,8 +29,6 @@
 
 #include "nokia_h4p.h"
 
-#define BT_DBG(a...) printk(a)
-
 #define FW_NAME_BCM2048		"nokia/bcmfw.bin"
 
 /* Read fw. Return length of the command. If no more commands in
@@ -79,17 +77,16 @@ int h4p_read_fw(struct h4p_info *info)
 			continue;
 
 		/* Note that this is timing-critical. If sending packets takes too
-		   long, initialization will fail. */
-		printk("Packet %d...", num);
-
+		 * long, initialization will fail.
+		 */
 		cmd = fw_entry->data[fw_pos+1];
 		cmd += fw_entry->data[fw_pos+2] << 8;
 		len = fw_entry->data[fw_pos+3];
-		printk("cmd %x, len %d.", cmd, len);
 
 		skb = __hci_cmd_sync(info->hdev, cmd, len, fw_entry->data+fw_pos+4, 500);
 		if (IS_ERR(skb)) {
-			dev_err(info->dev, "...sending cmd failed %ld\n", PTR_ERR(skb));
+			dev_err(info->dev, "...sending cmd %x len %d failed %ld\n",
+				cmd, len, PTR_ERR(skb));
 			err = -EIO;
 			break;
 		}
