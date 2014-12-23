@@ -96,7 +96,7 @@ struct h4p_info {
 	u16 mdr1;
 	u16 efr;
 
-	int init_phase;
+	bool init_phase;
 };
 
 struct h4p_radio_hdr {

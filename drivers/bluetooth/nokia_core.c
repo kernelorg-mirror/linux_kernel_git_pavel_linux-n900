@@ -811,7 +811,7 @@ static void h4p_deinit(struct hci_dev *hdev)
 	info->rx_skb = NULL;
 }
 
-static int h4p_setup(struct hci_dev *hdev)
+static int h4p_hci_setup(struct hci_dev *hdev)
 {
 	struct h4p_info *info = hci_get_drvdata(hdev);
 	int err;
@@ -823,7 +823,7 @@ static int h4p_setup(struct hci_dev *hdev)
 	h4p_set_auto_ctsrts(info, 1, UART_EFR_CTS | UART_EFR_RTS);
 	info->autorts = 1;
 
-	info->init_phase = 1;
+	info->init_phase = true;
 	BT_DBG("hci_setup");
 
 	err = h4p_send_negotiation(info);
@@ -861,7 +861,7 @@ static int h4p_setup(struct hci_dev *hdev)
 
 	h4p_set_clk(info, &info->tx_clocks_en, 0);
 
-	info->init_phase = 0;
+	info->init_phase = false;
 	return 0;
 
 err_clean:
@@ -869,11 +869,6 @@ err_clean:
 	h4p_hci_flush(hdev);
 	h4p_deinit(hdev);
 	return err;
-}
-
-static int h4p_hci_setup(struct hci_dev *hdev)
-{
-	return h4p_setup(hdev);
 }
 
 static int h4p_boot(struct hci_dev *hdev)
