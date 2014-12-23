@@ -122,19 +122,19 @@ struct h4p_neg_hdr {
 
 struct h4p_neg_cmd {
 	u8	ack;
-	u16	baud;
+	__le16	baud;
 	u16	unused1;
 	u8	proto;
-	u16	sys_clk;
+	__le16	sys_clk;
 	u16	unused2;
 } __packed;
 
 struct h4p_neg_evt {
 	u8	ack;
-	u16	baud;
-	u16	unused1;
+	__le16	baud;
+	__le16	unused1;
 	u8	proto;
-	u16	sys_clk;
+	__le16	sys_clk;
 	u16	unused2;
 	u8	man_id;
 	u8	ver_id;
