@@ -193,14 +193,14 @@ static void h4p_enable_rx(struct h4p_info *info)
 	info->autorts = 1;
 }
 
-void h4p_simple_send_frame(struct h4p_info *info, struct sk_buff *skb)
+static void h4p_simple_send_frame(struct h4p_info *info, struct sk_buff *skb)
 {
 	skb_queue_tail(&info->txq, skb);
 	h4p_enable_tx_nopm(info);
 }
 
 /* Negotiation functions */
-int h4p_send_alive_packet(struct h4p_info *info)
+static int h4p_send_alive_packet(struct h4p_info *info)
 {
 	struct h4p_alive_hdr *hdr;
 	struct h4p_alive_pkt *pkt;

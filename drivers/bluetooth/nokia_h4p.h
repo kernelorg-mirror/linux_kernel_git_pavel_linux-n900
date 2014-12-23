@@ -116,9 +116,7 @@ struct h4p_neg_hdr {
 #define H4P_PROTO_PKT	0x44
 #define H4P_PROTO_BYTE	0x4c
 
-#define H4P_ID_CSR	0x02
 #define H4P_ID_BCM2048	0x04
-#define H4P_ID_TI1271	0x31
 
 struct h4p_neg_cmd {
 	u8	ack;
@@ -178,19 +176,7 @@ struct h4p_alive_pkt {
 #define WAIT_FOR_HEADER		2
 #define WAIT_FOR_DATA		3
 
-struct hci_fw_event {
-	struct hci_event_hdr hev;
-	struct hci_ev_cmd_complete cmd;
-	u8 status;
-} __packed;
-
-void h4p_simple_send_frame(struct h4p_info *info, struct sk_buff *skb);
-
-int h4p_send_alive_packet(struct h4p_info *info);
-
 int h4p_read_fw(struct h4p_info *info);
-int h4p_send_fw(struct h4p_info *info);
-void h4p_parse_fw_event(struct h4p_info *info, struct sk_buff *skb);
 
 static inline void h4p_outb(struct h4p_info *info, unsigned int offset, u8 val)
 {
