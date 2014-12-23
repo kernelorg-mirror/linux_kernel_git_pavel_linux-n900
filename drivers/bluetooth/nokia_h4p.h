@@ -185,9 +185,7 @@ static inline void h4p_outb(struct h4p_info *info, unsigned int offset, u8 val)
 
 static inline u8 h4p_inb(struct h4p_info *info, unsigned int offset)
 {
-	u8 val;
-	val = __raw_readb(info->uart_base + (offset << 2));
-	return val;
+	return __raw_readb(info->uart_base + (offset << 2));
 }
 
 static inline void h4p_set_rts(struct h4p_info *info, int active)

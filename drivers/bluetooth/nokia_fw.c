@@ -13,11 +13,6 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
- * 02110-1301 USA
- *
  */
 
 #include <linux/module.h>
@@ -76,14 +71,15 @@ int h4p_read_fw(struct h4p_info *info)
 		if (++num <= 2)
 			continue;
 
-		/* Note that this is timing-critical. If sending packets takes too
-		 * long, initialization will fail.
+		/* Note that this is timing-critical. If sending packets takes
+		 * too long, initialization will fail.
 		 */
 		cmd = fw_entry->data[fw_pos+1];
 		cmd += fw_entry->data[fw_pos+2] << 8;
 		len = fw_entry->data[fw_pos+3];
 
-		skb = __hci_cmd_sync(info->hdev, cmd, len, fw_entry->data+fw_pos+4, 500);
+		skb = __hci_cmd_sync(info->hdev, cmd, len,
+				     fw_entry->data+fw_pos+4, 500);
 		if (IS_ERR(skb)) {
 			dev_err(info->dev, "...sending cmd %x len %d failed %ld\n",
 				cmd, len, PTR_ERR(skb));

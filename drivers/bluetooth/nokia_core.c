@@ -13,11 +13,6 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
- * 02110-1301 USA
- *
  * Thanks to all the Nokia people that helped with this driver,
  * including Ville Tervo and Roger Quadros.
  *
@@ -979,7 +974,7 @@ static int h4p_probe_dt(struct platform_device *pdev, struct h4p_info *info)
 	info->uart_iclk = of_clk_get_by_name(uart, "ick");
 	info->uart_fclk = of_clk_get_by_name(uart, "fck");
 
-	BT_DBG("DT: have neccessary data");
+	BT_DBG("DT: have necessary data");
 	return 0;
 }
 
