@@ -52,8 +52,6 @@
 
 #include "nokia_h4p.h"
 
-static int hw_inited = 0;
-
 /* This should be used in function that cannot release clocks */
 static void h4p_set_clk(struct h4p_info *info, int *clock, bool enable)
 {
@@ -822,20 +820,17 @@ static int h4p_setup(struct hci_dev *hdev)
 	h4p_set_clk(info, &info->tx_clocks_en, true);
 	h4p_set_clk(info, &info->rx_clocks_en, true);
 
-	if (!hw_inited) {
-		h4p_set_auto_ctsrts(info, 1, UART_EFR_CTS | UART_EFR_RTS);
-		info->autorts = 1;
+	h4p_set_auto_ctsrts(info, 1, UART_EFR_CTS | UART_EFR_RTS);
+	info->autorts = 1;
 
-		info->init_phase = 1;
-		BT_DBG("hci_setup");
+	info->init_phase = 1;
+	BT_DBG("hci_setup");
 
-		err = h4p_send_negotiation(info);
-		if (err < 0)
-			goto err_clean;
-	}
+	err = h4p_send_negotiation(info);
+	if (err < 0)
+		goto err_clean;
 
-	/*
-	 * Disable smart-idle as UART TX interrupts
+	/* Disable smart-idle as UART TX interrupts
 	 * are not wake-up capable
 	 */
 	h4p_smart_idle(info, 0);
@@ -867,7 +862,6 @@ static int h4p_setup(struct hci_dev *hdev)
 	h4p_set_clk(info, &info->tx_clocks_en, 0);
 
 	info->init_phase = 0;
-	hw_inited = 1;
 	return 0;
 
 err_clean:
