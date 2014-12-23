@@ -72,16 +72,16 @@ struct h4p_info {
 	struct sk_buff_head txq;
 
 	struct sk_buff *rx_skb;
-	long rx_count;
-	unsigned long rx_state;
-	unsigned long garbage_bytes;
+	int rx_count;
+	unsigned int rx_state;
+	unsigned int garbage_bytes;
 
 	struct sk_buff_head *fw_q;
 
-	int pm_enabled;
-	int tx_enabled;
+	bool pm_enabled;
+	bool tx_enabled;
 	int autorts;
-	int rx_enabled;
+	bool rx_enabled;
 	unsigned long pm_flags;
 
 	int tx_clocks_en;

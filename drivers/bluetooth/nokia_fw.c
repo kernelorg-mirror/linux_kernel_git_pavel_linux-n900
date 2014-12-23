@@ -20,7 +20,6 @@
  *
  */
 
-#define DEBUG
 #include <linux/module.h>
 #include <linux/skbuff.h>
 #include <linux/firmware.h>
@@ -29,6 +28,8 @@
 #include <net/bluetooth/bluetooth.h>
 
 #include "nokia_h4p.h"
+
+#define BT_DBG(a...) printk(a)
 
 #define FW_NAME_BCM2048		"nokia/bcmfw.bin"
 
@@ -57,7 +58,7 @@ int h4p_read_fw(struct h4p_info *info)
 			break;
 
 		if (fw_pos + 2 > fw_entry->size) {
-			dev_err(info->dev, "Corrupted firmware image 1\n");
+			dev_err(info->dev, "Corrupted firmware image\n");
 			err = -EMSGSIZE;
 			break;
 		}
@@ -68,7 +69,7 @@ int h4p_read_fw(struct h4p_info *info)
 			break;
 
 		if (fw_pos + cmd_len > fw_entry->size) {
-			dev_err(info->dev, "Corrupted firmware image 2\n");
+			dev_err(info->dev, "Corrupted firmware image\n");
 			err = -EMSGSIZE;
 			break;
 		}

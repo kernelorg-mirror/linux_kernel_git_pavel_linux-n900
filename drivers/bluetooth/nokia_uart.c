@@ -27,8 +27,6 @@
 
 #include "nokia_h4p.h"
 
-
-
 int h4p_wait_for_cts(struct h4p_info *info, int active,
 			 int timeout_ms)
 {

@@ -52,12 +52,10 @@
 
 #include "nokia_h4p.h"
 
-#undef TEST
-
 static int hw_inited = 0;
 
 /* This should be used in function that cannot release clocks */
-static void h4p_set_clk(struct h4p_info *info, int *clock, int enable)
+static void h4p_set_clk(struct h4p_info *info, int *clock, bool enable)
 {
 	unsigned long flags;
 
@@ -90,7 +88,7 @@ static void h4p_lazy_clock_release(unsigned long data)
 
 	spin_lock_irqsave(&info->lock, flags);
 	if (!info->tx_enabled)
-		h4p_set_clk(info, &info->tx_clocks_en, 0);
+		h4p_set_clk(info, &info->tx_clocks_en, false);
 	spin_unlock_irqrestore(&info->lock, flags);
 }
 
@@ -124,16 +122,16 @@ static void h4p_disable_tx(struct h4p_info *info)
 
 	gpio_set_value(info->bt_wakeup_gpio, 0);
 	mod_timer(&info->lazy_release, jiffies + msecs_to_jiffies(100));
-	info->tx_enabled = 0;
+	info->tx_enabled = false;
 }
 
 void h4p_enable_tx_nopm(struct h4p_info *info)
 {
 	unsigned long flags;
-	
+
 	spin_lock_irqsave(&info->lock, flags);
-	h4p_outb(info, UART_IER, h4p_inb(info, UART_IER) |
-		     UART_IER_THRI);
+	h4p_outb(info, UART_IER,
+		 h4p_inb(info, UART_IER) | UART_IER_THRI);
 	spin_unlock_irqrestore(&info->lock, flags);
 }
 
@@ -148,13 +146,13 @@ void h4p_enable_tx(struct h4p_info *info)
 
 	spin_lock_irqsave(&info->lock, flags);
 	del_timer(&info->lazy_release);
-	h4p_set_clk(info, &info->tx_clocks_en, 1);
-	info->tx_enabled = 1;
+	h4p_set_clk(info, &info->tx_clocks_en, true);
+	info->tx_enabled = true;
 	gpio_set_value(info->bt_wakeup_gpio, 1);
-	h4p_outb(info, UART_IER, h4p_inb(info, UART_IER) |
-		     UART_IER_THRI);
-	/*
-	 * Disable smart-idle as UART TX interrupts
+	h4p_outb(info, UART_IER,
+		 h4p_inb(info, UART_IER) | UART_IER_THRI);
+
+	/* Disable smart-idle as UART TX interrupts
 	 * are not wake-up capable
 	 */
 	h4p_smart_idle(info, 0);
@@ -167,7 +165,7 @@ static void h4p_disable_rx(struct h4p_info *info)
 	if (!info->pm_enabled)
 		return;
 
-	info->rx_enabled = 0;
+	info->rx_enabled = false;
 
 	if (h4p_inb(info, UART_LSR) & UART_LSR_DR)
 		return;
@@ -177,7 +175,7 @@ static void h4p_disable_rx(struct h4p_info *info)
 
 	__h4p_set_auto_ctsrts(info, 0, UART_EFR_RTS);
 	info->autorts = 0;
-	h4p_set_clk(info, &info->rx_clocks_en, 0);
+	h4p_set_clk(info, &info->rx_clocks_en, false);
 }
 
 static void h4p_enable_rx(struct h4p_info *info)
@@ -187,8 +185,8 @@ static void h4p_enable_rx(struct h4p_info *info)
 
 	h4p_schedule_pm(info);
 
-	h4p_set_clk(info, &info->rx_clocks_en, 1);
-	info->rx_enabled = 1;
+	h4p_set_clk(info, &info->rx_clocks_en, true);
+	info->rx_enabled = true;
 
 	if (!(h4p_inb(info, UART_LSR) & UART_LSR_TEMT))
 		return;
@@ -232,8 +230,7 @@ int h4p_send_alive_packet(struct h4p_info *info)
 	return 0;
 }
 
-static void h4p_alive_packet(struct h4p_info *info,
-				 struct sk_buff *skb)
+static void h4p_alive_packet(struct h4p_info *info, struct sk_buff *skb)
 {
 	struct h4p_alive_hdr *hdr;
 	struct h4p_alive_pkt *pkt;
@@ -265,7 +262,7 @@ static int h4p_send_negotiation(struct h4p_info *info)
 	int err, len;
 	u16 sysclk = 38400;
 
-	printk("Sending negotiation..");
+	BT_DBG("Sending negotiation..");
 	len = sizeof(*neg_cmd) + sizeof(*neg_hdr) + H4_TYPE_SIZE;
 
 	skb = bt_skb_alloc(len, GFP_KERNEL);
@@ -293,7 +290,7 @@ static int h4p_send_negotiation(struct h4p_info *info)
 
 	if (!wait_for_completion_interruptible_timeout(&info->init_completion,
 						       msecs_to_jiffies(1000))) {
-		printk("h4p: negotiation did not return\n");
+		BT_ERR("h4p: negotiation did not return\n");
 		return -ETIMEDOUT;
 	}
 
@@ -312,23 +309,21 @@ static int h4p_send_negotiation(struct h4p_info *info)
 	h4p_set_auto_ctsrts(info, 1, UART_EFR_RTS);
 	init_completion(&info->init_completion);
 	err = h4p_send_alive_packet(info);
-
 	if (err < 0)
 		return err;
 
 	if (!wait_for_completion_interruptible_timeout(&info->init_completion,
-				msecs_to_jiffies(1000)))
+						msecs_to_jiffies(1000)))
 		return -ETIMEDOUT;
 
 	if (info->init_error < 0)
 		return info->init_error;
 
-	printk("Negotiation successful\n");
+	BT_DBG("Negotiation successful\n");
 	return 0;
 }
 
-static void h4p_negotiation_packet(struct h4p_info *info,
-				       struct sk_buff *skb)
+static void h4p_negotiation_packet(struct h4p_info *info, struct sk_buff *skb)
 {
 	struct h4p_neg_hdr *hdr;
 	struct h4p_neg_evt *evt;
@@ -348,10 +343,9 @@ static void h4p_negotiation_packet(struct h4p_info *info,
 
 	info->man_id = evt->man_id;
 	info->ver_id = evt->ver_id;
-	printk("Negotiation finished.\n");
+	BT_DBG("Negotiation finished.\n");
 
 finish_neg:
-
 	complete(&info->init_completion);
 	kfree_skb(skb);
 }
@@ -359,7 +353,7 @@ finish_neg:
 /* H4 packet handling functions */
 static int h4p_get_hdr_len(struct h4p_info *info, u8 pkt_type)
 {
-	long retval;
+	int retval;
 
 	switch (pkt_type) {
 	case H4_EVT_PKT:
@@ -389,10 +383,9 @@ static int h4p_get_hdr_len(struct h4p_info *info, u8 pkt_type)
 	return retval;
 }
 
-static unsigned int h4p_get_data_len(struct h4p_info *info,
-					 struct sk_buff *skb)
+static unsigned int
+h4p_get_data_len(struct h4p_info *info, struct sk_buff *skb)
 {
-	long retval = -1;
 	struct hci_acl_hdr *acl_hdr;
 	struct hci_sco_hdr *sco_hdr;
 	struct hci_event_hdr *evt_hdr;
@@ -403,35 +396,28 @@ static unsigned int h4p_get_data_len(struct h4p_info *info,
 	switch (bt_cb(skb)->pkt_type) {
 	case H4_EVT_PKT:
 		evt_hdr = (struct hci_event_hdr *)skb->data;
-		retval = evt_hdr->plen;
-		break;
+		return evt_hdr->plen;
 	case H4_ACL_PKT:
 		acl_hdr = (struct hci_acl_hdr *)skb->data;
-		retval = le16_to_cpu(acl_hdr->dlen);
-		break;
+		return le16_to_cpu(acl_hdr->dlen);
 	case H4_SCO_PKT:
 		sco_hdr = (struct hci_sco_hdr *)skb->data;
-		retval = sco_hdr->dlen;
-		break;
+		return sco_hdr->dlen;
 	case H4_RADIO_PKT:
 		radio_hdr = (struct h4p_radio_hdr *)skb->data;
-		retval = radio_hdr->dlen;
-		break;
+		return radio_hdr->dlen;
 	case H4_NEG_PKT:
 		neg_hdr = (struct h4p_neg_hdr *)skb->data;
-		retval = neg_hdr->dlen;
-		break;
+		return neg_hdr->dlen;
 	case H4_ALIVE_PKT:
 		alive_hdr = (struct h4p_alive_hdr *)skb->data;
-		retval = alive_hdr->dlen;
-		break;
+		return alive_hdr->dlen;
+	default:
+		return ~0;
 	}
-
-	return retval;
 }
 
-static inline void h4p_recv_frame(struct h4p_info *info,
-				      struct sk_buff *skb)
+static inline void h4p_recv_frame(struct h4p_info *info, struct sk_buff *skb)
 {
 	if (info->initing) {
 		switch (bt_cb(skb)->pkt_type) {
@@ -500,8 +486,8 @@ static inline void h4p_handle_byte(struct h4p_info *info, u8 byte)
 
 static void h4p_rx_tasklet(unsigned long data)
 {
-	u8 byte;
 	struct h4p_info *info = (struct h4p_info *)data;
+	u8 byte;
 
 	BT_DBG("rx_tasklet woke up");
 
@@ -512,7 +498,7 @@ static void h4p_rx_tasklet(unsigned long data)
 			info->garbage_bytes--;
 			continue;
 		}
-		if (info->rx_skb == NULL) {
+		if (!info->rx_skb) {
 			info->rx_skb = bt_skb_alloc(HCI_MAX_FRAME_SIZE,
 						    GFP_ATOMIC | GFP_DMA);
 			if (!info->rx_skb) {
@@ -528,14 +514,14 @@ static void h4p_rx_tasklet(unsigned long data)
 	}
 
 	if (!info->rx_enabled) {
-		if (h4p_inb(info, UART_LSR) & UART_LSR_TEMT &&
-						  info->autorts) {
+		if ((h4p_inb(info, UART_LSR) & UART_LSR_TEMT) &&
+		    info->autorts) {
 			__h4p_set_auto_ctsrts(info, 0 , UART_EFR_RTS);
 			info->autorts = 0;
 		}
 		/* Flush posted write to avoid spurious interrupts */
 		h4p_inb(info, UART_OMAP_SCR);
-		h4p_set_clk(info, &info->rx_clocks_en, 0);
+		h4p_set_clk(info, &info->rx_clocks_en, false);
 	}
 
 finish_rx:
@@ -544,9 +530,9 @@ finish_rx:
 
 static void h4p_tx_tasklet(unsigned long data)
 {
-	unsigned int sent = 0;
-	struct sk_buff *skb;
 	struct h4p_info *info = (struct h4p_info *)data;
+	struct sk_buff *skb;
+	unsigned int sent = 0;
 
 	BT_DBG("tx_tasklet woke up");
 
@@ -554,18 +540,18 @@ static void h4p_tx_tasklet(unsigned long data)
 		if (h4p_inb(info, UART_LSR) & UART_LSR_TEMT) {
 			if (info->autorts && !info->rx_enabled) {
 				__h4p_set_auto_ctsrts(info, 0,
-							  UART_EFR_RTS);
+						      UART_EFR_RTS);
 				info->autorts = 0;
 			}
 			if (!info->autorts && info->rx_enabled) {
 				__h4p_set_auto_ctsrts(info, 1,
-							  UART_EFR_RTS);
+						      UART_EFR_RTS);
 				info->autorts = 1;
 			}
 		} else {
 			h4p_outb(info, UART_OMAP_SCR,
-				     h4p_inb(info, UART_OMAP_SCR) |
-				     UART_OMAP_SCR_EMPTY_THR);
+				 h4p_inb(info, UART_OMAP_SCR)
+				 | UART_OMAP_SCR_EMPTY_THR);
 			goto finish_tx;
 		}
 	}
@@ -576,8 +562,7 @@ static void h4p_tx_tasklet(unsigned long data)
 		BT_DBG("skb ready");
 		if (h4p_inb(info, UART_LSR) & UART_LSR_TEMT) {
 			h4p_outb(info, UART_IER,
-				     h4p_inb(info, UART_IER) &
-				     ~UART_IER_THRI);
+				 h4p_inb(info, UART_IER) & ~UART_IER_THRI);
 			h4p_inb(info, UART_OMAP_SCR);
 			h4p_disable_tx(info);
 			return;
@@ -604,10 +589,10 @@ static void h4p_tx_tasklet(unsigned long data)
 		skb_queue_head(&info->txq, skb);
 	}
 
-	h4p_outb(info, UART_OMAP_SCR, h4p_inb(info, UART_OMAP_SCR) &
-						     ~UART_OMAP_SCR_EMPTY_THR);
-	h4p_outb(info, UART_IER, h4p_inb(info, UART_IER) |
-						 UART_IER_THRI);
+	h4p_outb(info, UART_OMAP_SCR,
+		 h4p_inb(info, UART_OMAP_SCR) & ~UART_OMAP_SCR_EMPTY_THR);
+	h4p_outb(info, UART_IER,
+		 h4p_inb(info, UART_IER) | UART_IER_THRI);
 
 finish_tx:
 	/* Flush posted write to avoid spurious interrupts */
@@ -655,22 +640,20 @@ static irqreturn_t h4p_interrupt(int irq, void *data)
 static irqreturn_t h4p_wakeup_interrupt(int irq, void *dev_inst)
 {
 	struct h4p_info *info = dev_inst;
-	int should_wakeup;
-	struct hci_dev *hdev;
+	bool should_wakeup;
 
 	BT_DBG("[wakeup irq]");
-	
+
 	if (!info->hdev)
 		return IRQ_HANDLED;
 
-	should_wakeup = gpio_get_value(info->host_wakeup_gpio);
-	hdev = info->hdev;
+	should_wakeup = !!gpio_get_value(info->host_wakeup_gpio);
 
 	if (info->initing) {
 		if (should_wakeup == 1)
 			complete_all(&info->test_completion);
 
-		printk("wakeup irq handled\n");
+		BT_DBG("wakeup irq handled");
 
 		return IRQ_HANDLED;
 	}
@@ -753,8 +736,7 @@ static int h4p_bt_wakeup_test(struct h4p_info *info)
 	 * sleep).
 	 * Host polls the UART_CTS line, waiting for it to be de-asserted.
 	 */
-	int err;
-	int ret = -ECOMM;
+	int err = 0;
 
 	if (!info)
 		return -EINVAL;
@@ -766,8 +748,7 @@ static int h4p_bt_wakeup_test(struct h4p_info *info)
 	err = h4p_wait_for_cts(info, 0, 100);
 	if (err) {
 		dev_warn(info->dev,
-				"bt_wakeup_test: fail: CTS low timed out: %d\n",
-				err);
+			 "bt_wakeup_test: fail: CTS low timed out: %d\n", err);
 		goto out;
 	}
 
@@ -775,8 +756,8 @@ static int h4p_bt_wakeup_test(struct h4p_info *info)
 	err = h4p_wait_for_cts(info, 1, 100);
 	if (err) {
 		dev_warn(info->dev,
-				"bt_wakeup_test: fail: CTS high timed out: %d\n",
-				err);
+			 "bt_wakeup_test: fail: CTS high timed out: %d\n",
+			 err);
 		goto out;
 	}
 
@@ -784,19 +765,16 @@ static int h4p_bt_wakeup_test(struct h4p_info *info)
 	err = h4p_wait_for_cts(info, 0, 100);
 	if (err) {
 		dev_warn(info->dev,
-				"bt_wakeup_test: fail: CTS re-low timed out: %d\n",
-				err);
+			 "bt_wakeup_test: fail: CTS re-low timed out: %d\n",
+			 err);
 		goto out;
 	}
 
-	ret = 0;
-
 out:
-
 	/* Re-enable wakeup interrupts */
 	enable_irq(gpio_to_irq(info->host_wakeup_gpio));
 
-	return ret;
+	return err;
 }
 
 static int h4p_hci_set_bdaddr(struct hci_dev *hdev, const bdaddr_t *bdaddr)
@@ -804,8 +782,8 @@ static int h4p_hci_set_bdaddr(struct hci_dev *hdev, const bdaddr_t *bdaddr)
 	struct sk_buff *skb;
 	long ret;
 
-	printk("Set bdaddr... %pMR\n", bdaddr);
-	
+	BT_DBG("Set bdaddr... %pMR", bdaddr);
+
 	skb = __hci_cmd_sync(hdev, 0xfc01, 6, bdaddr, HCI_INIT_TIMEOUT);
 	if (IS_ERR(skb)) {
 		ret = PTR_ERR(skb);
@@ -823,13 +801,13 @@ static void h4p_deinit(struct hci_dev *hdev)
 	struct h4p_info *info = hci_get_drvdata(hdev);
 
 	h4p_hci_flush(hdev);
-	h4p_set_clk(info, &info->tx_clocks_en, 1);
-	h4p_set_clk(info, &info->rx_clocks_en, 1);
+	h4p_set_clk(info, &info->tx_clocks_en, true);
+	h4p_set_clk(info, &info->rx_clocks_en, true);
 	h4p_reset_uart(info);
 	del_timer_sync(&info->lazy_release);
-	h4p_set_clk(info, &info->tx_clocks_en, 0);
-	h4p_set_clk(info, &info->rx_clocks_en, 0);
-	gpio_set_value(info->reset_gpio, 0);	
+	h4p_set_clk(info, &info->tx_clocks_en, false);
+	h4p_set_clk(info, &info->rx_clocks_en, false);
+	gpio_set_value(info->reset_gpio, 0);
 	gpio_set_value(info->bt_wakeup_gpio, 0);
 	kfree_skb(info->rx_skb);
 	info->rx_skb = NULL;
@@ -843,21 +821,21 @@ static int h4p_setup(struct hci_dev *hdev)
 
 	/* TI1271 has HW bug and boot up might fail. Nokia retried up to 3x. */
 
-	h4p_set_clk(info, &info->tx_clocks_en, 1);
-	h4p_set_clk(info, &info->rx_clocks_en, 1);
+	h4p_set_clk(info, &info->tx_clocks_en, true);
+	h4p_set_clk(info, &info->rx_clocks_en, true);
 
 	if (!hw_inited) {
 		h4p_set_auto_ctsrts(info, 1, UART_EFR_CTS | UART_EFR_RTS);
 		info->autorts = 1;
 
 		info->initing = 1;
-		printk("hci_setup\n");
-		
+		BT_DBG("hci_setup");
+
 		err = h4p_send_negotiation(info);
 		if (err < 0)
 			goto err_clean;
 	}
-	
+
 	/*
 	 * Disable smart-idle as UART TX interrupts
 	 * are not wake-up capable
@@ -870,13 +848,12 @@ static int h4p_setup(struct hci_dev *hdev)
 		goto err_clean;
 	}
 
-
 	h4p_set_auto_ctsrts(info, 0, UART_EFR_RTS);
 	h4p_set_rts(info, 0);
 	h4p_change_speed(info, BC4_MAX_BAUD_RATE);
 	h4p_set_auto_ctsrts(info, 1, UART_EFR_RTS);
 
-	info->pm_enabled = 1;
+	info->pm_enabled = true;
 
 	err = h4p_bt_wakeup_test(info);
 	if (err < 0) {
@@ -885,25 +862,18 @@ static int h4p_setup(struct hci_dev *hdev)
 	}
 
 	spin_lock_irqsave(&info->lock, flags);
-	info->rx_enabled = gpio_get_value(info->host_wakeup_gpio);
+	info->rx_enabled = !!gpio_get_value(info->host_wakeup_gpio);
 	h4p_set_clk(info, &info->rx_clocks_en, info->rx_enabled);
 	spin_unlock_irqrestore(&info->lock, flags);
 
 	h4p_set_clk(info, &info->tx_clocks_en, 0);
 
-#if 0
-	{
-		char bdaddr[] = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06 };
-		h4p_hci_set_bdaddr(hdev, bdaddr);
-	}
-#endif
-	
 	info->initing = 0;
 	hw_inited = 1;
 	return 0;
 
 err_clean:
-	printk("hci_setup: something failed, should do the clean up\n");
+	BT_ERR("hci_setup: something failed, should do the clean up");
 	h4p_hci_flush(hdev);
 	h4p_deinit(hdev);
 	return err;
@@ -913,7 +883,6 @@ static int h4p_hci_setup(struct hci_dev *hdev)
 {
 	return h4p_setup(hdev);
 }
-
 
 static int h4p_boot(struct hci_dev *hdev)
 {
@@ -925,7 +894,7 @@ static int h4p_boot(struct hci_dev *hdev)
 	info->rx_count = 0;
 	info->garbage_bytes = 0;
 	info->rx_skb = NULL;
-	info->pm_enabled = 0;
+	info->pm_enabled = false;
 	init_completion(&info->fw_completion);
 	h4p_set_clk(info, &info->tx_clocks_en, 1);
 	h4p_set_clk(info, &info->rx_clocks_en, 1);
@@ -951,12 +920,10 @@ static int h4p_hci_send_frame(struct hci_dev *hdev, struct sk_buff *skb)
 	struct h4p_info *info = hci_get_drvdata(hdev);
 	int err = 0;
 
-	BT_DBG("hci_send_frame: dev %p, skb %p\n", hdev, skb);
+	BT_DBG("hci_send_frame: dev %p, skb %p", hdev, skb);
 
-	if (!test_bit(HCI_RUNNING, &hdev->flags)) {
-		dev_warn(info->dev, "Frame for non-running device\n");
-		return -EIO;
-	}
+	if (!test_bit(HCI_RUNNING, &hdev->flags))
+		return -EBUSY;
 
 	switch (bt_cb(skb)->pkt_type) {
 	case HCI_COMMAND_PKT:
@@ -971,12 +938,12 @@ static int h4p_hci_send_frame(struct hci_dev *hdev, struct sk_buff *skb)
 	}
 
 	/* Push frame type to skb */
-	*skb_push(skb, 1) = (bt_cb(skb)->pkt_type);
+	*skb_push(skb, 1) = bt_cb(skb)->pkt_type;
 	/* We should always send word aligned data to h4+ devices */
 	if (skb->len % 2) {
-		err = skb_pad(skb, 1);
-		if (!err)
-			*skb_put(skb, 1) = 0x00;
+		if (skb_pad(skb, 1))
+			return -ENOMEM;
+		*skb_put(skb, 1) = 0x00;
 	}
 	if (err)
 		return err;
@@ -995,7 +962,7 @@ static int h4p_probe_dt(struct platform_device *pdev, struct h4p_info *info)
 	struct device_node *node;
 	struct device_node *uart = pdev->dev.of_node;
 	u32 val;
-	struct resource *mem;	
+	struct resource *mem;
 
 	node = of_get_child_by_name(uart, "device");
 
@@ -1003,13 +970,14 @@ static int h4p_probe_dt(struct platform_device *pdev, struct h4p_info *info)
 		return -ENODATA;
 
 	info->chip_type = 3;	/* Bcm2048 */
-	
-	if (of_property_read_u32(node, "bt-sysclk", &val)) return -EINVAL;
+
+	if (of_property_read_u32(node, "bt-sysclk", &val))
+		return -EINVAL;
 	info->bt_sysclk = val;
 
 	info->reset_gpio       = of_get_named_gpio(node, "reset-gpios", 0);
 	info->host_wakeup_gpio = of_get_named_gpio(node, "host-wakeup-gpios", 0);
-	info->bt_wakeup_gpio   = of_get_named_gpio(node, "bluetooth-wakeup-gpios", 0);	
+	info->bt_wakeup_gpio   = of_get_named_gpio(node, "bluetooth-wakeup-gpios", 0);
 
 	if (!uart) {
 		dev_err(&pdev->dev, "UART link not provided\n");
@@ -1022,7 +990,7 @@ static int h4p_probe_dt(struct platform_device *pdev, struct h4p_info *info)
 	info->uart_base = devm_ioremap_resource(&pdev->dev, mem);
 
 	info->uart_iclk = of_clk_get_by_name(uart, "ick");
-	info->uart_fclk = of_clk_get_by_name(uart, "fck");	
+	info->uart_fclk = of_clk_get_by_name(uart, "fck");
 
 	printk("DT: have neccessary data\n");
 	return 0;
@@ -1036,13 +1004,13 @@ static int h4p_probe(struct platform_device *pdev)
 
 	dev_info(&pdev->dev, "Registering HCI H4P device\n");
 	info = devm_kzalloc(&pdev->dev, sizeof(struct h4p_info),
-			GFP_KERNEL);
+			    GFP_KERNEL);
 	if (!info)
 		return -ENOMEM;
 
 	info->dev = &pdev->dev;
-	info->tx_enabled = 1;
-	info->rx_enabled = 1;
+	info->tx_enabled = true;
+	info->rx_enabled = true;
 	spin_lock_init(&info->lock);
 	spin_lock_init(&info->clocks_lock);
 	skb_queue_head_init(&info->txq);
@@ -1096,19 +1064,19 @@ static int h4p_probe(struct platform_device *pdev)
 	}
 
 	err = devm_request_irq(&pdev->dev, gpio_to_irq(info->host_wakeup_gpio),
-			  h4p_wakeup_interrupt,  IRQF_TRIGGER_FALLING |
-			  IRQF_TRIGGER_RISING | IRQF_DISABLED,
-			  "h4p_wkup", info);
+			       h4p_wakeup_interrupt,  IRQF_TRIGGER_FALLING |
+			       IRQF_TRIGGER_RISING | IRQF_DISABLED,
+			       "h4p_wkup", info);
 	if (err < 0) {
 		dev_err(info->dev, "nokia_h4p: unable to get wakeup IRQ %d\n",
-			  gpio_to_irq(info->host_wakeup_gpio));
+			gpio_to_irq(info->host_wakeup_gpio));
 		return err;
 	}
 
 	err = irq_set_irq_wake(gpio_to_irq(info->host_wakeup_gpio), 1);
 	if (err < 0) {
 		dev_err(info->dev, "nokia_h4p: unable to set wakeup for IRQ %d\n",
-				gpio_to_irq(info->host_wakeup_gpio));
+			gpio_to_irq(info->host_wakeup_gpio));
 		return err;
 	}
 
@@ -1145,14 +1113,14 @@ static int h4p_probe(struct platform_device *pdev)
 	hdev->send = h4p_hci_send_frame;
 	hdev->set_bdaddr = h4p_hci_set_bdaddr;
 
-#ifndef TEST
 	set_bit(HCI_QUIRK_INVALID_BDADDR, &hdev->quirks);
-#endif
 	SET_HCIDEV_DEV(hdev, info->dev);
 
-	if (hci_register_dev(hdev) >= 0)
-		return h4p_boot(hdev);
+	if (hci_register_dev(hdev) < 0)
+		goto err;
+	return h4p_boot(hdev);
 
+err:
 	dev_err(info->dev, "hci_register failed %s.\n", hdev->name);
 	hci_free_dev(info->hdev);
 	return -ENODEV;
@@ -1176,7 +1144,7 @@ static const struct of_device_id h4p_of_match[] = {
 };
 MODULE_DEVICE_TABLE(of, h4p_of_match);
 
-static struct platform_driver h4p_driver = {
+static const struct platform_driver h4p_driver = {
 	.probe		= h4p_probe,
 	.remove		= h4p_remove,
 	.driver		= {
@@ -1189,6 +1157,6 @@ static struct platform_driver h4p_driver = {
 module_platform_driver(h4p_driver);
 
 MODULE_ALIAS("platform:nokia_h4p");
-MODULE_DESCRIPTION("Bluetooth h4 driver with nokia extensions");
+MODULE_DESCRIPTION("Bluetooth H4 driver with nokia extensions");
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Ville Tervo");
