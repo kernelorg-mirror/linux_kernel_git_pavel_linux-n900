@@ -565,7 +565,7 @@
 		gpios = <&gpio3 24 GPIO_ACTIVE_HIGH>; /* 88 */
 
 		flash {
-			flash-timeout-microsec = <500000>;
+			flash-timeout-us = <500000>;
 			flash-max-microamp = <320000>;
 			max-microamp = <50000>;
 		};
