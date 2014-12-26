@@ -28,6 +28,10 @@ config HWMON_VID
 	tristate
 	default n
 
+config SENSORS_OMAP34XX
+	tristate "TI OMAP34xx internal temperature sensor"
+	depends on ARCH_OMAP3 && HIGH_RES_TIMERS
+
 config HWMON_DEBUG_CHIP
 	bool "Hardware Monitoring Chip debugging messages"
 	default n
