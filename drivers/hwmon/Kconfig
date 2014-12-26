@@ -29,7 +29,7 @@ config HWMON_VID
 	default n
 
 config SENSORS_OMAP34XX
-	tristate "TI OMAP34xx internal temperature sensor"
+	bool "TI OMAP34xx internal temperature sensor"
 	depends on ARCH_OMAP3 && HIGH_RES_TIMERS
 
 config HWMON_DEBUG_CHIP
