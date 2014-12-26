@@ -107,8 +107,10 @@ static void omap34xx_update(struct omap34xx_data *data)
 	if (!data->valid
 	    || time_after(jiffies, data->last_updated + HZ)) {
 
-		clk_enable(data->clk_32k);
+		printk("omap34xx_update: updating temperature\n");
 
+		clk_prepare_enable(data->clk_32k);
+#if 1
 		temp_sensor_reg = omap_ctrl_readl(OMAP343X_CONTROL_TEMP_SENSOR);
 		temp_sensor_reg |= TEMP_SENSOR_SOC;
 		omap_ctrl_writel(temp_sensor_reg, OMAP343X_CONTROL_TEMP_SENSOR);
@@ -130,8 +132,12 @@ static void omap34xx_update(struct omap34xx_data *data)
 		data->last_updated = jiffies;
 		data->valid = 1;
 
+		printk("omap34xx_update: temperature %d\n", data->temp);
+
 err:
-		clk_disable(data->clk_32k);
+#endif				
+		clk_disable_unprepare(data->clk_32k);
+
 	}
 
 	mutex_unlock(&data->update_lock);
@@ -193,6 +199,10 @@ static int omap34xx_temp_probe(void)
 	data->name = "omap34xx_temp";
 
 	data->clk_32k = clk_get(&omap34xx_temp_device.dev, "ts_fck");
+	if (!data->clk_32k) {
+		printk("can't get clk_32k\n");
+		goto exit_free;
+	}
 	if (IS_ERR(data->clk_32k)) {
 		err = PTR_ERR(data->clk_32k);
 		goto exit_free;
