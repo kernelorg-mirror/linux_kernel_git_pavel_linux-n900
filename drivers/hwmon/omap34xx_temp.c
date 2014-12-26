@@ -29,8 +29,9 @@
 #include <linux/err.h>
 #include <linux/platform_device.h>
 #include <linux/io.h>
-#include <mach/omap34xx.h>
-#include <mach/control.h>
+#include <linux/slab.h>
+
+#include "../../arch/arm/mach-omap2/control.h"
 
 #define TEMP_SENSOR_SOC BIT(8)
 #define TEMP_SENSOR_EOCZ BIT(7)
@@ -169,7 +170,7 @@ static SENSOR_DEVICE_ATTR_2(temp1_input_raw, S_IRUGO, show_temp_raw,
 				NULL, 0, 0);
 static DEVICE_ATTR(name, S_IRUGO, show_name, NULL);
 
-static int __devinit omap34xx_temp_probe(void)
+static int omap34xx_temp_probe(void)
 {
 	int err;
 	struct omap34xx_data *data;
