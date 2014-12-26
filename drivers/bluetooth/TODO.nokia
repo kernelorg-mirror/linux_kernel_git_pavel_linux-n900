@@ -1,0 +1,20 @@
+> +++ b/drivers/bluetooth/hci_h4p.h
+
+can we please get the naming straight. File names do not start with
+hci_ anymore. We moved away from it since that term is too generic.
+
+> +     struct timer_list lazy_release;
+
+Timer? Not delayed work?
+
+> +/**
+> + * struct hci_h4p_platform data - hci_h4p Platform data structure
+> + */
+> +struct hci_h4p_platform_data {
+
+please have a proper name here. For example
+btnokia_h4p_platform_data.
+
+Please send patches to Greg Kroah-Hartman <greg@kroah.com> and Cc:
+Pavel Machek <pavel@ucw.cz>
+

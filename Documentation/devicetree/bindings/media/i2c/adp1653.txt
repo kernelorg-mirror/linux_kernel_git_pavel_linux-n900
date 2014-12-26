@@ -18,7 +18,7 @@ Required properties of the LED child node:
 Required properties of the flash LED child node:
 
 - flash-max-microamp : see Documentation/devicetree/bindings/leds/common.txt
-- flash-timeout-microsec : see Documentation/devicetree/bindings/leds/common.txt
+- flash-timeout-us : see Documentation/devicetree/bindings/leds/common.txt
 
 Example:
 
@@ -28,7 +28,7 @@ Example:
                 gpios = <&gpio3 24 GPIO_ACTIVE_HIGH>; /* 88 */
 
 		flash {
-                        flash-timeout-microsec = <500000>;
+                        flash-timeout-us = <500000>;
                         flash-max-microamp = <320000>;
                         max-microamp = <50000>;
 		};

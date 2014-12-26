@@ -21,9 +21,6 @@
 #include <net/bluetooth/hci_core.h>
 #include <net/bluetooth/hci.h>
 
-#include <linux/platform_data/bt-nokia-h4p.h>
-
-
 #include "common.h"
 #include <linux/omap-dma.h>
 #include <linux/platform_data/ssi.h>
@@ -61,6 +58,7 @@
 #include "soc.h"
 #include "omap-secure.h"
 
+#if 0
 /* Allow C6 state {1, 3120, 5788, 10000} */
 #define H4P_WAKEUP_LATENCY	5700
 
@@ -74,7 +72,7 @@ static void rx51_bt_set_pm_limits(struct device *dev, bool set)
 #define RX51_HCI_H4P_HOSTWU_GPIO	101
 #define RX51_HCI_H4P_BTWU_GPIO		37
 
-struct hci_h4p_platform_data bt_plat_data = {
+struct h4p_platform_data bt_plat_data = {
 	.chip_type		= 3,
 	.bt_sysclk		= 2,
 	.bt_wakeup_gpio		= RX51_HCI_H4P_BTWU_GPIO,
@@ -104,6 +102,7 @@ int rx51_bt_init(void *foo)
 	platform_device_register(&rx51_bt_device);
 	return 0;
 }
+#endif
 
 #define ADP1653_GPIO_ENABLE	88	/* Used for resetting ADP1653 */
 #define ADP1653_GPIO_INT	167	/* Fault interrupt */
@@ -251,5 +250,5 @@ static int __init rx51_camera_hw_init(void)
 	return 0;
 }
 
-__initcall(rx51_bt_init);
+//__initcall(rx51_bt_init);
 __initcall(rx51_camera_hw_init);
