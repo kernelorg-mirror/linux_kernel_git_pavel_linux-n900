@@ -15,7 +15,6 @@ Optional properties for child nodes:
      "timer" - LED flashes at a fixed, configurable rate
 
 - max-microamp : maximum intensity in microamperes of the LED
-	         (torch LED for flash devices)
 - flash-max-microamp : maximum intensity in microamperes of the
                        flash LED; it is mandatory if the LED should
 		       support the flash mode
