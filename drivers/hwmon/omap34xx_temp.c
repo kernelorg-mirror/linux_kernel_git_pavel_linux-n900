@@ -15,10 +15,6 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
 #include <linux/clk.h>
@@ -63,7 +59,7 @@ struct omap34xx_data {
 };
 
 static struct platform_device omap34xx_temp_device = {
-	.name 	= "omap34xx_temp",
+	.name	= "omap34xx_temp",
 	.id	= -1,
 };
 
@@ -176,8 +172,7 @@ static int omap34xx_temp_probe(void)
 
 	err = platform_device_register(&omap34xx_temp_device);
 	if (err) {
-		printk(KERN_ERR
-			"Unable to register omap34xx temperature device\n");
+		pr_err("Unable to register omap34xx temperature device\n");
 		goto exit;
 	}
 
