@@ -130,9 +130,10 @@ static inline bool wait_for_eocz(struct omap3_temp_data *data,
 	ktime_t timeout, expire;
 	u32 temp_sensor_reg, eocz_mask;
 
+	BUG_ON(min_delay < 0);
+	BUG_ON(max_delay < 0);
+
 	eocz_mask = BIT(data->hwdata->eocz_bit);
-	level &= 1;
-	level *= eocz_mask;
 
 	expire = ktime_add_ns(ktime_get(), max_delay);
 	timeout = ktime_set(0, min_delay);
@@ -140,9 +141,9 @@ static inline bool wait_for_eocz(struct omap3_temp_data *data,
 	schedule_hrtimeout(&timeout, HRTIMER_MODE_REL);
 	do {
 		regmap_read(data->syscon, SYSCON_TEMP_REG, &temp_sensor_reg);
-		if ((temp_sensor_reg & eocz_mask) == level)
+		if (!!(temp_sensor_reg & eocz_mask) == level)
 			return true;
-	} while (ktime_us_delta(expire, ktime_get()) > 0);
+	} while (ktime_after(expire, ktime_get()));
 
 	return false;
 }
@@ -153,14 +154,16 @@ static int omap3_temp_update(struct omap3_temp_data *data)
 	u32 temp_sensor_reg;
 	u32 soc_mask = BIT(data->hwdata->soc_bit);
 
+	printk("mutex,");
 	mutex_lock(&data->update_lock);
 
 	if (!data->valid || time_after(jiffies, data->last_updated + HZ)) {
+		printk("clock,");
 		clk_prepare_enable(data->clk_32k);
 
 		regmap_update_bits(data->syscon, SYSCON_TEMP_REG,
 				   soc_mask, soc_mask);
-
+		printk("w1,");
 		if (!wait_for_eocz(data, EOCZ_MIN_RISING_DELAY,
 		    EOCZ_MAX_RISING_DELAY, 1)) {
 			e = -EIO;
@@ -169,6 +172,7 @@ static int omap3_temp_update(struct omap3_temp_data *data)
 
 		regmap_update_bits(data->syscon, SYSCON_TEMP_REG, soc_mask, 0);
 
+		printk("w2,");
 		if (!wait_for_eocz(data, EOCZ_MIN_FALLING_DELAY,
 		    EOCZ_MAX_FALLING_DELAY, 0)) {
 			e = -EIO;
@@ -181,10 +185,13 @@ static int omap3_temp_update(struct omap3_temp_data *data)
 		data->valid = true;
 
 err:
+		printk("unprepare,");
 		clk_disable_unprepare(data->clk_32k);
 	}
 
+	printk("unlock,");
 	mutex_unlock(&data->update_lock);
+	printk("ok\n");
 	return e;
 }
 
@@ -194,6 +201,8 @@ static ssize_t show_temp(struct device *dev,
 	struct omap3_temp_data *data = dev_get_drvdata(dev);
 	int temp;
 	int ret;
+
+	int i;
 
 	ret = omap3_temp_update(data);
 	if (ret < 0)
@@ -234,6 +243,7 @@ static int omap3_temp_probe(struct platform_device *pdev)
 	struct omap3_temp_data *data;
 	const struct of_device_id *of_id;
 	int err;
+
 
 	data = devm_kzalloc(&pdev->dev, sizeof(*data), GFP_KERNEL);
 	if (!data)
