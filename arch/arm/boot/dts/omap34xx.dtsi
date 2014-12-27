@@ -38,6 +38,13 @@
 			pinctrl-single,function-mask = <0xff1f>;
 		};
 	};
+
+	omap3_temperature_sensor: temperature-sensor {
+		compatible = "ti,omap34xx-temperature-sensor";
+		syscon = <&omap3_scm_general>;
+		clocks = <&ts_fck>;
+		clock-names = "fck";
+	};
 };
 
 &ssi {
