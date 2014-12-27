@@ -35,21 +35,29 @@
 /* 32.768Khz clock speed in nano seconds */
 #define CLOCK_32K_SPEED_NS 30518
 
-/* minimum delay for EOCZ rise after SOC rise is
- * 11 cycles of the 32.768Khz clock */
+/*
+ * minimum delay for EOCZ rise after SOC rise is
+ * 11 cycles of the 32.768Khz clock
+ */
 #define EOCZ_MIN_RISING_DELAY (11 * CLOCK_32K_SPEED_NS)
 
-/* From docs, maximum delay for EOCZ rise after SOC rise is
+/*
+ * From docs, maximum delay for EOCZ rise after SOC rise is
  * 14 cycles of the 32.768Khz clock. But after some experiments,
- * 24 cycles as maximum is safer. */
+ * 24 cycles as maximum is safer.
+ */
 #define EOCZ_MAX_RISING_DELAY (24 * CLOCK_32K_SPEED_NS)
 
-/* minimum delay for EOCZ falling is
- * 36 cycles of the 32.768Khz clock */
+/*
+ * minimum delay for EOCZ falling is
+ * 36 cycles of the 32.768Khz clock 
+ */
 #define EOCZ_MIN_FALLING_DELAY (36 * CLOCK_32K_SPEED_NS)
 
-/* maximum delay for EOCZ falling is
- * 40 cycles of the 32.768Khz clock */
+/*
+ * maximum delay for EOCZ falling is
+ * 40 cycles of the 32.768Khz clock 
+ */
 #define EOCZ_MAX_FALLING_DELAY (40 * CLOCK_32K_SPEED_NS)
 
 /* temperature register offset in the syscon register area */
@@ -116,8 +124,8 @@ struct omap3_temp_data {
 	bool valid;
 };
 
-static inline u32 wait_for_eocz(int min_delay, int max_delay, u32 level,
-				struct omap3_temp_data *data)
+static inline bool wait_for_eocz(struct omap3_temp_data *data,
+				 int min_delay, int max_delay, u32 level)
 {
 	ktime_t timeout, expire;
 	u32 temp_sensor_reg, eocz_mask;
@@ -133,10 +141,10 @@ static inline u32 wait_for_eocz(int min_delay, int max_delay, u32 level,
 	do {
 		regmap_read(data->syscon, SYSCON_TEMP_REG, &temp_sensor_reg);
 		if ((temp_sensor_reg & eocz_mask) == level)
-			break;
+			return true;
 	} while (ktime_us_delta(expire, ktime_get()) > 0);
 
-	return (temp_sensor_reg & eocz_mask) == level;
+	return false;
 }
 
 static int omap3_temp_update(struct omap3_temp_data *data)
@@ -153,16 +161,16 @@ static int omap3_temp_update(struct omap3_temp_data *data)
 		regmap_update_bits(data->syscon, SYSCON_TEMP_REG,
 				   soc_mask, soc_mask);
 
-		if (!wait_for_eocz(EOCZ_MIN_RISING_DELAY,
-		    EOCZ_MAX_RISING_DELAY, 1, data)) {
+		if (!wait_for_eocz(data, EOCZ_MIN_RISING_DELAY,
+		    EOCZ_MAX_RISING_DELAY, 1)) {
 			e = -EIO;
 			goto err;
 		}
 
 		regmap_update_bits(data->syscon, SYSCON_TEMP_REG, soc_mask, 0);
 
-		if (!wait_for_eocz(EOCZ_MIN_FALLING_DELAY,
-		    EOCZ_MAX_FALLING_DELAY, 0, data)) {
+		if (!wait_for_eocz(data, EOCZ_MIN_FALLING_DELAY,
+		    EOCZ_MAX_FALLING_DELAY, 0)) {
 			e = -EIO;
 			goto err;
 		}
