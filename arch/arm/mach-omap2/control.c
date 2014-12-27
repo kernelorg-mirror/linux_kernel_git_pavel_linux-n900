@@ -611,6 +611,3 @@ void __init omap3_ctrl_init(void)
 	omap3_ctrl_setup_d2d_padconf();
 }
 #endif /* CONFIG_ARCH_OMAP3 && CONFIG_PM */
-
-EXPORT_SYMBOL_GPL(omap_ctrl_writel);
-EXPORT_SYMBOL_GPL(omap_ctrl_readl);
