@@ -1,0 +1,94 @@
+/*
+ * OMAP4 thermal driver.
+ *
+ * Copyright (C) 2011-2012 Texas Instruments Inc.
+ * Copyright (C) 2014 Pavel Machek <pavel@ucw.cz>
+ *
+ * This software is licensed under the terms of the GNU General Public
+ * License version 2, as published by the Free Software Foundation, and
+ * may be copied, distributed, and modified under those terms.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ */
+
+#include "ti-thermal.h"
+#include "ti-bandgap.h"
+
+/*
+ * OMAP34XX has one instance of thermal sensor for MPU
+ * need to describe the individual bit fields
+ */
+static struct temp_sensor_registers
+omap34xx_mpu_temp_sensor_registers = {
+	.temp_sensor_ctrl = 0,
+	.bgap_tempsoff_mask = 0, /* Unused, we don't have POWER_SWITCH */
+	.bgap_soc_mask = BIT(8),
+	.bgap_eocz_mask = BIT(7),
+	.bgap_dtemp_mask = 0x7f,
+
+	.bgap_mode_ctrl = 0,
+	.mode_ctrl_mask = 0,	/* Unused, no MODE_CONFIG */
+
+	.bgap_efuse = 0,
+};
+
+/* Thresholds and limits for OMAP34XX MPU temperature sensor */
+static struct temp_sensor_data omap34xx_mpu_temp_sensor_data = {
+	.min_freq = 100000,
+	.max_freq = 1000000,
+	.max_temp = -99000,
+	.min_temp = 99000,
+	.hyst_val = 5000,
+};
+
+/*
+ * Temperature values in milli degree celsius
+ * ADC code values from 530 to 923
+ */
+static const int
+omap34xx_adc_to_temp[] = {
+	-38000, -35000, -34000, -32000, -30000, -28000, -26000, -24000, -22000,
+	-20000, -18000, -17000, -15000, -13000, -12000, -10000, -8000, -6000,
+	-5000, -3000, -1000, 0, 2000, 3000, 5000, 6000, 8000, 10000, 12000,
+	13000, 15000, 17000, 19000, 21000, 23000, 25000, 27000, 28000, 30000,
+	32000, 33000, 35000, 37000, 38000, 40000, 42000, 43000, 45000, 47000,
+	48000, 50000, 52000, 53000, 55000, 57000, 58000, 60000, 62000, 64000,
+	66000, 68000, 70000, 71000, 73000, 75000, 77000, 78000, 80000, 82000,
+	83000, 85000, 87000, 88000, 90000, 92000, 93000, 95000, 97000, 98000,
+	100000, 102000, 103000, 105000, 107000, 109000, 111000, 113000, 115000,
+	117000, 118000, 120000, 122000, 123000,
+};
+
+/* OMAP34XX data */
+const struct ti_bandgap_data omap34xx_data = {
+	.features = TI_BANDGAP_FEATURE_CLK_CTRL,
+	.fclock_name = "ts_fclk",
+	.div_ck_name = "ts_fclk",
+	.conv_table = omap34xx_adc_to_temp,
+	.adc_start_val = 0,
+	.adc_end_val = 127,
+	.expose_sensor = ti_thermal_expose_sensor,
+	.remove_sensor = ti_thermal_remove_sensor,
+
+	.sensors = {
+		{
+		.registers = &omap34xx_mpu_temp_sensor_registers,
+		.ts_data = &omap34xx_mpu_temp_sensor_data,
+		.domain = "cpu",
+		.slope = 0,
+		.constant = 20000,
+		.slope_pcb = 0,
+		.constant_pcb = 20000,
+		.register_cooling = NULL,
+		.unregister_cooling = NULL,
+		},
+	},
+	.sensor_count = 1,
+
+	.sensor_count = 0,
+};
+
