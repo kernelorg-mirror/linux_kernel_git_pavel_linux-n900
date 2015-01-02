@@ -40,6 +40,7 @@
 #include <linux/of_irq.h>
 #include <linux/of_gpio.h>
 #include <linux/io.h>
+#include <linux/delay.h>
 
 #include "ti-bandgap.h"
 
@@ -1196,9 +1197,13 @@ int ti_bandgap_probe(struct platform_device *pdev)
 	struct ti_bandgap *bgp;
 	int clk_rate, ret = 0, i;
 
+	printk("ti_bandgap: probe\n");
+	mdelay(10000);
+
 	bgp = ti_bandgap_build(pdev);
 	if (IS_ERR(bgp)) {
 		dev_err(&pdev->dev, "failed to fetch platform data\n");
+	mdelay(10000);		
 		return PTR_ERR(bgp);
 	}
 	bgp->dev = &pdev->dev;
@@ -1208,6 +1213,7 @@ int ti_bandgap_probe(struct platform_device *pdev)
 		if (ret) {
 			dev_err(&pdev->dev,
 				"failed to initialize system tshut IRQ\n");
+	mdelay(10000);			
 			return ret;
 		}
 	}
@@ -1220,11 +1226,10 @@ int ti_bandgap_probe(struct platform_device *pdev)
 		goto free_irqs;
 	}
 
-	bgp->div_clk = clk_get(NULL,  bgp->conf->div_ck_name);
+	bgp->div_clk = clk_get(NULL, bgp->conf->div_ck_name);
 	ret = IS_ERR(bgp->div_clk);
 	if (ret) {
-		dev_err(&pdev->dev,
-			"failed to request div_ts_ck clock ref\n");
+		dev_err(&pdev->dev, "failed to request div_ts_ck clock ref\n");
 		ret = PTR_ERR(bgp->div_clk);
 		goto free_irqs;
 	}
@@ -1325,6 +1330,17 @@ int ti_bandgap_probe(struct platform_device *pdev)
 			if (ret)
 				goto remove_last_cooling;
 		}
+
+		printk("bandgap: exposing sensor\n");
+		while (1) {
+			int t;
+
+			t = ti_bandgap_read_temp(bgp, 0);
+			printk("Temperature ADC: %d\n", t);			
+			ti_bandgap_read_temperature(bgp, 0, &t);
+			printk("Temperature: %d\n", t);
+			mdelay(1000);
+		}
 	}
 
 	/*
@@ -1365,6 +1381,8 @@ free_irqs:
 		free_irq(gpio_to_irq(bgp->tshut_gpio), NULL);
 		gpio_free(bgp->tshut_gpio);
 	}
+	printk("ti_bandgap: probe: something failed\n");
+	mdelay(10000);
 
 	return ret;
 }

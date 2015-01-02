@@ -1,5 +1,5 @@
 /*
- * OMAP4 thermal driver.
+ * OMAP3 thermal driver.
  *
  * Copyright (C) 2011-2012 Texas Instruments Inc.
  * Copyright (C) 2014 Pavel Machek <pavel@ucw.cz>
