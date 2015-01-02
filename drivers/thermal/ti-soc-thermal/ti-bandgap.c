@@ -155,6 +155,7 @@ static u32 ti_bandgap_read_temp(struct ti_bandgap *bgp, int id)
 	if (TI_BANDGAP_HAS(bgp, FREEZE_BIT))
 		RMW_BITS(bgp, id, bgap_mask_ctrl, mask_freeze_mask, 0);
 
+	printk("Bandgap: ADC is %d\n", temp);
 	return temp;
 }
 
@@ -861,6 +862,7 @@ int ti_bandgap_read_temperature(struct ti_bandgap *bgp, int id,
 	if (ret)
 		return -EIO;
 
+	printk("Bandgap: temperature is %d\n", temp);
 	*temperature = temp;
 
 	return 0;
@@ -1198,12 +1200,10 @@ int ti_bandgap_probe(struct platform_device *pdev)
 	int clk_rate, ret = 0, i;
 
 	printk("ti_bandgap: probe\n");
-	mdelay(10000);
 
 	bgp = ti_bandgap_build(pdev);
 	if (IS_ERR(bgp)) {
 		dev_err(&pdev->dev, "failed to fetch platform data\n");
-	mdelay(10000);		
 		return PTR_ERR(bgp);
 	}
 	bgp->dev = &pdev->dev;
@@ -1213,7 +1213,6 @@ int ti_bandgap_probe(struct platform_device *pdev)
 		if (ret) {
 			dev_err(&pdev->dev,
 				"failed to initialize system tshut IRQ\n");
-	mdelay(10000);			
 			return ret;
 		}
 	}
@@ -1332,7 +1331,7 @@ int ti_bandgap_probe(struct platform_device *pdev)
 		}
 
 		printk("bandgap: exposing sensor\n");
-		while (1) {
+		{
 			int t;
 
 			t = ti_bandgap_read_temp(bgp, 0);
