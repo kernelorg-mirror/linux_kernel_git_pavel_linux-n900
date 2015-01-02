@@ -89,6 +89,6 @@ const struct ti_bandgap_data omap34xx_data = {
 	},
 	.sensor_count = 1,
 
-	.sensor_count = 0,
+//	.sensor_count = 0,
 };
 
