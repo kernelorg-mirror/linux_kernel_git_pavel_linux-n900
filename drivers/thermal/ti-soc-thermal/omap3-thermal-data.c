@@ -38,8 +38,8 @@ omap34xx_mpu_temp_sensor_registers = {
 
 /* Thresholds and limits for OMAP34XX MPU temperature sensor */
 static struct temp_sensor_data omap34xx_mpu_temp_sensor_data = {
-	.min_freq = 100000,
-	.max_freq = 1000000,
+	.min_freq = 32768,
+	.max_freq = 32768,
 	.max_temp = -99000,
 	.min_temp = 99000,
 	.hyst_val = 5000,
@@ -66,8 +66,8 @@ omap34xx_adc_to_temp[] = {
 /* OMAP34XX data */
 const struct ti_bandgap_data omap34xx_data = {
 	.features = TI_BANDGAP_FEATURE_CLK_CTRL,
-	.fclock_name = "ts_fclk",
-	.div_ck_name = "ts_fclk",
+	.fclock_name = "ts_fck",
+	.div_ck_name = "ts_fck",
 	.conv_table = omap34xx_adc_to_temp,
 	.adc_start_val = 0,
 	.adc_end_val = 127,
