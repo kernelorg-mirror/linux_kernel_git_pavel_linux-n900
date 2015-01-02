@@ -1316,6 +1316,8 @@ int ti_bandgap_probe(struct platform_device *pdev)
 	/* Every thing is good? Then expose the sensors */
 	for (i = 0; i < bgp->conf->sensor_count; i++) {
 		char *domain;
+		extern int ti_thermal_expose_sensor(struct ti_bandgap *bgp, int id,
+					     char *domain);
 
 		if (bgp->conf->sensors[i].register_cooling) {
 			ret = bgp->conf->sensors[i].register_cooling(bgp, i);
@@ -1323,9 +1325,13 @@ int ti_bandgap_probe(struct platform_device *pdev)
 				goto remove_sensors;
 		}
 
+		printk("bandgap: exposing sensor: %p\n", bgp->conf->expose_sensor);
+		
 		if (bgp->conf->expose_sensor) {
+			printk("bandgap: calling %p %p\n", bgp->conf->expose_sensor, ti_thermal_expose_sensor);
 			domain = bgp->conf->sensors[i].domain;
 			ret = bgp->conf->expose_sensor(bgp, i, domain);
+			printk("bandgap: done\n");
 			if (ret)
 				goto remove_last_cooling;
 		}

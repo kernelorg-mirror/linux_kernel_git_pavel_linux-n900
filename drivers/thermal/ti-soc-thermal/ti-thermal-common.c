@@ -328,18 +328,23 @@ int ti_thermal_expose_sensor(struct ti_bandgap *bgp, int id,
 {
 	struct ti_thermal_data *data;
 
+	printk("expose_sensor\n");
+
 	data = ti_bandgap_get_sensor_data(bgp, id);
 
 	if (!data || IS_ERR(data))
 		data = ti_thermal_build_data(bgp, id);
 
-	if (!data)
+	if (!data) {
+		printk("no data\n");	
 		return -EINVAL;
+	}
 
 	/* in case this is specified by DT */
 	data->ti_thermal = thermal_zone_of_sensor_register(bgp->dev, id,
 					data, &ti_of_thermal_ops);
 	if (IS_ERR(data->ti_thermal)) {
+		printk("of_sensor_register failed\n");
 		/* Create thermal zone */
 		data->ti_thermal = thermal_zone_device_register(domain,
 				OMAP_TRIP_NUMBER, 0, data, &ti_thermal_ops,
