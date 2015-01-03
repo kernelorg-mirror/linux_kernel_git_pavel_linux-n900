@@ -40,12 +40,10 @@
 #include <linux/of_irq.h>
 #include <linux/of_gpio.h>
 #include <linux/io.h>
-#include <linux/delay.h>
 
 #include "ti-bandgap.h"
 
-static int
-ti_bandgap_force_single_read(struct ti_bandgap *bgp, int id);
+static int ti_bandgap_force_single_read(struct ti_bandgap *bgp, int id);
 
 /***   Helper functions to access registers and their bitfields   ***/
 
@@ -905,7 +903,7 @@ void *ti_bandgap_get_sensor_data(struct ti_bandgap *bgp, int id)
 static int
 ti_bandgap_force_single_read(struct ti_bandgap *bgp, int id)
 {
-	u32 temp = 0, counter = 1000;
+	u32 counter = 1000;
 	struct temp_sensor_registers *tsr;
 
 	/* Select single conversion mode */
@@ -919,19 +917,20 @@ ti_bandgap_force_single_read(struct ti_bandgap *bgp, int id)
 	tsr = bgp->conf->sensors[id].registers;
 
 	while (--counter) {
-		if (ti_bandgap_readl(bgp, tsr->temp_sensor_ctrl) & tsr->bgap_eocz_mask)
+		if (ti_bandgap_readl(bgp, tsr->temp_sensor_ctrl) &
+		    tsr->bgap_eocz_mask)
 			break;
-		printk("@");
 	}
 
 	/* Start of Conversion = 0 */
 	RMW_BITS(bgp, id, temp_sensor_ctrl, bgap_soc_mask, 0);
 
+	/* Wait for EOCZ going down */
 	counter = 1000;
 	while (--counter) {
-		if (!(ti_bandgap_readl(bgp, tsr->temp_sensor_ctrl) & tsr->bgap_eocz_mask))
+		if (!(ti_bandgap_readl(bgp, tsr->temp_sensor_ctrl) &
+		      tsr->bgap_eocz_mask))
 			break;
-		printk("#");
 	}
 
 	return 0;
