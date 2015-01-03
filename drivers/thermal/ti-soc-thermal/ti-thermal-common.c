@@ -336,7 +336,7 @@ int ti_thermal_expose_sensor(struct ti_bandgap *bgp, int id,
 		data = ti_thermal_build_data(bgp, id);
 
 	if (!data) {
-		printk("no data\n");	
+		printk("no data\n");
 		return -EINVAL;
 	}
 

@@ -514,10 +514,10 @@ static int _ti_bandgap_write_threshold(struct ti_bandgap *bgp, int id, int val,
 
 	if (ret)
 		return ret;
-	
+
 	ret = ti_bandgap_mcelsius_to_adc(bgp, val, &adc_val);
 	if (ret < 0)
-		return ret;		
+		return ret;
 
 	spin_lock(&bgp->lock);
 	ret = ti_bandgap_update_alert_threshold(bgp, id, adc_val, hot);
@@ -918,7 +918,7 @@ ti_bandgap_force_single_read(struct ti_bandgap *bgp, int id)
 
 	/* Wait for EOCZ going up */
 	tsr = bgp->conf->sensors[id].registers;
-	
+
 	while (--counter) {
 		if (ti_bandgap_readl(bgp, tsr->temp_sensor_ctrl) & tsr->bgap_eocz_mask)
 			break;
@@ -1323,7 +1323,7 @@ int ti_bandgap_probe(struct platform_device *pdev)
 		}
 
 		printk("bandgap: exposing sensor: %p\n", bgp->conf->expose_sensor);
-		
+
 		if (bgp->conf->expose_sensor) {
 			printk("bandgap: calling %p %p\n", bgp->conf->expose_sensor, ti_thermal_expose_sensor);
 			domain = bgp->conf->sensors[i].domain;
@@ -1340,7 +1340,7 @@ int ti_bandgap_probe(struct platform_device *pdev)
 			ti_bandgap_force_single_read(bgp, 0);
 
 			t = ti_bandgap_read_temp(bgp, 0);
-			printk("Temperature ADC: %d\n", t);			
+			printk("Temperature ADC: %d\n", t);
 			ti_bandgap_read_temperature(bgp, 0, &t);
 			printk("Temperature: %d\n", t);
 			mdelay(1000);
