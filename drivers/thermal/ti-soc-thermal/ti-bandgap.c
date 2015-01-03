@@ -154,7 +154,6 @@ static u32 ti_bandgap_read_temp(struct ti_bandgap *bgp, int id)
 	if (TI_BANDGAP_HAS(bgp, FREEZE_BIT))
 		RMW_BITS(bgp, id, bgap_mask_ctrl, mask_freeze_mask, 0);
 
-	printk("Bandgap: ADC is %d\n", temp);
 	return temp;
 }
 
@@ -1196,8 +1195,6 @@ int ti_bandgap_probe(struct platform_device *pdev)
 	struct ti_bandgap *bgp;
 	int clk_rate, ret = 0, i;
 
-	printk("ti_bandgap: probe\n");
-
 	bgp = ti_bandgap_build(pdev);
 	if (IS_ERR(bgp)) {
 		dev_err(&pdev->dev, "failed to fetch platform data\n");
@@ -1313,8 +1310,6 @@ int ti_bandgap_probe(struct platform_device *pdev)
 	/* Every thing is good? Then expose the sensors */
 	for (i = 0; i < bgp->conf->sensor_count; i++) {
 		char *domain;
-		extern int ti_thermal_expose_sensor(struct ti_bandgap *bgp, int id,
-					     char *domain);
 
 		if (bgp->conf->sensors[i].register_cooling) {
 			ret = bgp->conf->sensors[i].register_cooling(bgp, i);
@@ -1322,28 +1317,11 @@ int ti_bandgap_probe(struct platform_device *pdev)
 				goto remove_sensors;
 		}
 
-		printk("bandgap: exposing sensor: %p\n", bgp->conf->expose_sensor);
-
 		if (bgp->conf->expose_sensor) {
-			printk("bandgap: calling %p %p\n", bgp->conf->expose_sensor, ti_thermal_expose_sensor);
 			domain = bgp->conf->sensors[i].domain;
 			ret = bgp->conf->expose_sensor(bgp, i, domain);
-			printk("bandgap: done\n");
 			if (ret)
 				goto remove_last_cooling;
-		}
-
-		printk("bandgap: exposing sensor\n");
-		{
-			int t;
-
-			ti_bandgap_force_single_read(bgp, 0);
-
-			t = ti_bandgap_read_temp(bgp, 0);
-			printk("Temperature ADC: %d\n", t);
-			ti_bandgap_read_temperature(bgp, 0, &t);
-			printk("Temperature: %d\n", t);
-			mdelay(1000);
 		}
 	}
 
@@ -1385,8 +1363,6 @@ free_irqs:
 		free_irq(gpio_to_irq(bgp->tshut_gpio), NULL);
 		gpio_free(bgp->tshut_gpio);
 	}
-	printk("ti_bandgap: probe: something failed\n");
-	mdelay(10000);
 
 	return ret;
 }
