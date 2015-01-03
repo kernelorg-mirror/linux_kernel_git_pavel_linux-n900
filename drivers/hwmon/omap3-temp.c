@@ -31,6 +31,7 @@
 #include <linux/regmap.h>
 #include <linux/sched.h>
 #include <linux/stat.h>
+#include <linux/delay.h>
 
 /* 32.768Khz clock speed in nano seconds */
 #define CLOCK_32K_SPEED_NS 30518
@@ -157,9 +158,22 @@ static int omap3_temp_update(struct omap3_temp_data *data)
 	printk("mutex,");
 	mutex_lock(&data->update_lock);
 
+	regmap_read(data->syscon, SYSCON_TEMP_REG, &temp_sensor_reg);
+	printk("Raw register: %lx\n", temp_sensor_reg);
+	
+
 	if (!data->valid || time_after(jiffies, data->last_updated + HZ)) {
 		printk("clock,");
 		clk_prepare_enable(data->clk_32k);
+
+	regmap_read(data->syscon, SYSCON_TEMP_REG, &temp_sensor_reg);
+	printk("Raw register / clock: %lx\n", temp_sensor_reg);
+
+	mdelay(1);
+	
+	regmap_read(data->syscon, SYSCON_TEMP_REG, &temp_sensor_reg);
+	printk("Raw register / clock delay: %lx\n", temp_sensor_reg);
+		
 
 		regmap_update_bits(data->syscon, SYSCON_TEMP_REG,
 				   soc_mask, soc_mask);
@@ -178,6 +192,9 @@ static int omap3_temp_update(struct omap3_temp_data *data)
 			e = -EIO;
 			goto err;
 		}
+
+	regmap_read(data->syscon, SYSCON_TEMP_REG, &temp_sensor_reg);
+	printk("Raw register / clock delay: %lx\n", temp_sensor_reg);
 
 		regmap_read(data->syscon, SYSCON_TEMP_REG, &temp_sensor_reg);
 		data->temperature = temp_sensor_reg & ((1<<7) - 1);
