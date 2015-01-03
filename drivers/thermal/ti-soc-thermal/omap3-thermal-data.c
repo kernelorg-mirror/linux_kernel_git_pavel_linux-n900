@@ -31,7 +31,7 @@ omap34xx_mpu_temp_sensor_registers = {
 	.bgap_dtemp_mask = 0x7f,
 
 	.bgap_mode_ctrl = 0,
-	.mode_ctrl_mask = 0,	/* Unused, no MODE_CONFIG */
+	.mode_ctrl_mask = BIT(9),
 
 	.bgap_efuse = 0,
 };
@@ -47,10 +47,9 @@ static struct temp_sensor_data omap34xx_mpu_temp_sensor_data = {
 
 /*
  * Temperature values in milli degree celsius
- * ADC code values from 530 to 923
  */
 static const int
-omap34xx_adc_to_temp[] = {
+omap34xx_adc_to_temp[128] = {
 	-40000, -40000, -40000, -40000, -40000, -39000, -38000, -36000,
 	-34000, -32000, -31000,	-29000, -28000, -26000, -25000, -24000,
 	-22000, -21000, -19000, -18000, -17000, -15000,	-14000, -12000,
@@ -70,7 +69,7 @@ omap34xx_adc_to_temp[] = {
 
 /* OMAP34XX data */
 const struct ti_bandgap_data omap34xx_data = {
-	.features = TI_BANDGAP_FEATURE_CLK_CTRL,
+	.features = TI_BANDGAP_FEATURE_CLK_CTRL | TI_BANDGAP_FEATURE_MODE_CONFIG,
 	.fclock_name = "ts_fck",
 	.div_ck_name = "ts_fck",
 	.conv_table = omap34xx_adc_to_temp,
@@ -93,7 +92,5 @@ const struct ti_bandgap_data omap34xx_data = {
 		},
 	},
 	.sensor_count = 1,
-
-//	.sensor_count = 0,
 };
 
