@@ -385,26 +385,9 @@ void *ti_bandgap_get_sensor_data(struct ti_bandgap *bgp, int id);
 int ti_bandgap_get_trend(struct ti_bandgap *bgp, int id, int *trend);
 
 extern const struct ti_bandgap_data omap34xx_data;
-
-#ifdef CONFIG_OMAP4_THERMAL
 extern const struct ti_bandgap_data omap4430_data;
 extern const struct ti_bandgap_data omap4460_data;
 extern const struct ti_bandgap_data omap4470_data;
-#else
-#define omap4430_data					NULL
-#define omap4460_data					NULL
-#define omap4470_data					NULL
-#endif
-
-#ifdef CONFIG_OMAP5_THERMAL
 extern const struct ti_bandgap_data omap5430_data;
-#else
-#define omap5430_data					NULL
-#endif
-
-#ifdef CONFIG_DRA752_THERMAL
 extern const struct ti_bandgap_data dra752_data;
-#else
-#define dra752_data					NULL
-#endif
 #endif
