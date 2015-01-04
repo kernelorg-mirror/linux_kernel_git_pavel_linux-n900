@@ -13,6 +13,17 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
+ * Note
+ * http://www.ti.com/lit/er/sprz278f/sprz278f.pdf "Advisory
+ * 3.1.1.186 MMC OCP Clock Not Gated When Thermal Sensor Is Used"
+ *
+ * Also TI says:
+ * Just be careful when you try to make thermal policy like decisions
+ * based on this sensor. Placement of the sensor w.r.t the actual logic
+ * generating heat has to be a factor as well. If you are just looking
+ * for an approximation temperature (thermometerish kind), you might be
+ * ok with this. I am not sure we'd find any TI data around this.. just a
+ * heads up.
  */
 
 #include "ti-thermal.h"
@@ -25,15 +36,12 @@
 static struct temp_sensor_registers
 omap34xx_mpu_temp_sensor_registers = {
 	.temp_sensor_ctrl = 0,
-	.bgap_tempsoff_mask = 0, /* Unused, we don't have POWER_SWITCH */
 	.bgap_soc_mask = BIT(8),
 	.bgap_eocz_mask = BIT(7),
 	.bgap_dtemp_mask = 0x7f,
 
 	.bgap_mode_ctrl = 0,
 	.mode_ctrl_mask = BIT(9),
-
-	.bgap_efuse = 0,
 };
 
 /* Thresholds and limits for OMAP34XX MPU temperature sensor */

@@ -1201,6 +1201,10 @@ int ti_bandgap_probe(struct platform_device *pdev)
 	}
 	bgp->dev = &pdev->dev;
 
+	if (TI_BANDGAP_HAS(bgp, UNRELIABLE))
+		dev_warn(&pdev->dev,
+			 "OMAP3 thermal sensor is unreliable and normally unneccessary\n");
+
 	if (TI_BANDGAP_HAS(bgp, TSHUT)) {
 		ret = ti_bandgap_tshut_init(bgp, pdev);
 		if (ret) {
