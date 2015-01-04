@@ -8,7 +8,7 @@
  * Contributors:
  *	Sakari Ailus <sakari.ailus@iki.fi>
  *	Tuukka Toivonen <tuukkat76@gmail.com>
- *      Pavel Machek <pavel@ucw.cz>
+ *	Pavel Machek <pavel@ucw.cz>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -36,12 +36,9 @@
 #include <linux/i2c.h>
 #include <linux/slab.h>
 #include <linux/of_gpio.h>
+#include <linux/gpio.h>
 #include <media/adp1653.h>
 #include <media/v4l2-device.h>
-
-#include <linux/gpio.h>
-
-#define TEST_FLASH
 
 #define TIMEOUT_MAX		820000
 #define TIMEOUT_STEP		54600
@@ -298,12 +295,6 @@ adp1653_init_device(struct adp1653_flash *flash)
 	}
 
 	mutex_lock(flash->ctrls.lock);
-#ifdef TEST_FLASH
-	flash->led_mode->val = V4L2_FLASH_LED_MODE_TORCH;
-	rval = adp1653_update_hw(flash);
-	mdelay(100);
-	flash->led_mode->val = V4L2_FLASH_LED_MODE_NONE;
-#endif
 	rval = adp1653_update_hw(flash);
 	mutex_unlock(flash->ctrls.lock);
 	if (rval) {
@@ -320,14 +311,13 @@ __adp1653_set_power(struct adp1653_flash *flash, int on)
 {
 	int ret = 0;
 
-	if (flash->platform_data->power)
+	if (flash->platform_data->power) {
 		ret = flash->platform_data->power(&flash->subdev, on);
-	else {
+	} else {
 		gpio_set_value(flash->platform_data->power_gpio, on);
-		if (on) {
+		if (on)
 			/* Some delay is apparently required. */
 			udelay(20);
-		}
 	}
 
 	if (ret < 0)
@@ -478,13 +468,12 @@ static int adp1653_of_init(struct i2c_client *client,
 		return -EINVAL;
 	}
 
-	gpio = of_get_gpio_flags(node, 0, &flags);
-	if (gpio < 0) {
+	pd->power_gpio = of_get_gpio_flags(node, 0, &flags);
+	if (pd->power_gpio < 0) {
 		dev_err(&client->dev, "Error getting GPIO\n");
 		return -EINVAL;
 	}
 
-	pd->power_gpio = gpio;
 	return 0;
 }
 
@@ -521,10 +510,6 @@ static int adp1653_probe(struct i2c_client *client,
 		goto free_and_quit;
 
 	flash->subdev.entity.type = MEDIA_ENT_T_V4L2_SUBDEV_FLASH;
-#ifdef TEST_FLASH
-	__adp1653_set_power(flash, 1);
-	__adp1653_set_power(flash, 0);
-#endif
 	return 0;
 
 free_and_quit:
