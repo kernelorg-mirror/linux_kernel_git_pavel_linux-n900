@@ -31,7 +31,7 @@ config OMAP3_THERMAL
 	   - OMAP3430
 
 	  OMAP3 chips normally don't need thermal management, and sensors in
-	  this generation are not very accurate, nor they are very close to
+	  this generation are not accurate, nor they are very close to
 	  the important hotspots.
 
 	  Say 'N' here.
