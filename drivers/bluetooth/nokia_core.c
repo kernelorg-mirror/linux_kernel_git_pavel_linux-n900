@@ -306,7 +306,7 @@ static int h4p_send_negotiation(struct h4p_info *info)
 		return err;
 
 	if (!wait_for_completion_interruptible_timeout(&info->init_completion,
-						msecs_to_jiffies(1000)))
+						       msecs_to_jiffies(1000)))
 		return -ETIMEDOUT;
 
 	if (info->init_error < 0)
@@ -509,7 +509,7 @@ static void h4p_rx_tasklet(unsigned long data)
 	if (!info->rx_enabled) {
 		if ((h4p_inb(info, UART_LSR) & UART_LSR_TEMT) &&
 		    info->autorts) {
-			__h4p_set_auto_ctsrts(info, 0 , UART_EFR_RTS);
+			__h4p_set_auto_ctsrts(info, 0, UART_EFR_RTS);
 			info->autorts = 0;
 		}
 		/* Flush posted write to avoid spurious interrupts */
@@ -561,8 +561,8 @@ static void h4p_tx_tasklet(unsigned long data)
 			return;
 		}
 		h4p_outb(info, UART_OMAP_SCR,
-			     h4p_inb(info, UART_OMAP_SCR) |
-			     UART_OMAP_SCR_EMPTY_THR);
+			 h4p_inb(info, UART_OMAP_SCR) |
+			 UART_OMAP_SCR_EMPTY_THR);
 		goto finish_tx;
 	}
 
@@ -590,7 +590,6 @@ static void h4p_tx_tasklet(unsigned long data)
 finish_tx:
 	/* Flush posted write to avoid spurious interrupts */
 	h4p_inb(info, UART_OMAP_SCR);
-
 }
 
 static irqreturn_t h4p_interrupt(int irq, void *data)
@@ -1033,12 +1032,12 @@ static int h4p_probe(struct platform_device *pdev)
 				    GPIOF_DIR_IN, "host_wakeup");
 	if (err < 0) {
 		dev_err(info->dev, "Cannot get GPIO line %d",
-		       info->host_wakeup_gpio);
+			info->host_wakeup_gpio);
 		return err;
 	}
 
 	err = devm_request_irq(&pdev->dev, info->irq, h4p_interrupt,
-				IRQF_DISABLED, "nokia_h4p", info);
+			       IRQF_DISABLED, "nokia_h4p", info);
 	if (err < 0) {
 		dev_err(info->dev, "nokia_h4p: unable to get IRQ %d\n",
 			info->irq);

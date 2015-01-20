@@ -86,6 +86,7 @@ int h4p_read_fw(struct h4p_info *info)
 			err = -EIO;
 			break;
 		}
+		kfree_skb(skb);
 	}
 
 	release_firmware(fw_entry);
