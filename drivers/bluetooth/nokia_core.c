@@ -951,10 +951,7 @@ static int h4p_probe_dt(struct platform_device *pdev, struct h4p_info *info)
 		return -ENODATA;
 
 	info->chip_type = 3;	/* Bcm2048 */
-
-	if (of_property_read_u32(node, "bt-sysclk", &val))
-		return -EINVAL;
-	info->bt_sysclk = val;
+	info->bt_sysclk = 2;
 
 	info->reset_gpio       = of_get_named_gpio(node, "reset-gpios", 0);
 	info->host_wakeup_gpio = of_get_named_gpio(node, "host-wakeup-gpios", 0);
@@ -1120,7 +1117,7 @@ static int h4p_remove(struct platform_device *pdev)
 }
 
 static const struct of_device_id h4p_of_match[] = {
-	{ .compatible = "brcm,uart,bcm2048" },
+	{ .compatible = "ti+brcm,omap3-uart,bcm2048" },
 	{},
 };
 MODULE_DEVICE_TABLE(of, h4p_of_match);
