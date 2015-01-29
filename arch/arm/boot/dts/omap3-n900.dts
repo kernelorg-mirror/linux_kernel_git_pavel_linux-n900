@@ -505,7 +505,7 @@
 		IOVDD-supply = <&vio>;
 		DVDD-supply = <&vio>;
 
-		ai3x-micbias-vg = <1>;
+		ai3x-micbias-vg = <2>;
 	};
 
 	tsl2563: tsl2563@29 {
