@@ -283,13 +283,13 @@ restart:	adr	r0, LC0
 		add	r5, r5, #7
 		bic	r5, r5, #7
 		/* clamp to 32KB min and 1MB max */
-		movs	r1, r5, lsr #15
-		moveq	r5, #(1 << 15)
-		movs	r1, r5, lsr #20
-		movne	r5, #(1 << 20)
-
-		/* Temporarily relocate the stack past the DTB work space */
+		cmp	r5, #(1 << 15)
+		movlo	r5, #(1 << 15)
+		cmp	r5, #(1 << 20)
+		movhi	r5, #(1 << 20)
+		/* temporarily relocate the stack past the DTB work space */
 		add	sp, sp, r5
+
 		stmfd	sp!, {r0-r3, ip, lr}
 		mov	r0, r8
 		mov	r1, r6
