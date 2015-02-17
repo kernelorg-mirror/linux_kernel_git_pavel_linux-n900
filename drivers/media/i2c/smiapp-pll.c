@@ -14,16 +14,11 @@
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
- * 02110-1301 USA
- *
  */
 
 #define DEBUG
 
+#include <linux/device.h>
 #include <linux/gcd.h>
 #include <linux/lcm.h>
 #include <linux/module.h>
@@ -233,14 +228,8 @@ static int __smiapp_pll_calculate(
 	}
 
 	more_mul_factor = lcm(div, pll->pre_pll_clk_div) / div;
-<<<<<<< HEAD
-	dev_dbg(dev, "more_mul_factor: %d\n", more_mul_factor);
-	more_mul_factor = lcm(more_mul_factor,
-			      DIV_ROUND_UP(limits->op.min_sys_clk_div, div));
-=======
 	dev_dbg(dev, "more_mul_factor: %u\n", more_mul_factor);
 	more_mul_factor = lcm(more_mul_factor, op_limits->min_sys_clk_div);
->>>>>>> 2756d373a3f45a3a9ebf4ac389f9e0e02bd35a93
 	dev_dbg(dev, "more_mul_factor: min_op_sys_clk_div: %d\n",
 		more_mul_factor);
 	i = roundup(more_mul_min, more_mul_factor);
