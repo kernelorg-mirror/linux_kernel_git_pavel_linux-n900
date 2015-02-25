@@ -25,6 +25,14 @@
 
 #include <media/v4l2-fwnode.h>
 
+enum v4l2_fwnode_bus_type {
+	V4L2_FWNODE_BUS_TYPE_GUESS = 0,
+	V4L2_FWNODE_BUS_TYPE_CSI2_CPHY,
+	V4L2_FWNODE_BUS_TYPE_CSI1,
+	V4L2_FWNODE_BUS_TYPE_CCP2,
+	NR_OF_V4L2_FWNODE_BUS_TYPE,
+};
+
 static int v4l2_fwnode_endpoint_parse_csi2_bus(
 	struct fwnode_handle *fwn, struct v4l2_fwnode_endpoint *vfwn)
 {
@@ -165,6 +173,7 @@ static void v4l2_fwnode_endpoint_parse_parallel_bus(
 int v4l2_fwnode_endpoint_parse(struct fwnode_handle *fwn,
 			       struct v4l2_fwnode_endpoint *vfwn)
 {
+	u32 bus_type;
 	int rval;
 
 	fwnode_graph_parse_endpoint(fwn, &vfwn->base);
@@ -172,6 +181,12 @@ int v4l2_fwnode_endpoint_parse(struct fwnode_handle *fwn,
 	/* Zero fields from bus_type to until the end */
 	memset(&vfwn->bus_type, 0, sizeof(*vfwn) -
 	       offsetof(typeof(*vfwn), bus_type));
+
+	fwnode_property_read_u32(fwn, "bus-type", &bus_type);
+	if (bus_type >= NR_OF_V4L2_FWNODE_BUS_TYPE) {
+		pr_warn("unknown bus type %u, defaulting to 0\n", bus_type);
+		bus_type = 0;
+	}
 
 	rval = v4l2_fwnode_endpoint_parse_csi2_bus(fwn, vfwn);
 	if (rval)
