@@ -147,6 +147,14 @@
 		>;
 	};
 
+	ethernet_pins: pinmux_ethernet_pins {
+		pinctrl-single,pins = <
+			OMAP3_CORE1_IOPAD(0x20b4, PIN_INPUT_PULLDOWN | MUX_MODE4)	/* gpmc_ncs3.gpio_54 */
+			OMAP3_CORE1_IOPAD(0x20fc, PIN_OUTPUT | MUX_MODE4)		/* dss_data16.gpio_86 */
+			OMAP3_CORE1_IOPAD(0x219c, PIN_OUTPUT | MUX_MODE4)		/* uart3_rts_sd.gpio_164 */
+		>;
+	};
+
 	gpmc_pins: pinmux_gpmc_pins {
 		pinctrl-single,pins = <
 
