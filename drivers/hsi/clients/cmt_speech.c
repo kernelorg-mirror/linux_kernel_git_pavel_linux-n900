@@ -43,6 +43,8 @@
 
 #include <sound/initval.h>
 #include <sound/core.h>
+#include <sound/memalloc.h>
+#include <sound/pcm.h>
 
 #define CS_MMAP_SIZE	PAGE_SIZE
 
@@ -1370,6 +1372,22 @@ static struct miscdevice cs_char_miscdev = {
 	.fops	= &cs_char_fops
 };
 
+static struct snd_pcm_ops my_pcm_ops = {
+	/*
+	.open      = my_pcm_open,
+	.close     = my_pcm_close,
+	.ioctl     = snd_pcm_lib_ioctl,
+	.hw_params = my_hw_params,
+	.hw_free   = my_hw_free,
+	.prepare   = my_pcm_prepare,
+	.trigger   = my_pcm_trigger,
+	.pointer   = my_pcm_pointer,
+	.copy      = my_pcm_copy,
+	*/
+};
+
+#define MAX_BUFFER 1024
+
 static int cs_hsi_client_probe(struct device *dev)
 {
 	int err = 0;
@@ -1424,6 +1442,25 @@ static int cs_hsi_client_probe(struct device *dev)
 	if (ret < 0)
 		return ret;
 
+	struct snd_pcm *pcm;
+	ret = snd_pcm_new(card, card->driver, 0, 0, 1,
+			  &pcm);
+	if (ret < 0)
+		return ret;
+
+	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_CAPTURE,
+			&my_pcm_ops);
+	pcm->private_data = dev;
+	pcm->info_flags = 0;
+	strcpy(pcm->name, card->shortname);
+
+	ret = snd_pcm_lib_preallocate_pages_for_all(pcm,
+						    SNDRV_DMA_TYPE_CONTINUOUS,
+						    snd_dma_continuous_data(GFP_KERNEL),
+						    MAX_BUFFER, MAX_BUFFER);
+	if (ret < 0)
+		return ret;
+	
 	if ((ret = snd_card_register(card)) < 0)
 		return ret;
 
