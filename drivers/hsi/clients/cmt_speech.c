@@ -21,6 +21,8 @@
  * 02110-1301 USA
  */
 
+/* Thanks to http://ben-collins.blogspot.cz/2010/05/writing-alsa-driver-basics.html */
+
 #include <linux/errno.h>
 #include <linux/module.h>
 #include <linux/types.h>
@@ -38,6 +40,9 @@
 #include <linux/hsi/hsi.h>
 #include <linux/hsi/ssi_protocol.h>
 #include <linux/hsi/cs-protocol.h>
+
+#include <sound/initval.h>
+#include <sound/core.h>
 
 #define CS_MMAP_SIZE	PAGE_SIZE
 
@@ -62,6 +67,8 @@ struct cs_char {
 	/* hsi channel ids */
 	int                     channel_id_cmd;
 	int                     channel_id_data;
+	/* alsa */
+	struct snd_card *card;
 };
 
 #define SSI_CHANNEL_STATE_READING	1
@@ -1398,14 +1405,29 @@ static int cs_hsi_client_probe(struct device *dev)
 		dev_err(dev, "Failed to register: %d\n", err);
 
 	printk("Registering sound card\n");
-#if 0
+#if 1
 	{
 	struct snd_card *card;
 	int ret;
-	ret = snd_card_create(SNDRV_DEFAULT_IDX1, "Nokia HSI modem",
+	ret = snd_card_new(dev, SNDRV_DEFAULT_IDX1, "Nokia HSI modem",
 			      THIS_MODULE, 0, &card);
 	if (ret < 0)
 		return ret;
+
+	strcpy(card->driver, "cmt_speech");
+	strcpy(card->shortname, "Nokia HSI modem");
+	sprintf(card->longname, "Nokia HSI modem");
+	snd_card_set_dev(card, dev);
+
+	static struct snd_device_ops ops = { NULL };
+	ret = snd_device_new(card, SNDRV_DEV_LOWLEVEL, dev, &ops);
+	if (ret < 0)
+		return ret;
+
+	if ((ret = snd_card_register(card)) < 0)
+		return ret;
+
+	cs_char_data.card = card;
 	}
 #endif
 
@@ -1417,6 +1439,8 @@ static int cs_hsi_client_remove(struct device *dev)
 	struct cs_hsi_iface *hi;
 
 	dev_dbg(dev, "hsi_client_remove\n");
+
+	snd_card_free(cs_char_data.card);
 	misc_deregister(&cs_char_miscdev);
 	spin_lock_bh(&cs_char_data.lock);
 	hi = cs_char_data.hi;
