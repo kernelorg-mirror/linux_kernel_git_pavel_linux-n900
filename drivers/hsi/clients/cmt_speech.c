@@ -1397,6 +1397,18 @@ static int cs_hsi_client_probe(struct device *dev)
 	if (err)
 		dev_err(dev, "Failed to register: %d\n", err);
 
+	printk("Registering sound card\n");
+#if 0
+	{
+	struct snd_card *card;
+	int ret;
+	ret = snd_card_create(SNDRV_DEFAULT_IDX1, "Nokia HSI modem",
+			      THIS_MODULE, 0, &card);
+	if (ret < 0)
+		return ret;
+	}
+#endif
+
 	return err;
 }
 

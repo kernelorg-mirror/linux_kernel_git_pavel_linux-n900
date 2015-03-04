@@ -1,4 +1,4 @@
 #!/bin/bash
 eval ` eldk-switch.sh -r 5.4 armv7a`
 ARCH=arm nice make -j 3 modules && \
-    cp drivers/bluetooth/nokia_h4p.ko drivers/tty/serial/*.ko drivers/media/i2c/adp1653.ko drivers/thermal/ti-soc-thermal/ti-soc-thermal.ko /srv/nfs/n900/my/modules/
+    cp drivers/hsi/clients/cmt_speech.ko drivers/hsi/clients/nokia-modem.ko drivers/bluetooth/nokia_h4p.ko drivers/tty/serial/*.ko drivers/media/i2c/adp1653.ko drivers/thermal/ti-soc-thermal/ti-soc-thermal.ko /srv/nfs/n900/my/modules/
