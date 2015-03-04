@@ -1372,21 +1372,57 @@ static struct miscdevice cs_char_miscdev = {
 	.fops	= &cs_char_fops
 };
 
+static struct snd_pcm_hardware my_pcm_hw = {
+	.info = (SNDRV_PCM_INFO_MMAP |
+		 SNDRV_PCM_INFO_INTERLEAVED |
+		 SNDRV_PCM_INFO_BLOCK_TRANSFER |
+		 SNDRV_PCM_INFO_MMAP_VALID),
+	.formats          = SNDRV_PCM_FMTBIT_U8,
+	.rates            = SNDRV_PCM_RATE_8000,
+	.rate_min         = 8000,
+	.rate_max         = 8000,
+	.channels_min     = 1,
+	.channels_max     = 1,
+	.buffer_bytes_max = (32 * 48),
+	.period_bytes_min = 48,
+	.period_bytes_max = 48,
+	.periods_min      = 1,
+	.periods_max      = 32,
+};
+#define MAX_BUFFER 1024
+
+static int my_pcm_open(struct snd_pcm_substream *ss)
+{
+	ss->runtime->hw = my_pcm_hw;
+	ss->private_data = NULL;
+
+	printk("my_pcm_open\n");
+
+	return 0;
+}
+
+static int my_pcm_close(struct snd_pcm_substream *ss)
+{
+	ss->private_data = NULL;
+
+	printk("my_pcm_close\n");	
+
+	return 0;
+}
+
 static struct snd_pcm_ops my_pcm_ops = {
-	/*
 	.open      = my_pcm_open,
 	.close     = my_pcm_close,
 	.ioctl     = snd_pcm_lib_ioctl,
+#if 0      
 	.hw_params = my_hw_params,
 	.hw_free   = my_hw_free,
 	.prepare   = my_pcm_prepare,
 	.trigger   = my_pcm_trigger,
 	.pointer   = my_pcm_pointer,
 	.copy      = my_pcm_copy,
-	*/
+#endif
 };
-
-#define MAX_BUFFER 1024
 
 static int cs_hsi_client_probe(struct device *dev)
 {
