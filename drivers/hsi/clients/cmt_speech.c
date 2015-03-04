@@ -73,6 +73,8 @@ struct cs_char {
 	struct snd_card *card;
 };
 
+#define my_device cs_char
+
 #define SSI_CHANNEL_STATE_READING	1
 #define SSI_CHANNEL_STATE_WRITING	(1 << 1)
 #define SSI_CHANNEL_STATE_POLL		(1 << 2)
@@ -176,6 +178,8 @@ static void cs_notify(u32 message, struct list_head *head)
 
 	wake_up_interruptible(&cs_char_data.wait);
 	kill_fasync(&cs_char_data.async_queue, SIGIO, POLL_IN);
+
+	/* snd_pcm_period_elapsed(my_dev->ss); ?? FIXME */
 
 out:
 	return;
@@ -1394,7 +1398,7 @@ static struct snd_pcm_hardware my_pcm_hw = {
 static int my_pcm_open(struct snd_pcm_substream *ss)
 {
 	ss->runtime->hw = my_pcm_hw;
-	ss->private_data = NULL;
+	ss->private_data = &cs_char_data;
 
 	printk("my_pcm_open\n");
 
@@ -1410,18 +1414,72 @@ static int my_pcm_close(struct snd_pcm_substream *ss)
 	return 0;
 }
 
+static int my_hw_params(struct snd_pcm_substream *ss,
+			struct snd_pcm_hw_params *hw_params)
+{
+	return snd_pcm_lib_malloc_pages(ss,
+					params_buffer_bytes(hw_params));
+}
+
+static int my_hw_free(struct snd_pcm_substream *ss)
+{
+	return snd_pcm_lib_free_pages(ss);
+}
+
+static int my_pcm_prepare(struct snd_pcm_substream *ss)
+{
+	return 0;
+}
+
+static int my_pcm_trigger(struct snd_pcm_substream *ss,
+			  int cmd)
+{
+	struct my_device *my_dev = snd_pcm_substream_chip(ss);
+	int ret = 0;
+
+	switch (cmd) {
+	case SNDRV_PCM_TRIGGER_START:
+		// Start the hardware capture
+		break;
+	case SNDRV_PCM_TRIGGER_STOP:
+		// Stop the hardware capture
+		break;
+	default:
+		ret = -EINVAL;
+	}
+
+	return ret;
+}
+
+static snd_pcm_uframes_t my_pcm_pointer(struct snd_pcm_substream *ss)
+{
+	struct my_device *my_dev = snd_pcm_substream_chip(ss);
+
+//	return my_dev->hw_idx;
+	return 0;
+}
+
+static int my_pcm_copy(struct snd_pcm_substream *ss,
+		       int channel, snd_pcm_uframes_t pos,
+		       void __user *dst,
+		       snd_pcm_uframes_t count)
+{
+	struct my_device *my_dev = snd_pcm_substream_chip(ss);
+
+	//return copy_to_user(dst, my_dev->buffer + pos, count);
+	return -EFAULT;
+}
+
 static struct snd_pcm_ops my_pcm_ops = {
 	.open      = my_pcm_open,
 	.close     = my_pcm_close,
 	.ioctl     = snd_pcm_lib_ioctl,
-#if 0      
 	.hw_params = my_hw_params,
 	.hw_free   = my_hw_free,
 	.prepare   = my_pcm_prepare,
 	.trigger   = my_pcm_trigger,
 	.pointer   = my_pcm_pointer,
 	.copy      = my_pcm_copy,
-#endif
 };
 
 static int cs_hsi_client_probe(struct device *dev)
