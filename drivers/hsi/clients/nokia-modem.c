@@ -150,6 +150,7 @@ static int nokia_modem_probe(struct device *dev)
 	struct hsi_port *port = hsi_get_port(cl);
 	int irq, pflags, err;
 	struct hsi_board_info ssip;
+	struct hsi_board_info cmtspeech;
 
 	np = dev->of_node;
 	if (!np) {
@@ -214,25 +215,25 @@ static int nokia_modem_probe(struct device *dev)
 		goto error3;
 	}
 
-	ssip.name = "cmt_speech";
-	ssip.tx_cfg = cl->tx_cfg;
-	ssip.rx_cfg = cl->rx_cfg;
-	ssip.platform_data = NULL;
-	ssip.archdata = NULL;
+	cmtspeech.name = "cmt-speech";
+	cmtspeech.tx_cfg = cl->tx_cfg;
+	cmtspeech.rx_cfg = cl->rx_cfg;
+	cmtspeech.platform_data = NULL;
+	cmtspeech.archdata = NULL;
 
-	modem->cmt_speech = hsi_new_client(port, &ssip);
+	modem->cmt_speech = hsi_new_client(port, &cmtspeech);
 	if (!modem->cmt_speech) {
-		dev_err(dev, "Could not register cmt_speech device\n");
+		dev_err(dev, "Could not register cmt-speech device\n");
 		goto error3;
 	}
 
 	err = device_attach(&modem->cmt_speech->device);
 	if (err == 0) {
-		dev_err(dev, "Missing cmt_speech driver\n");
+		dev_err(dev, "Missing cmt-speech driver\n");
 		err = -EPROBE_DEFER;
 		goto error4;
 	} else if (err < 0) {
-		dev_err(dev, "Could not load cmt_speech driver (%d)\n", err);
+		dev_err(dev, "Could not load cmt-speech driver (%d)\n", err);
 		goto error4;
 	}
 

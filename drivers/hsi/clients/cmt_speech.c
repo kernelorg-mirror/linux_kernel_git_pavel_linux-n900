@@ -37,10 +37,9 @@
 #include <linux/pm_qos.h>
 #include <linux/hsi/hsi.h>
 #include <linux/hsi/ssi_protocol.h>
-#include <linux/cs-protocol.h>
+#include <linux/hsi/cs-protocol.h>
 
 #define CS_MMAP_SIZE	PAGE_SIZE
-#define DRIVER_NAME	"cmt_speech"
 
 struct char_queue {
 	struct list_head	list;
@@ -60,6 +59,12 @@ struct cs_char {
 	spinlock_t		lock;
 	struct fasync_struct	*async_queue;
 	wait_queue_head_t	wait;
+<<<<<<< HEAD
+=======
+	/* hsi channel ids */
+	int                     channel_id_cmd;
+	int                     channel_id_data;
+>>>>>>> v4.0
 };
 
 #define SSI_CHANNEL_STATE_READING	1
@@ -67,9 +72,12 @@ struct cs_char {
 #define SSI_CHANNEL_STATE_POLL		(1 << 2)
 #define SSI_CHANNEL_STATE_ERROR		(1 << 3)
 
+<<<<<<< HEAD
 #define CONTROL_HSI_CH			1
 #define DATA_HSI_CH			2
 
+=======
+>>>>>>> v4.0
 #define TARGET_MASK			0xf000000
 #define TARGET_REMOTE			(1 << CS_DOMAIN_SHIFT)
 #define TARGET_LOCAL			0
@@ -126,7 +134,11 @@ struct cs_hsi_iface {
 	struct hsi_msg			*data_tx_msg;
 	wait_queue_head_t		datawait;
 
+<<<<<<< HEAD
 	struct pm_qos_request		pm_qos_req;
+=======
+	struct pm_qos_request           pm_qos_req;
+>>>>>>> v4.0
 
 	spinlock_t			lock;
 };
@@ -297,7 +309,11 @@ static int cs_alloc_cmds(struct cs_hsi_iface *hi)
 			goto out;
 		}
 		sg_init_one(msg->sgt.sgl, buf, sizeof(*buf));
+<<<<<<< HEAD
 		msg->channel = CONTROL_HSI_CH;
+=======
+		msg->channel = cs_char_data.channel_id_cmd;
+>>>>>>> v4.0
 		msg->context = hi;
 		list_add_tail(&msg->link, &hi->cmdqueue);
 	}
@@ -343,7 +359,11 @@ static int cs_hsi_alloc_data(struct cs_hsi_iface *hi)
 		res = -ENOMEM;
 		goto out1;
 	}
+<<<<<<< HEAD
 	rxmsg->channel = DATA_HSI_CH;
+=======
+	rxmsg->channel = cs_char_data.channel_id_data;
+>>>>>>> v4.0
 	rxmsg->destructor = cs_hsi_data_destructor;
 	rxmsg->context = hi;
 
@@ -352,7 +372,11 @@ static int cs_hsi_alloc_data(struct cs_hsi_iface *hi)
 		res = -ENOMEM;
 		goto out2;
 	}
+<<<<<<< HEAD
 	txmsg->channel = DATA_HSI_CH;
+=======
+	txmsg->channel = cs_char_data.channel_id_data;
+>>>>>>> v4.0
 	txmsg->destructor = cs_hsi_data_destructor;
 	txmsg->context = hi;
 
@@ -642,7 +666,11 @@ static void cs_hsi_peek_on_data_complete(struct hsi_msg *msg)
 		cs_hsi_data_read_error(hi, msg);
 }
 
+<<<<<<< HEAD
 /*
+=======
+/**
+>>>>>>> v4.0
  * Read/write transaction is ongoing. Returns false if in
  * SSI_CHANNEL_STATE_POLL state.
  */
@@ -652,7 +680,11 @@ static inline int cs_state_xfer_active(unsigned int state)
 		(state & SSI_CHANNEL_STATE_READING);
 }
 
+<<<<<<< HEAD
 /*
+=======
+/**
+>>>>>>> v4.0
  * No pending read/writes
  */
 static inline int cs_state_idle(unsigned int state)
@@ -841,7 +873,11 @@ static int check_buf_params(struct cs_hsi_iface *hi,
 	return r;
 }
 
+<<<<<<< HEAD
 /*
+=======
+/**
+>>>>>>> v4.0
  * Block until pending data transfers have completed.
  */
 static int cs_hsi_data_sync(struct cs_hsi_iface *hi)
@@ -864,7 +900,11 @@ static int cs_hsi_data_sync(struct cs_hsi_iface *hi)
 			r = -ERESTARTSYS;
 			goto out;
 		}
+<<<<<<< HEAD
 		/*
+=======
+		/**
+>>>>>>> v4.0
 		 * prepare_to_wait must be called with hi->lock held
 		 * so that callbacks can check for waitqueue_active()
 		 */
@@ -1365,7 +1405,7 @@ static const struct file_operations cs_char_fops = {
 
 static struct miscdevice cs_char_miscdev = {
 	.minor	= MISC_DYNAMIC_MINOR,
-	.name	= DRIVER_NAME,
+	.name	= "cmt_speech",
 	.fops	= &cs_char_fops
 };
 
@@ -1383,9 +1423,25 @@ static int cs_hsi_client_probe(struct device *dev)
 	INIT_LIST_HEAD(&cs_char_data.chardev_queue);
 	INIT_LIST_HEAD(&cs_char_data.dataind_queue);
 
+	cs_char_data.channel_id_cmd = hsi_get_channel_id_by_name(cl,
+		"speech-control");
+	if (cs_char_data.channel_id_cmd < 0) {
+		err = cs_char_data.channel_id_cmd;
+		dev_err(dev, "Could not get cmd channel (%d)\n", err);
+		return err;
+	}
+
+	cs_char_data.channel_id_data = hsi_get_channel_id_by_name(cl,
+		"speech-data");
+	if (cs_char_data.channel_id_data < 0) {
+		err = cs_char_data.channel_id_data;
+		dev_err(dev, "Could not get data channel (%d)\n", err);
+		return err;
+	}
+
 	err = misc_register(&cs_char_miscdev);
 	if (err)
-		dev_err(dev, "Failed to register\n");
+		dev_err(dev, "Failed to register: %d\n", err);
 
 	return err;
 }
@@ -1408,7 +1464,7 @@ static int cs_hsi_client_remove(struct device *dev)
 
 static struct hsi_client_driver cs_hsi_driver = {
 	.driver = {
-		.name	= DRIVER_NAME,
+		.name	= "cmt-speech",
 		.owner	= THIS_MODULE,
 		.probe	= cs_hsi_client_probe,
 		.remove	= cs_hsi_client_remove,
@@ -1417,23 +1473,19 @@ static struct hsi_client_driver cs_hsi_driver = {
 
 static int __init cs_char_init(void)
 {
-	int err = 0;
-
-	err = hsi_register_client_driver(&cs_hsi_driver);
-	if (err)
-		pr_err(DRIVER_NAME ": Error when registering driver %d\n", err);
-
-	return err;
+	pr_info("CMT speech driver added\n");
+	return hsi_register_client_driver(&cs_hsi_driver);
 }
 module_init(cs_char_init);
 
 static void __exit cs_char_exit(void)
 {
 	hsi_unregister_client_driver(&cs_hsi_driver);
+	pr_info("CMT speech driver removed\n");
 }
 module_exit(cs_char_exit);
 
-MODULE_ALIAS("hsi:cmt_speech");
+MODULE_ALIAS("hsi:cmt-speech");
 MODULE_AUTHOR("Kai Vehmanen <kai.vehmanen@nokia.com>");
 MODULE_AUTHOR("Peter Ujfalusi <peter.ujfalusi@nokia.com>");
 MODULE_DESCRIPTION("CMT speech driver");
