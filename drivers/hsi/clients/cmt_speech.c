@@ -115,6 +115,7 @@ struct cs_hsi_iface {
 	unsigned int			rx_ptr_boundary;
 	unsigned int			rx_offsets[CS_MAX_BUFFERS];
 	unsigned int			tx_offsets[CS_MAX_BUFFERS];
+
 	/* size of aligned memory blocks */
 	unsigned int			slot_size;
 	unsigned int			flags;
@@ -194,32 +195,27 @@ static void cs_notify_data(u32 message, int maxlength)
 	cs_notify(message, &cs_char_data.dataind_queue);
 
 	spin_lock(&cs_char_data.lock);
-	++cs_char_data.dataind_pending;
+	cs_char_data.dataind_pending++;
 	while (cs_char_data.dataind_pending > maxlength &&
 				!list_empty(&cs_char_data.dataind_queue)) {
 		dev_dbg(&cs_char_data.cl->device, "data notification "
 		"queue overrun (%u entries)\n", cs_char_data.dataind_pending);
 
 		cs_pop_entry(&cs_char_data.dataind_queue);
-		--cs_char_data.dataind_pending;
+		cs_char_data.dataind_pending--;
 	}
 	spin_unlock(&cs_char_data.lock);
 }
 
 static inline void cs_set_cmd(struct hsi_msg *msg, u32 cmd)
 {
-	u32 *data;
-
-	data = sg_virt(msg->sgt.sgl);
+	u32 *data = sg_virt(msg->sgt.sgl);
 	*data = cmd;
 }
 
 static inline u32 cs_get_cmd(struct hsi_msg *msg)
 {
-	u32 *data;
-
-	data = sg_virt(msg->sgt.sgl);
-
+	u32 *data = sg_virt(msg->sgt.sgl);
 	return *data;
 }
 
@@ -641,7 +637,7 @@ static void cs_hsi_peek_on_data_complete(struct hsi_msg *msg)
 		cs_hsi_data_read_error(hi, msg);
 }
 
-/**
+/*
  * Read/write transaction is ongoing. Returns false if in
  * SSI_CHANNEL_STATE_POLL state.
  */
@@ -651,7 +647,7 @@ static inline int cs_state_xfer_active(unsigned int state)
 		(state & SSI_CHANNEL_STATE_READING);
 }
 
-/**
+/*
  * No pending read/writes
  */
 static inline int cs_state_idle(unsigned int state)
@@ -1117,10 +1113,9 @@ static int cs_char_fasync(int fd, struct file *file, int on)
 {
 	struct cs_char *csdata = file->private_data;
 
-	if (fasync_helper(fd, file, on, &csdata->async_queue) >= 0)
-		return 0;
-	else
+	if (fasync_helper(fd, file, on, &csdata->async_queue) < 0)
 		return -EIO;
+	return 0;
 }
 
 static unsigned int cs_char_poll(struct file *file, poll_table *wait)
@@ -1149,7 +1144,7 @@ static ssize_t cs_char_read(struct file *file, char __user *buf, size_t count,
 	if (count < sizeof(data))
 		return -EINVAL;
 
-	for ( ; ; ) {
+	for (;;) {
 		DEFINE_WAIT(wait);
 
 		spin_lock_bh(&csdata->lock);
@@ -1157,7 +1152,7 @@ static ssize_t cs_char_read(struct file *file, char __user *buf, size_t count,
 			data = cs_pop_entry(&csdata->chardev_queue);
 		} else if (!list_empty(&csdata->dataind_queue)) {
 			data = cs_pop_entry(&csdata->dataind_queue);
-			--csdata->dataind_pending;
+			csdata->dataind_pending--;
 
 		} else {
 			data = 0;
@@ -1239,8 +1234,8 @@ static long cs_char_ioctl(struct file *file, unsigned int cmd,
 
 		if (copy_to_user((void __user *)arg, &ifver, sizeof(ifver)))
 			r = -EFAULT;
-		break;
 	}
+		break;
 	case CS_CONFIG_BUFS: {
 		struct cs_buffer_config buf_cfg;
 
@@ -1249,8 +1244,8 @@ static long cs_char_ioctl(struct file *file, unsigned int cmd,
 			r = -EFAULT;
 		else
 			r = cs_hsi_buf_config(csdata->hi, &buf_cfg);
-		break;
 	}
+		break;
 	default:
 		r = -ENOTTY;
 		break;
