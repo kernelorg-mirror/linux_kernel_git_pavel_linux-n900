@@ -1164,7 +1164,6 @@ static ssize_t __cs_char_read(struct cs_char *csdata, char __user *buf, size_t c
 		} else if (!list_empty(&csdata->dataind_queue)) {
 			data = cs_pop_entry(&csdata->dataind_queue);
 			csdata->dataind_pending--;
-
 		} else {
 			data = 0;
 		}
@@ -1423,17 +1422,18 @@ static int my_pcm_open(struct snd_pcm_substream *ss)
 	ss->private_data = &cs_char_data;
 
 	printk("my_pcm_open\n");
-
-	return 0;
+	return __cs_char_open();
 }
 
 static int my_pcm_close(struct snd_pcm_substream *ss)
 {
-	ss->private_data = NULL;
+	int res;
 
 	printk("my_pcm_close\n");	
-
-	return 0;
+	
+	res = __cs_char_release(ss->private_data);
+	ss->private_data = NULL;
+	return res;
 }
 
 static int my_hw_params(struct snd_pcm_substream *ss,
