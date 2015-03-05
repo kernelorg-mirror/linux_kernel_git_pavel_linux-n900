@@ -1147,7 +1147,7 @@ static unsigned int cs_char_poll(struct file *file, poll_table *wait)
 	return ret;
 }
 
-static ssize_t __cs_char_read(struct cs_char *csdata, char __user *buf, size_t count)
+static ssize_t __cs_char_read(struct cs_char *csdata, char __user *buf, size_t count, int nonblock)
 {
 	u32 data;
 	ssize_t retval;
@@ -1172,7 +1172,7 @@ static ssize_t __cs_char_read(struct cs_char *csdata, char __user *buf, size_t c
 
 		if (data)
 			break;
-		if (file->f_flags & O_NONBLOCK) {
+		if (nonblock) {
 			retval = -EAGAIN;
 			goto out;
 		} else if (signal_pending(current)) {
@@ -1198,7 +1198,7 @@ static ssize_t cs_char_read(struct file *file, char __user *buf, size_t count,
 								loff_t *unused)
 {
 	struct cs_char *csdata = file->private_data;
-	return __cs_char_read(file, buf, count);
+	return __cs_char_read(csdata, buf, count, file->f_flags & O_NONBLOCK);
 }
 
 static ssize_t __cs_char_write(struct cs_char *csdata, const char __user *buf,
@@ -1227,7 +1227,7 @@ static ssize_t cs_char_write(struct file *file, const char __user *buf,
 						size_t count, loff_t *unused)
 {
 	struct cs_char *csdata = file->private_data;
-	return __cs_char_write(csdata, buf, count, unused);
+	return __cs_char_write(csdata, buf, count);
 }
 
 static long cs_char_ioctl(struct file *file, unsigned int cmd,
@@ -1294,7 +1294,7 @@ static int cs_char_mmap(struct file *file, struct vm_area_struct *vma)
 	return 0;
 }
 
-static int cs_char_open(struct inode *unused, struct file *file)
+static int __cs_char_open(void)
 {
 	int ret = 0;
 	unsigned long p;
@@ -1325,8 +1325,6 @@ static int cs_char_open(struct inode *unused, struct file *file)
 	cs_char_data.mmap_base = p;
 	cs_char_data.mmap_size = CS_MMAP_SIZE;
 
-	file->private_data = &cs_char_data;
-
 	return 0;
 
 out3:
@@ -1337,6 +1335,13 @@ out2:
 	spin_unlock_bh(&cs_char_data.lock);
 out1:
 	return ret;
+}
+
+static int cs_char_open(struct inode *unused, struct file *file)
+{
+	file->private_data = &cs_char_data;
+
+	return __cs_char_open();
 }
 
 static void cs_free_char_queue(struct list_head *head)
@@ -1354,10 +1359,8 @@ static void cs_free_char_queue(struct list_head *head)
 
 }
 
-static int cs_char_release(struct inode *unused, struct file *file)
+static int __cs_char_release(struct cs_char *csdata)
 {
-	struct cs_char *csdata = file->private_data;
-
 	cs_hsi_stop(csdata->hi);
 	spin_lock_bh(&csdata->lock);
 	csdata->hi = NULL;
@@ -1368,6 +1371,13 @@ static int cs_char_release(struct inode *unused, struct file *file)
 	spin_unlock_bh(&csdata->lock);
 
 	return 0;
+}
+
+static int cs_char_release(struct inode *unused, struct file *file)
+{
+	struct cs_char *csdata = file->private_data;
+
+	return __cs_char_release(csdata);
 }
 
 static const struct file_operations cs_char_fops = {
