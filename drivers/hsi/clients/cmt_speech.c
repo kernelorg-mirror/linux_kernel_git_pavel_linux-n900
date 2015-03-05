@@ -73,7 +73,7 @@ struct cs_char {
 	struct snd_card *card;
 };
 
-#define my_device cs_char
+#define cs_char cs_char
 
 #define SSI_CHANNEL_STATE_READING	1
 #define SSI_CHANNEL_STATE_WRITING	(1 << 1)
@@ -1147,10 +1147,8 @@ static unsigned int cs_char_poll(struct file *file, poll_table *wait)
 	return ret;
 }
 
-static ssize_t cs_char_read(struct file *file, char __user *buf, size_t count,
-								loff_t *unused)
+static ssize_t __cs_char_read(struct cs_char *csdata, char __user *buf, size_t count)
 {
-	struct cs_char *csdata = file->private_data;
 	u32 data;
 	ssize_t retval;
 
@@ -1195,10 +1193,17 @@ out:
 	return retval;
 }
 
-static ssize_t cs_char_write(struct file *file, const char __user *buf,
-						size_t count, loff_t *unused)
+
+static ssize_t cs_char_read(struct file *file, char __user *buf, size_t count,
+								loff_t *unused)
 {
 	struct cs_char *csdata = file->private_data;
+	return __cs_char_read(file, buf, count);
+}
+
+static ssize_t __cs_char_write(struct cs_char *csdata, const char __user *buf,
+						size_t count)
+{
 	u32 data;
 	int err;
 	ssize_t	retval;
@@ -1216,6 +1221,13 @@ static ssize_t cs_char_write(struct file *file, const char __user *buf,
 		retval = err;
 
 	return retval;
+}
+
+static ssize_t cs_char_write(struct file *file, const char __user *buf,
+						size_t count, loff_t *unused)
+{
+	struct cs_char *csdata = file->private_data;
+	return __cs_char_write(csdata, buf, count, unused);
 }
 
 static long cs_char_ioctl(struct file *file, unsigned int cmd,
@@ -1434,7 +1446,7 @@ static int my_pcm_prepare(struct snd_pcm_substream *ss)
 static int my_pcm_trigger(struct snd_pcm_substream *ss,
 			  int cmd)
 {
-	struct my_device *my_dev = snd_pcm_substream_chip(ss);
+	struct cs_char *my_dev = snd_pcm_substream_chip(ss);
 	int ret = 0;
 
 	switch (cmd) {
@@ -1453,7 +1465,7 @@ static int my_pcm_trigger(struct snd_pcm_substream *ss,
 
 static snd_pcm_uframes_t my_pcm_pointer(struct snd_pcm_substream *ss)
 {
-	struct my_device *my_dev = snd_pcm_substream_chip(ss);
+	struct cs_char *my_dev = snd_pcm_substream_chip(ss);
 
 //	return my_dev->hw_idx;
 	return 0;
@@ -1464,7 +1476,7 @@ static int my_pcm_copy(struct snd_pcm_substream *ss,
 		       void __user *dst,
 		       snd_pcm_uframes_t count)
 {
-	struct my_device *my_dev = snd_pcm_substream_chip(ss);
+	struct cs_char *my_dev = snd_pcm_substream_chip(ss);
 
 	//return copy_to_user(dst, my_dev->buffer + pos, count);
 	return -EFAULT;
@@ -1527,7 +1539,7 @@ static int cs_hsi_client_probe(struct device *dev)
 		return ret;
 
 	strcpy(card->driver, "cmt_speech");
-	strcpy(card->shortname, "Nokia HSI modem");
+	strcpy(card->shortname, "HSI modem");
 	sprintf(card->longname, "Nokia HSI modem");
 	snd_card_set_dev(card, dev);
 
