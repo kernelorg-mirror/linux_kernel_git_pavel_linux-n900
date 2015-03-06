@@ -11,7 +11,7 @@
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  */
-
+#define DEBUG
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/slab.h>
@@ -565,6 +565,8 @@ static int __init twl4030_bci_probe(struct platform_device *pdev)
 	int ret;
 	u32 reg;
 
+	printk("twl4030_bci: probe\n");
+
 	bci = kzalloc(sizeof(*bci), GFP_KERNEL);
 	if (bci == NULL)
 		return -ENOMEM;
@@ -575,6 +577,8 @@ static int __init twl4030_bci_probe(struct platform_device *pdev)
 	bci->dev = &pdev->dev;
 	bci->irq_chg = platform_get_irq(pdev, 0);
 	bci->irq_bci = platform_get_irq(pdev, 1);
+
+	printk("twl4030_bci: check battery\n");	
 
 	/* Only proceed further *IF* battery is physically present */
 	ret = twl4030_is_battery_present(bci);
@@ -590,6 +594,7 @@ static int __init twl4030_bci_probe(struct platform_device *pdev)
 	bci->ac.num_properties = ARRAY_SIZE(twl4030_charger_props);
 	bci->ac.get_property = twl4030_bci_get_property;
 
+	printk("twl4030_bci: register\n");		
 	ret = power_supply_register(&pdev->dev, &bci->ac);
 	if (ret) {
 		dev_err(&pdev->dev, "failed to register ac: %d\n", ret);
@@ -609,6 +614,8 @@ static int __init twl4030_bci_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "failed to register usb: %d\n", ret);
 		goto fail_register_usb;
 	}
+
+	printk("twl4030_bci: registered?\n");
 
 	ret = request_threaded_irq(bci->irq_chg, NULL,
 			twl4030_charger_interrupt, IRQF_ONESHOT, pdev->name,
@@ -658,6 +665,7 @@ static int __init twl4030_bci_probe(struct platform_device *pdev)
 					      pdata->bb_uamp);
 	else
 		twl4030_charger_enable_backup(0, 0);
+	printk("twl4030_bci: all ok?\n");
 
 	return 0;
 
@@ -714,6 +722,7 @@ static const struct of_device_id twl_bci_of_match[] = {
 MODULE_DEVICE_TABLE(of, twl_bci_of_match);
 
 static struct platform_driver twl4030_bci_driver = {
+	.probe = twl4030_bci_probe,
 	.driver	= {
 		.name	= "twl4030_bci",
 		.of_match_table = of_match_ptr(twl_bci_of_match),
@@ -721,7 +730,7 @@ static struct platform_driver twl4030_bci_driver = {
 	.remove	= __exit_p(twl4030_bci_remove),
 };
 
-module_platform_driver_probe(twl4030_bci_driver, twl4030_bci_probe);
+module_platform_driver(twl4030_bci_driver);
 
 MODULE_AUTHOR("Gražvydas Ignotas");
 MODULE_DESCRIPTION("TWL4030 Battery Charger Interface driver");
