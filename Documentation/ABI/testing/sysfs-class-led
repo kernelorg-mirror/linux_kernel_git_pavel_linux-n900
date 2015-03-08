@@ -8,6 +8,11 @@ Description:
 		non-zero brightness settings. The value is between 0 and
 		/sys/class/leds/<led>/max_brightness.
 
+		If LED supports continuous brightness settings, 50% brightness
+		should correspond to 50% brightness perceived by human, in a similar
+		manner pixel brightness on monitor does (not 50% PWM).
+
+
 What:		/sys/class/leds/<led>/max_brightness
 Date:		March 2006
 KernelVersion:	2.6.17
