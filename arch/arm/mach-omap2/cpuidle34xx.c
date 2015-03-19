@@ -270,79 +270,43 @@ static struct cpuidle_driver omap3_idle_driver = {
 		},
 		{
 			.enter		  = omap3_enter_idle_bm,
-<<<<<<< HEAD
 			.exit_latency	  = 106 + 180,
 			.target_residency = 309,
-			.flags		  = CPUIDLE_FLAG_TIME_VALID,
-=======
-			.exit_latency	  = 10 + 10,
-			.target_residency = 30,
->>>>>>> 2756d373a3f45a3a9ebf4ac389f9e0e02bd35a93
 			.name		  = "C2",
 			.desc		  = "MPU ON + CORE ON",
 		},
 		{
 			.enter		  = omap3_enter_idle_bm,
-<<<<<<< HEAD
 			.exit_latency	  = 107 + 410,
 			.target_residency = 46057,
-			.flags		  = CPUIDLE_FLAG_TIME_VALID,
-=======
-			.exit_latency	  = 50 + 50,
-			.target_residency = 300,
->>>>>>> 2756d373a3f45a3a9ebf4ac389f9e0e02bd35a93
 			.name		  = "C3",
 			.desc		  = "MPU RET + CORE ON",
 		},
 		{
 			.enter		  = omap3_enter_idle_bm,
-<<<<<<< HEAD
 			.exit_latency	  = 121 + 3374,
 			.target_residency = 46057,
-			.flags		  = CPUIDLE_FLAG_TIME_VALID,
-=======
-			.exit_latency	  = 1500 + 1800,
-			.target_residency = 4000,
->>>>>>> 2756d373a3f45a3a9ebf4ac389f9e0e02bd35a93
 			.name		  = "C4",
 			.desc		  = "MPU OFF + CORE ON",
 		},
 		{
 			.enter		  = omap3_enter_idle_bm,
-<<<<<<< HEAD
 			.exit_latency	  = 855 + 1146,
 			.target_residency = 46057,
-			.flags		  = CPUIDLE_FLAG_TIME_VALID,
-=======
-			.exit_latency	  = 2500 + 7500,
-			.target_residency = 12000,
->>>>>>> 2756d373a3f45a3a9ebf4ac389f9e0e02bd35a93
 			.name		  = "C5",
 			.desc		  = "MPU RET + CORE RET",
 		},
 		{
 			.enter		  = omap3_enter_idle_bm,
-<<<<<<< HEAD
 			.exit_latency	  = 7580 + 4134,
 			.target_residency = 484329,
-			.flags		  = CPUIDLE_FLAG_TIME_VALID,
-=======
-			.exit_latency	  = 3000 + 8500,
-			.target_residency = 15000,
->>>>>>> 2756d373a3f45a3a9ebf4ac389f9e0e02bd35a93
 			.name		  = "C6",
 			.desc		  = "MPU OFF + CORE RET",
 		},
 		{
 			.enter		  = omap3_enter_idle_bm,
-<<<<<<< HEAD
 			.exit_latency	  = 7505 + 15274,
 			.target_residency = 484329,
-			.flags		  = CPUIDLE_FLAG_TIME_VALID,
-=======
-			.exit_latency	  = 10000 + 30000,
-			.target_residency = 30000,
->>>>>>> 2756d373a3f45a3a9ebf4ac389f9e0e02bd35a93
 			.name		  = "C7",
 			.desc		  = "MPU OFF + CORE OFF",
 		},
