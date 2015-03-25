@@ -77,7 +77,7 @@ omap34xx_adc_to_temp[128] = {
 
 /* OMAP34XX data */
 const struct ti_bandgap_data omap34xx_data = {
-	.features = TI_BANDGAP_FEATURE_CLK_CTRL /* | TI_BANDGAP_FEATURE_MODE_CONFIG */,
+	.features = TI_BANDGAP_FEATURE_CLK_CTRL | TI_BANDGAP_FEATURE_UNRELIABLE,
 	.fclock_name = "ts_fck",
 	.div_ck_name = "ts_fck",
 	.conv_table = omap34xx_adc_to_temp,
