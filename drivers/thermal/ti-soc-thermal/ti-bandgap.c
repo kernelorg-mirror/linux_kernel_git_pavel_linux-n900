@@ -564,14 +564,11 @@ static int _ti_bandgap_read_threshold(struct ti_bandgap *bgp, int id,
 	ret = ti_bandgap_adc_to_mcelsius(bgp, temp, &temp);
 	if (ret) {
 		dev_err(bgp->dev, "failed to read thot\n");
-		ret = -EIO;
-		goto exit;
+		return -EIO;
 	}
 
 	*val = temp;
-
-exit:
-	return ret;
+	return 0;
 }
 
 /***   Exposed APIs   ***/
