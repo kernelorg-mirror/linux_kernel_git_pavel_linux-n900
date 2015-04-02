@@ -430,7 +430,6 @@ static int adp1653_of_init(struct i2c_client *client,
 	u32 val;
 	struct adp1653_platform_data *pd;
 	enum of_gpio_flags flags;
-	int gpio;
 	struct device_node *child;
 
 	if (!node)
@@ -489,7 +488,7 @@ static int adp1653_probe(struct i2c_client *client,
 		return -ENOMEM;
 
 	flash->platform_data = client->dev.platform_data;
-	if (!flash->platform_data) {
+	if (client->dev.of_node) {
 		ret = adp1653_of_init(client, flash, client->dev.of_node);
 		if (ret)
 			return ret;
@@ -510,6 +509,7 @@ static int adp1653_probe(struct i2c_client *client,
 		goto free_and_quit;
 
 	flash->subdev.entity.type = MEDIA_ENT_T_V4L2_SUBDEV_FLASH;
+
 	return 0;
 
 free_and_quit:
