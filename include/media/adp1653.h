@@ -104,7 +104,7 @@ struct adp1653_platform_data {
 	u32 max_torch_intensity;	/* led intensity, torch mode, mA */
 	u32 max_indicator_intensity;	/* indicator led intensity, uA */
 
-	int power_gpio;			/* for device-tree based boot */
+	struct gpio_desc *power_gpio;	/* for device-tree based boot */
 };
 
 #define to_adp1653_flash(sd)	container_of(sd, struct adp1653_flash, subdev)

@@ -314,7 +314,7 @@ __adp1653_set_power(struct adp1653_flash *flash, int on)
 	if (flash->platform_data->power) {
 		ret = flash->platform_data->power(&flash->subdev, on);
 	} else {
-		gpio_set_value(flash->platform_data->power_gpio, on);
+		gpiod_set_value(flash->platform_data->power_gpio, on);
 		if (on)
 			/* Some delay is apparently required. */
 			udelay(20);
@@ -333,7 +333,7 @@ __adp1653_set_power(struct adp1653_flash *flash, int on)
 	if (flash->platform_data->power)
 		flash->platform_data->power(&flash->subdev, 0);
 	else
-		gpio_set_value(flash->platform_data->power_gpio, 0);
+		gpiod_set_value(flash->platform_data->power_gpio, 0);
 
 	return ret;
 }
@@ -429,7 +429,6 @@ static int adp1653_of_init(struct i2c_client *client,
 {
 	u32 val;
 	struct adp1653_platform_data *pd;
-	enum of_gpio_flags flags;
 	struct device_node *child;
 
 	if (!node)
@@ -467,8 +466,8 @@ static int adp1653_of_init(struct i2c_client *client,
 		return -EINVAL;
 	}
 
-	pd->power_gpio = of_get_gpio_flags(node, 0, &flags);
-	if (pd->power_gpio < 0) {
+	pd->power_gpio = devm_gpiod_get(&client->dev, "power");
+	if (!pd->power_gpio) {
 		dev_err(&client->dev, "Error getting GPIO\n");
 		return -EINVAL;
 	}
