@@ -429,7 +429,7 @@ static int adp1653_of_init(struct i2c_client *client,
 {
 	u32 val;
 	struct adp1653_platform_data *pd;
-	struct device_node *child;
+	struct device_node *child = NULL;
 
 	if (!node)
 		return -EINVAL;
@@ -443,36 +443,42 @@ static int adp1653_of_init(struct i2c_client *client,
 	if (!child)
 		return -EINVAL;
 	if (of_property_read_u32(child, "flash-timeout-microsec", &val))
-		return -EINVAL;
+		goto err;
 
 	pd->max_flash_timeout = val;
 	if (of_property_read_u32(child, "flash-max-microamp", &val))
-		return -EINVAL;
+		goto err;
 	pd->max_flash_intensity = val/1000;
 
 	if (of_property_read_u32(child, "max-microamp", &val))
-		return -EINVAL;
+		goto err;
 	pd->max_torch_intensity = val/1000;
+	of_node_put(child);
 
 	child = of_get_child_by_name(node, "indicator");
 	if (!child)
 		return -EINVAL;
 	if (of_property_read_u32(child, "max-microamp", &val))
-		return -EINVAL;
+		goto err;
 	pd->max_indicator_intensity = val;
+
+	of_node_put(child);
 
 	if (!of_find_property(node, "gpios", NULL)) {
 		dev_err(&client->dev, "No gpio node\n");
 		return -EINVAL;
 	}
 
-	pd->power_gpio = devm_gpiod_get(&client->dev, "power");
+	pd->power_gpio = devm_gpiod_get(&client->dev, "enable");
 	if (!pd->power_gpio) {
 		dev_err(&client->dev, "Error getting GPIO\n");
 		return -EINVAL;
 	}
 
 	return 0;
+err:
+	of_node_put(child);
+	return -EINVAL;
 }
 
 

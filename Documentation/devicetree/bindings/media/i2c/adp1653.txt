@@ -6,7 +6,7 @@ Required Properties:
 
   - reg: I2C slave address
 
-  - power-gpios: Reference to the GPIO that controls the power for the chip.
+  - enable-gpios: Reference to the GPIO that controls the power for the chip.
 
 There are two LED outputs available - flash and indicator. One LED is
 represented by one child node, nodes need to be named "flash" and "indicator".
@@ -24,7 +24,7 @@ Example:
 	adp1653: led-controller@30 {
 		compatible = "adi,adp1653";
 		reg = <0x30>;
-		power-gpios = <&gpio3 24 GPIO_ACTIVE_HIGH>; /* 88 */
+		enable-gpios = <&gpio3 24 GPIO_ACTIVE_HIGH>; /* 88 */
 
 		flash {
 			flash-timeout-us = <500000>;
