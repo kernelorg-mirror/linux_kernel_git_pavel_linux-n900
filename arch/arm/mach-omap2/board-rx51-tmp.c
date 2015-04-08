@@ -58,6 +58,7 @@
 #include "soc.h"
 #include "omap-secure.h"
 
+
 #if 0
 /* Allow C6 state {1, 3120, 5788, 10000} */
 #define H4P_WAKEUP_LATENCY	5700
@@ -195,6 +196,7 @@ static int __init rx51_adp1653_init(void)
 {
 	int err;
 
+#if 0
 	err = gpio_request(ADP1653_GPIO_ENABLE, "adp1653 enable");
 	if (err) {
 		printk(KERN_ERR ADP1653_NAME
@@ -221,7 +223,7 @@ static int __init rx51_adp1653_init(void)
 	gpio_direction_output(ADP1653_GPIO_ENABLE, 0);
 	gpio_direction_input(ADP1653_GPIO_INT);
 	gpio_direction_output(ADP1653_GPIO_STROBE, 0);
-
+#endif
 	return 0;
 
 err_omap_request_gpio_3:
