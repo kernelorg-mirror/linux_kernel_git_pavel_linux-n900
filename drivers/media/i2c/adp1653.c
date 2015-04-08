@@ -442,7 +442,8 @@ static int adp1653_of_init(struct i2c_client *client,
 	child = of_get_child_by_name(node, "flash");
 	if (!child)
 		return -EINVAL;
-	if (of_property_read_u32(child, "flash-timeout-microsec", &val))
+
+	if (of_property_read_u32(child, "flash-timeout-us", &val))
 		goto err;
 
 	pd->max_flash_timeout = val;
@@ -472,6 +473,7 @@ static int adp1653_of_init(struct i2c_client *client,
 
 	return 0;
 err:
+	dev_err(&client->dev, "Required property not found\n");
 	of_node_put(child);
 	return -EINVAL;
 }
