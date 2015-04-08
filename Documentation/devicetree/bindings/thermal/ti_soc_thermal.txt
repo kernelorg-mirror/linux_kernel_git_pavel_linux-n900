@@ -26,6 +26,11 @@ to each bandgap version, because the mapping may change from
 soc to soc, apart of depending on available features.
 
 Example:
+OMAP34xx:
+bandgap: bandgap {
+	reg = <0x48002524 0x4>;
+	compatible = "ti,omap34xx-bandgap";
+};
 OMAP4430:
 bandgap {
 	reg = <0x4a002260 0x4 0x4a00232C 0x4>;

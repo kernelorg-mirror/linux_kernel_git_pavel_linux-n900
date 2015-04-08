@@ -464,11 +464,6 @@ static int adp1653_of_init(struct i2c_client *client,
 
 	of_node_put(child);
 
-	if (!of_find_property(node, "gpios", NULL)) {
-		dev_err(&client->dev, "No gpio node\n");
-		return -EINVAL;
-	}
-
 	pd->power_gpio = devm_gpiod_get(&client->dev, "enable");
 	if (!pd->power_gpio) {
 		dev_err(&client->dev, "Error getting GPIO\n");

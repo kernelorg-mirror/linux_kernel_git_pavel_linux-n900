@@ -546,12 +546,10 @@ static int _ti_bandgap_read_threshold(struct ti_bandgap *bgp, int id,
 
 	ret = ti_bandgap_validate(bgp, id);
 	if (ret)
-		goto exit;
+		return ret;
 
-	if (!TI_BANDGAP_HAS(bgp, TALERT)) {
-		ret = -ENOTSUPP;
-		goto exit;
-	}
+	if (!TI_BANDGAP_HAS(bgp, TALERT))
+		return -ENOTSUPP;
 
 	tsr = bgp->conf->sensors[id].registers;
 	if (hot)
@@ -1200,7 +1198,7 @@ int ti_bandgap_probe(struct platform_device *pdev)
 
 	if (TI_BANDGAP_HAS(bgp, UNRELIABLE))
 		dev_warn(&pdev->dev,
-			 "OMAP3 thermal sensor is unreliable and normally unneccessary\n");
+			 "This OMAP thermal sensor is unreliable. You've been warned.\n");
 
 	if (TI_BANDGAP_HAS(bgp, TSHUT)) {
 		ret = ti_bandgap_tshut_init(bgp, pdev);
