@@ -35,8 +35,8 @@
 #include <linux/module.h>
 #include <linux/i2c.h>
 #include <linux/slab.h>
-#include <linux/of_gpio.h>
-#include <linux/gpio.h>
+#include <linux/of.h>
+#include <linux/gpio/consumer.h>
 #include <media/adp1653.h>
 #include <media/v4l2-device.h>
 
