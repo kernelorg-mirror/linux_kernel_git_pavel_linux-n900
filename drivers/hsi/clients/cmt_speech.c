@@ -180,7 +180,6 @@ static void cs_notify(u32 message, struct list_head *head)
 	kill_fasync(&cs_char_data.async_queue, SIGIO, POLL_IN);
 
 	/* snd_pcm_period_elapsed(my_dev->ss); ?? FIXME */
-
 out:
 	return;
 }
@@ -296,10 +295,10 @@ static int cs_alloc_cmds(struct cs_hsi_iface *hi)
 	INIT_LIST_HEAD(&hi->cmdqueue);
 
 	for (i = 0; i < CS_MAX_CMDS; i++) {
-		msg = hsi_alloc_msg(1, GFP_ATOMIC);
+		msg = hsi_alloc_msg(1, GFP_KERNEL);
 		if (!msg)
 			goto out;
-		buf = kmalloc(sizeof(*buf), GFP_ATOMIC);
+		buf = kmalloc(sizeof(*buf), GFP_KERNEL);
 		if (!buf) {
 			hsi_free_msg(msg);
 			goto out;
@@ -782,8 +781,7 @@ static int cs_hsi_command(struct cs_hsi_iface *hi, u32 cmd)
 	return ret;
 }
 
-static void cs_hsi_set_wakeline(struct cs_hsi_iface *hi,
-				unsigned int new_state)
+static void cs_hsi_set_wakeline(struct cs_hsi_iface *hi, bool new_state)
 {
 	int change = 0;
 
@@ -1042,6 +1040,7 @@ static int cs_hsi_start(struct cs_hsi_iface **hi, struct hsi_client *cl,
 	}
 	hsi_if->master = ssip_slave_get_master(cl);
 	if (IS_ERR(hsi_if->master)) {
+		err = PTR_ERR(hsi_if->master);
 		dev_err(&cl->device, "Could not get HSI master client\n");
 		goto leave4;
 	}
@@ -1128,6 +1127,7 @@ static int cs_char_fasync(int fd, struct file *file, int on)
 
 	if (fasync_helper(fd, file, on, &csdata->async_queue) < 0)
 		return -EIO;
+
 	return 0;
 }
 
@@ -1191,7 +1191,6 @@ static ssize_t __cs_char_read(struct cs_char *csdata, char __user *buf, size_t c
 out:
 	return retval;
 }
-
 
 static ssize_t cs_char_read(struct file *file, char __user *buf, size_t count,
 								loff_t *unused)
@@ -1632,4 +1631,4 @@ MODULE_ALIAS("hsi:cmt-speech");
 MODULE_AUTHOR("Kai Vehmanen <kai.vehmanen@nokia.com>");
 MODULE_AUTHOR("Peter Ujfalusi <peter.ujfalusi@nokia.com>");
 MODULE_DESCRIPTION("CMT speech driver");
-MODULE_LICENSE("GPL");
+MODULE_LICENSE("GPL v2");
