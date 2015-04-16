@@ -5,5 +5,7 @@ D=`git describe`
 TFTP=/srv/tftp
 ARCH=arm nice make -j 3 zImage && \
     ARCH=arm make omap3-n900.dtb && \
+    ARCH=arm make omap2420-n810.dtb && \
     cat arch/arm/boot/zImage arch/arm/boot/dts/omap3-n900.dtb > arch/arm/boot/zImage-dtb && \
+    cat arch/arm/boot/zImage arch/arm/boot/dts/omap2420-n810.dtb > arch/arm/boot/zImage-dtb810 && \
     ./mkmods
