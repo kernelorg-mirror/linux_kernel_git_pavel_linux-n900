@@ -165,7 +165,7 @@ static int __init cmt_probe(struct platform_device *pd)
 
 	irq = gpio_to_irq(cmt->cmt_rst_ind_gpio);
 	err = request_irq(irq, cmt_rst_ind_isr,
-		IRQF_DISABLED | pflags, "cmt_rst_ind", cmt);
+			  pflags, "cmt_rst_ind", cmt);
 	if (err < 0) {
 		dev_err(&pd->dev, "Request cmt_rst_ind irq(%d) failed (flags %d)\n",
 			irq, pflags);
