@@ -115,6 +115,7 @@ struct cs_hsi_iface {
 	unsigned int			rx_ptr_boundary;
 	unsigned int			rx_offsets[CS_MAX_BUFFERS];
 	unsigned int			tx_offsets[CS_MAX_BUFFERS];
+
 	/* size of aligned memory blocks */
 	unsigned int			slot_size;
 	unsigned int			flags;
@@ -194,32 +195,27 @@ static void cs_notify_data(u32 message, int maxlength)
 	cs_notify(message, &cs_char_data.dataind_queue);
 
 	spin_lock(&cs_char_data.lock);
-	++cs_char_data.dataind_pending;
+	cs_char_data.dataind_pending++;
 	while (cs_char_data.dataind_pending > maxlength &&
 				!list_empty(&cs_char_data.dataind_queue)) {
 		dev_dbg(&cs_char_data.cl->device, "data notification "
 		"queue overrun (%u entries)\n", cs_char_data.dataind_pending);
 
 		cs_pop_entry(&cs_char_data.dataind_queue);
-		--cs_char_data.dataind_pending;
+		cs_char_data.dataind_pending--;
 	}
 	spin_unlock(&cs_char_data.lock);
 }
 
 static inline void cs_set_cmd(struct hsi_msg *msg, u32 cmd)
 {
-	u32 *data;
-
-	data = sg_virt(msg->sgt.sgl);
+	u32 *data = sg_virt(msg->sgt.sgl);
 	*data = cmd;
 }
 
 static inline u32 cs_get_cmd(struct hsi_msg *msg)
 {
-	u32 *data;
-
-	data = sg_virt(msg->sgt.sgl);
-
+	u32 *data = sg_virt(msg->sgt.sgl);
 	return *data;
 }
 
@@ -287,10 +283,10 @@ static int cs_alloc_cmds(struct cs_hsi_iface *hi)
 	INIT_LIST_HEAD(&hi->cmdqueue);
 
 	for (i = 0; i < CS_MAX_CMDS; i++) {
-		msg = hsi_alloc_msg(1, GFP_ATOMIC);
+		msg = hsi_alloc_msg(1, GFP_KERNEL);
 		if (!msg)
 			goto out;
-		buf = kmalloc(sizeof(*buf), GFP_ATOMIC);
+		buf = kmalloc(sizeof(*buf), GFP_KERNEL);
 		if (!buf) {
 			hsi_free_msg(msg);
 			goto out;
@@ -641,7 +637,7 @@ static void cs_hsi_peek_on_data_complete(struct hsi_msg *msg)
 		cs_hsi_data_read_error(hi, msg);
 }
 
-/**
+/*
  * Read/write transaction is ongoing. Returns false if in
  * SSI_CHANNEL_STATE_POLL state.
  */
@@ -651,7 +647,7 @@ static inline int cs_state_xfer_active(unsigned int state)
 		(state & SSI_CHANNEL_STATE_READING);
 }
 
-/**
+/*
  * No pending read/writes
  */
 static inline int cs_state_idle(unsigned int state)
@@ -773,8 +769,7 @@ static int cs_hsi_command(struct cs_hsi_iface *hi, u32 cmd)
 	return ret;
 }
 
-static void cs_hsi_set_wakeline(struct cs_hsi_iface *hi,
-				unsigned int new_state)
+static void cs_hsi_set_wakeline(struct cs_hsi_iface *hi, bool new_state)
 {
 	int change = 0;
 
@@ -1033,6 +1028,7 @@ static int cs_hsi_start(struct cs_hsi_iface **hi, struct hsi_client *cl,
 	}
 	hsi_if->master = ssip_slave_get_master(cl);
 	if (IS_ERR(hsi_if->master)) {
+		err = PTR_ERR(hsi_if->master);
 		dev_err(&cl->device, "Could not get HSI master client\n");
 		goto leave4;
 	}
@@ -1117,10 +1113,10 @@ static int cs_char_fasync(int fd, struct file *file, int on)
 {
 	struct cs_char *csdata = file->private_data;
 
-	if (fasync_helper(fd, file, on, &csdata->async_queue) >= 0)
-		return 0;
-	else
+	if (fasync_helper(fd, file, on, &csdata->async_queue) < 0)
 		return -EIO;
+
+	return 0;
 }
 
 static unsigned int cs_char_poll(struct file *file, poll_table *wait)
@@ -1149,7 +1145,7 @@ static ssize_t cs_char_read(struct file *file, char __user *buf, size_t count,
 	if (count < sizeof(data))
 		return -EINVAL;
 
-	for ( ; ; ) {
+	for (;;) {
 		DEFINE_WAIT(wait);
 
 		spin_lock_bh(&csdata->lock);
@@ -1157,8 +1153,7 @@ static ssize_t cs_char_read(struct file *file, char __user *buf, size_t count,
 			data = cs_pop_entry(&csdata->chardev_queue);
 		} else if (!list_empty(&csdata->dataind_queue)) {
 			data = cs_pop_entry(&csdata->dataind_queue);
-			--csdata->dataind_pending;
-
+			csdata->dataind_pending--;
 		} else {
 			data = 0;
 		}
@@ -1223,22 +1218,32 @@ static long cs_char_ioctl(struct file *file, unsigned int cmd,
 		state = cs_hsi_get_state(csdata->hi);
 		if (copy_to_user((void __user *)arg, &state, sizeof(state)))
 			r = -EFAULT;
-	}
+
 		break;
+	}
 	case CS_SET_WAKELINE: {
 		unsigned int state;
 
-		if (copy_from_user(&state, (void __user *)arg, sizeof(state)))
+		if (copy_from_user(&state, (void __user *)arg, sizeof(state))) {
 			r = -EFAULT;
-		else
-			cs_hsi_set_wakeline(csdata->hi, state);
-	}
+			break;
+		}
+
+		if (state > 1) {
+			r = -EINVAL;
+			break;
+		}
+
+		cs_hsi_set_wakeline(csdata->hi, !!state);
+
 		break;
+	}
 	case CS_GET_IF_VERSION: {
 		unsigned int ifver = CS_IF_VERSION;
 
 		if (copy_to_user((void __user *)arg, &ifver, sizeof(ifver)))
 			r = -EFAULT;
+
 		break;
 	}
 	case CS_CONFIG_BUFS: {
@@ -1249,6 +1254,7 @@ static long cs_char_ioctl(struct file *file, unsigned int cmd,
 			r = -EFAULT;
 		else
 			r = cs_hsi_buf_config(csdata->hi, &buf_cfg);
+
 		break;
 	}
 	default:
@@ -1448,4 +1454,4 @@ MODULE_ALIAS("hsi:cmt-speech");
 MODULE_AUTHOR("Kai Vehmanen <kai.vehmanen@nokia.com>");
 MODULE_AUTHOR("Peter Ujfalusi <peter.ujfalusi@nokia.com>");
 MODULE_DESCRIPTION("CMT speech driver");
-MODULE_LICENSE("GPL");
+MODULE_LICENSE("GPL v2");

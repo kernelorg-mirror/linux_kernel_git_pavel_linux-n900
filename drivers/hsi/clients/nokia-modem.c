@@ -202,6 +202,7 @@ static int nokia_modem_probe(struct device *dev)
 	modem->ssi_protocol = hsi_new_client(port, &ssip);
 	if (!modem->ssi_protocol) {
 		dev_err(dev, "Could not register ssi-protocol device\n");
+		err = -ENOMEM;
 		goto error2;
 	}
 
@@ -224,6 +225,7 @@ static int nokia_modem_probe(struct device *dev)
 	modem->cmt_speech = hsi_new_client(port, &cmtspeech);
 	if (!modem->cmt_speech) {
 		dev_err(dev, "Could not register cmt-speech device\n");
+		err = -ENOMEM;
 		goto error3;
 	}
 

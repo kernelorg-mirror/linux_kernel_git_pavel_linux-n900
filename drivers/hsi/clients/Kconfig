@@ -15,10 +15,11 @@ config NOKIA_MODEM
 
 config CMT_SPEECH
 	tristate "CMT speech"
-	depends on HSI && PHONET && OMAP_SSI
+	depends on HSI && SSI_PROTOCOL
 	help
 	If you say Y here, you will enable the CMT speech protocol used
-	by Nokia modems.
+	by Nokia modems. If you say M the protocol will be available as
+	module named cmt_speech.
 
 	If unsure, say N.
 
