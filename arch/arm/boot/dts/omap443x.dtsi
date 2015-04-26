@@ -36,8 +36,9 @@
 
 	ocp {
 		bandgap: bandgap {
-			reg = <0x48002524 0x4>;
-			compatible = "ti,omap34xx-bandgap";
+			reg = <0x4a002260 0x4
+			       0x4a00232C 0x4>;
+			compatible = "ti,omap4430-bandgap";
 
 			#thermal-sensor-cells = <0>;
 		};
