@@ -250,7 +250,6 @@ obj-y					+= $(omap-ssi-m) $(omap-ssi-y)
 # Specific board support
 obj-$(CONFIG_MACH_OMAP_GENERIC)		+= board-generic.o pdata-quirks.o
 obj-$(CONFIG_MACH_OMAP3_BEAGLE)		+= board-omap3beagle.o
-obj-$(CONFIG_MACH_DEVKIT8000)     	+= board-devkit8000.o
 obj-$(CONFIG_MACH_OMAP_LDP)		+= board-ldp.o
 obj-$(CONFIG_MACH_OMAP3530_LV_SOM)      += board-omap3logic.o
 obj-$(CONFIG_MACH_OMAP3_TORPEDO)        += board-omap3logic.o
@@ -263,9 +262,6 @@ obj-$(CONFIG_MACH_NOKIA_RX51)		+= board-rx51-video.o
 obj-$(CONFIG_MACH_NOKIA_RX51)		+= board-rx51-camera.o
 obj-$(CONFIG_MACH_NOKIA_RX51)		+= board-rx51-compat.o
 obj-$(CONFIG_MACH_CM_T35)		+= board-cm-t35.o
-obj-$(CONFIG_MACH_TOUCHBOOK)		+= board-omap3touchbook.o
-
-obj-$(CONFIG_MACH_SBC3530)		+= board-omap3stalker.o
 
 # Platform specific device init code
 
