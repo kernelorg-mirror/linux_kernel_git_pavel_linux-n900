@@ -738,7 +738,12 @@ static struct platform_driver twl4030_bci_driver = {
 	.remove	= __exit_p(twl4030_bci_remove),
 };
 
+#if 1
 module_platform_driver(twl4030_bci_driver);
+#else
+// Breaks boot on v4.1, not sure why
+module_platform_driver_probe(twl4030_bci_driver, twl4030_bci_probe);
+#endif
 
 MODULE_AUTHOR("Gražvydas Ignotas");
 MODULE_DESCRIPTION("TWL4030 Battery Charger Interface driver");
