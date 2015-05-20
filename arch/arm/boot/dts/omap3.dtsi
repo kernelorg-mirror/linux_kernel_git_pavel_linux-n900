@@ -457,6 +457,7 @@
 		};
 
 		mmu_isp: mmu@480bd400 {
+			#iommu-cells = <0>;
 			compatible = "ti,omap2-iommu";
 			reg = <0x480bd400 0x80>;
 			interrupts = <24>;
@@ -465,6 +466,7 @@
 		};
 
 		mmu_iva: mmu@5d000000 {
+			#iommu-cells = <0>;
 			compatible = "ti,omap2-iommu";
 			reg = <0x5d000000 0x80>;
 			interrupts = <28>;

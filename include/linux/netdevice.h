@@ -25,7 +25,6 @@
 #ifndef _LINUX_NETDEVICE_H
 #define _LINUX_NETDEVICE_H
 
-#include <linux/pm_qos.h>
 #include <linux/timer.h>
 #include <linux/bug.h>
 #include <linux/delay.h>
@@ -977,7 +976,8 @@ typedef u16 (*select_queue_fallback_t)(struct net_device *dev,
  * int (*ndo_bridge_setlink)(struct net_device *dev, struct nlmsghdr *nlh,
  *			     u16 flags)
  * int (*ndo_bridge_getlink)(struct sk_buff *skb, u32 pid, u32 seq,
- *			     struct net_device *dev, u32 filter_mask)
+ *			     struct net_device *dev, u32 filter_mask,
+ *			     int nlflags)
  * int (*ndo_bridge_dellink)(struct net_device *dev, struct nlmsghdr *nlh,
  *			     u16 flags);
  *
@@ -1173,7 +1173,8 @@ struct net_device_ops {
 	int			(*ndo_bridge_getlink)(struct sk_buff *skb,
 						      u32 pid, u32 seq,
 						      struct net_device *dev,
-						      u32 filter_mask);
+						      u32 filter_mask,
+						      int nlflags);
 	int			(*ndo_bridge_dellink)(struct net_device *dev,
 						      struct nlmsghdr *nlh,
 						      u16 flags);
@@ -1496,8 +1497,6 @@ enum netdev_priv_flags {
  *			for hardware timestamping
  *
  *	@qdisc_tx_busylock:	XXX: need comments on this one
- *
- *	@pm_qos_req:	Power Management QoS object
  *
  *	FIXME: cleanup struct net_device such that network protocol info
  *	moves out.
