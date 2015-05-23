@@ -2152,7 +2152,8 @@ static int isp_of_parse_node_endpoint(struct device *dev,
 }
 
 static int isp_of_parse_node(struct device *dev, struct device_node *node,
-			     struct v4l2_async_notifier *notifier, bool link)
+			     struct v4l2_async_notifier *notifier,
+			     u32 group_id, bool link)
 {
 	struct isp_async_subdev *isd;
 
@@ -2182,6 +2183,7 @@ static int isp_of_parse_node(struct device *dev, struct device_node *node,
 	}
 
 	isd->asd.match_type = V4L2_ASYNC_MATCH_OF;
+	isd->group_id = group_id;
 	notifier->num_subdevs++;
 
 	return 0;
@@ -2193,6 +2195,7 @@ static int isp_of_parse_nodes(struct device *dev,
 	struct device_node *node = NULL;
 	int ret;
 	unsigned int flash = 0;
+	u32 group_id = 0;
 
 	notifier->subdevs = devm_kcalloc(
 		dev, ISP_MAX_SUBDEVS, sizeof(*notifier->subdevs), GFP_KERNEL);
@@ -2201,7 +2204,7 @@ static int isp_of_parse_nodes(struct device *dev,
 
 	while (notifier->num_subdevs < ISP_MAX_SUBDEVS &&
 	       (node = of_graph_get_next_endpoint(dev->of_node, node))) {
-		ret = isp_of_parse_node(dev, node, notifier, true);
+		ret = isp_of_parse_node(dev, node, notifier, group_id++, true);
 		if (ret)
 			return ret;
 	}
@@ -2213,11 +2216,43 @@ static int isp_of_parse_nodes(struct device *dev,
 			of_parse_phandle(dev->of_node, "ti,camera-flashes",
 					 flash++);
 		unsigned int i;
+		u32 flash_group_id;
 
 		if (!sensor_node)
 			return -EINVAL;
 
-		ret = isp_of_parse_node(dev, node, notifier, false);
+		for (i = 0; i < notifier->num_subdevs; i++) {
+			struct isp_async_subdev *isd = container_of(
+				notifier->subdevs[i], struct isp_async_subdev,
+				asd);
+
+			if (!isd->bus)
+				continue;
+
+			dev_dbg(dev, "match \"%s\", \"%s\"\n",sensor_node->name,
+				isd->asd.match.of.node->name);
+
+			if (sensor_node != isd->asd.match.of.node)
+				continue;
+
+			dev_dbg(dev, "found\n");
+
+			flash_group_id = isd->group_id;
+			break;
+		}
+
+		/*
+		 * No sensor was found --- complain and allocate a new
+		 * group ID.
+		 */
+		if (i == notifier->num_subdevs) {
+			dev_warn(dev, "no device node \"%s\" was found",
+				 sensor_node->name);
+			flash_group_id = group_id++;
+		}
+
+		ret = isp_of_parse_node(dev, node, notifier, flash_group_id,
+					false);
 		if (ret)
 			return ret;
 	}
@@ -2232,6 +2267,7 @@ static int isp_subdev_notifier_bound(struct v4l2_async_notifier *async,
 	struct isp_async_subdev *isd =
 		container_of(asd, struct isp_async_subdev, asd);
 
+	subdev->entity.group_id = isd->group_id;
 	isd->sd = subdev;
 	isd->sd->host_priv = isd->bus;
 
