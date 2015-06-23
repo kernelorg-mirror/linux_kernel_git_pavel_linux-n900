@@ -3,7 +3,7 @@ eval ` eldk-switch.sh -r 5.4 armv7a`
 # PATH=$PATH:/opt/eldk-4.2-2008-11-24/usr/bin/
 D=`git describe`
 TFTP=/srv/tftp
-ARCH=arm nice make -j 3 zImage && \
+ARCH=arm nice make -j 3 zImage uImage LOADADDR=0x82000000 && \
     ARCH=arm make omap3-n900.dtb && \
     cat arch/arm/boot/zImage arch/arm/boot/dts/omap3-n900.dtb > arch/arm/boot/zImage-dtb && \
     ARCH=arm nice make -j 3 modules && \
