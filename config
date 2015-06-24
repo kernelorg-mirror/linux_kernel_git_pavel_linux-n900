@@ -1,6 +1,6 @@
 #
 # Automatically generated file; DO NOT EDIT.
-# Linux/arm 4.1.0-rc7 Kernel Configuration
+# Linux/arm 4.1.0 Kernel Configuration
 #
 CONFIG_ARM=y
 CONFIG_ARM_HAS_SG_CHAIN=y
@@ -522,7 +522,7 @@ CONFIG_ARM_APPENDED_DTB=y
 CONFIG_ARM_ATAG_DTB_COMPAT=y
 CONFIG_ARM_ATAG_DTB_COMPAT_CMDLINE_FROM_BOOTLOADER=y
 # CONFIG_ARM_ATAG_DTB_COMPAT_CMDLINE_EXTEND is not set
-CONFIG_CMDLINE="console=ttyO2,115200 console=tty root=/dev/nfs nfsroot=10.0.2.2:/srv/nfs/n900 rw ip=10.0.2.15::10.0.2.1:255.255.255.0 rw  no-omap-wd no-ext-wd console=tty0 nokia-modem.pm=1"
+CONFIG_CMDLINE="console=ttyO2,115200 console=tty root=/dev/nfs nfsroot=10.0.2.2:/srv/nfs/n900 rw ip=10.0.2.15::10.0.2.1:255.255.255.0 rw  no-omap-wd no-ext-wd console=tty0 nokia-modem.pm=1 1 single"
 CONFIG_KEXEC=y
 # CONFIG_CRASH_DUMP is not set
 CONFIG_AUTO_ZRELADDR=y
@@ -1445,6 +1445,8 @@ CONFIG_OMAP_SSI_PORT=y
 #
 # HSI clients
 #
+CONFIG_NOKIA_MODEM=y
+CONFIG_CMT_SPEECH=y
 CONFIG_SSI_PROTOCOL=y
 CONFIG_HSI_CHAR=y
 CONFIG_HSI_CMT_SPEECH=y
@@ -1870,7 +1872,6 @@ CONFIG_MEDIA_RADIO_SUPPORT=y
 # CONFIG_MEDIA_SDR_SUPPORT is not set
 CONFIG_MEDIA_RC_SUPPORT=y
 CONFIG_MEDIA_CONTROLLER=y
-# CONFIG_MEDIA_CONTROLLER_DVB is not set
 CONFIG_VIDEO_DEV=y
 CONFIG_VIDEO_V4L2_SUBDEV_API=y
 CONFIG_VIDEO_V4L2=y
