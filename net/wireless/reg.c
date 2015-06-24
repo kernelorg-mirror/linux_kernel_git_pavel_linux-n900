@@ -521,7 +521,8 @@ static void reg_regdb_query(const char *alpha2)
 static void reg_regdb_size_check(void)
 {
 	/* We should ideally BUILD_BUG_ON() but then random builds would fail */
-	WARN_ONCE(!reg_regdb_size, "db.txt is empty, you should update it...");
+	if (!reg_regdb_size)
+		printk(KERN_ERR  "db.txt is empty, you should update it...");
 }
 #else
 static inline void reg_regdb_size_check(void) {}
