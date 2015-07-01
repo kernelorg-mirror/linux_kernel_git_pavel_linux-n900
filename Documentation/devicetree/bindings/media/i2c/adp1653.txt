@@ -2,11 +2,11 @@
 
 Required Properties:
 
-  - compatible: Must contain be "adi,adp1653"
+  - compatible: Must contain "adi,adp1653"
 
   - reg: I2C slave address
 
-  - enable-gpios: Reference to the GPIO that controls the power for the chip.
+  - enable-gpios: Specifier of the GPIO connected to EN pin
 
 There are two LED outputs available - flash and indicator. One LED is
 represented by one child node, nodes need to be named "flash" and "indicator".

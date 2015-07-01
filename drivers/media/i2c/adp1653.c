@@ -320,8 +320,16 @@ __adp1653_set_power(struct adp1653_flash *flash, int on)
 			udelay(20);
 	}
 
-	if (ret < 0)
-		return ret;
+	if (flash->platform_data->power) {
+		ret = flash->platform_data->power(&flash->subdev, on);
+		if (ret < 0)
+			return ret;
+	} else {
+		gpiod_set_value(flash->platform_data->enable_gpio, on);
+		if (on)
+			/* Some delay is apparently required. */
+			udelay(20);
+	}
 
 	if (!on)
 		return 0;
@@ -333,7 +341,7 @@ __adp1653_set_power(struct adp1653_flash *flash, int on)
 	if (flash->platform_data->power)
 		flash->platform_data->power(&flash->subdev, 0);
 	else
-		gpiod_set_value(flash->platform_data->power_gpio, 0);
+		gpiod_set_value(flash->platform_data->enable_gpio, 0);
 
 	return ret;
 }
@@ -427,12 +435,8 @@ static int adp1653_of_init(struct i2c_client *client,
 			   struct adp1653_flash *flash,
 			   struct device_node *node)
 {
-	u32 val;
 	struct adp1653_platform_data *pd;
-	struct device_node *child = NULL;
-
-	if (!node)
-		return -EINVAL;
+	struct device_node *child;
 
 	pd = devm_kzalloc(&client->dev, sizeof(*pd), GFP_KERNEL);
 	if (!pd)
@@ -443,30 +447,35 @@ static int adp1653_of_init(struct i2c_client *client,
 	if (!child)
 		return -EINVAL;
 
-	if (of_property_read_u32(child, "flash-timeout-us", &val))
+	if (of_property_read_u32(child, "flash-timeout-us",
+				 &pd->max_flash_timeout))
 		goto err;
 
-	pd->max_flash_timeout = val;
-	if (of_property_read_u32(child, "flash-max-microamp", &val))
+	if (of_property_read_u32(child, "flash-max-microamp",
+				 &pd->max_flash_intensity))
 		goto err;
-	pd->max_flash_intensity = val/1000;
 
-	if (of_property_read_u32(child, "max-microamp", &val))
+	pd->max_flash_intensity /= 1000;
+
+	if (of_property_read_u32(child, "led-max-microamp",
+				 &pd->max_torch_intensity))
 		goto err;
-	pd->max_torch_intensity = val/1000;
+
+	pd->max_torch_intensity /= 1000;
 	of_node_put(child);
 
 	child = of_get_child_by_name(node, "indicator");
 	if (!child)
 		return -EINVAL;
-	if (of_property_read_u32(child, "max-microamp", &val))
+
+	if (of_property_read_u32(child, "led-max-microamp",
+				 &pd->max_indicator_intensity))
 		goto err;
-	pd->max_indicator_intensity = val;
 
 	of_node_put(child);
 
-	pd->power_gpio = devm_gpiod_get(&client->dev, "enable");
-	if (!pd->power_gpio) {
+	pd->enable_gpio = devm_gpiod_get(&client->dev, "enable");
+	if (!pd->enable_gpio) {
 		dev_err(&client->dev, "Error getting GPIO\n");
 		return -EINVAL;
 	}
@@ -489,11 +498,17 @@ static int adp1653_probe(struct i2c_client *client,
 	if (flash == NULL)
 		return -ENOMEM;
 
-	flash->platform_data = client->dev.platform_data;
 	if (client->dev.of_node) {
 		ret = adp1653_of_init(client, flash, client->dev.of_node);
 		if (ret)
 			return ret;
+	} else {
+		if (!client->dev.platform_data) {
+			dev_err(&client->dev,
+				"Neither DT not platform data provided\n");
+			return EINVAL;
+		}
+		flash->platform_data = client->dev.platform_data;
 	}
 
 	mutex_init(&flash->power_lock);
