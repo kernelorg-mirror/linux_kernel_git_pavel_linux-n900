@@ -23,7 +23,6 @@
 #include "u_ether.h"
 #include "u_phonet.h"
 #include "u_ecm.h"
-#include "gadget_chips.h"
 #include "f_mass_storage.h"
 
 /* Defines */
@@ -42,8 +41,6 @@ static struct fsg_module_parameters fsg_mod_data = {
 	.removable = { 1, 1, },
 };
 
-FSG_MODULE_PARAMETERS(/* no prefix */, fsg_mod_data);
-
 #ifdef CONFIG_USB_GADGET_DEBUG_FILES
 
 static unsigned int fsg_num_buffers = CONFIG_USB_GADGET_STORAGE_NUM_BUFFERS;
@@ -57,6 +54,8 @@ static unsigned int fsg_num_buffers = CONFIG_USB_GADGET_STORAGE_NUM_BUFFERS;
 #define fsg_num_buffers	CONFIG_USB_GADGET_STORAGE_NUM_BUFFERS
 
 #endif /* CONFIG_USB_DEBUG */
+
+FSG_MODULE_PARAMETERS(/* no prefix */, fsg_mod_data);
 
 #define NOKIA_VENDOR_ID			0x0421	/* Nokia */
 #define NOKIA_PRODUCT_ID		0x01c8	/* Nokia Gadget */
@@ -90,10 +89,10 @@ static struct usb_gadget_strings *dev_strings[] = {
 static struct usb_device_descriptor device_desc = {
 	.bLength		= USB_DT_DEVICE_SIZE,
 	.bDescriptorType	= USB_DT_DEVICE,
-	.bcdUSB			= __constant_cpu_to_le16(0x0200),
+	.bcdUSB			= cpu_to_le16(0x0200),
 	.bDeviceClass		= USB_CLASS_COMM,
-	.idVendor		= __constant_cpu_to_le16(NOKIA_VENDOR_ID),
-	.idProduct		= __constant_cpu_to_le16(NOKIA_PRODUCT_ID),
+	.idVendor		= cpu_to_le16(NOKIA_VENDOR_ID),
+	.idProduct		= cpu_to_le16(NOKIA_PRODUCT_ID),
 	.bcdDevice		= cpu_to_le16(NOKIA_VERSION_NUM),
 	/* .iManufacturer = DYNAMIC */
 	/* .iProduct = DYNAMIC */
@@ -292,7 +291,7 @@ static int nokia_bind(struct usb_composite_dev *cdev)
 	nokia_config_500ma_driver.iConfiguration = status;
 	nokia_config_100ma_driver.iConfiguration = status;
 
-	if (!gadget_supports_altsettings(gadget)) {
+	if (!gadget_is_altset_supported(gadget)) {
 		status = -ENODEV;
 		goto err_usb;
 	}
@@ -339,19 +338,15 @@ static int nokia_bind(struct usb_composite_dev *cdev)
 	if (status)
 		goto err_msg_inst;
 
-	status = fsg_common_set_nluns(fsg_opts->common, fsg_config.nluns);
-	if (status)
-		goto err_msg_buf;
-
 	status = fsg_common_set_cdev(fsg_opts->common, cdev, fsg_config.can_stall);
 	if (status)
-		goto err_msg_set_nluns;
+		goto err_msg_buf;
 
 	fsg_common_set_sysfs(fsg_opts->common, true);
 
 	status = fsg_common_create_luns(fsg_opts->common, &fsg_config);
 	if (status)
-		goto err_msg_set_nluns;
+		goto err_msg_buf;
 
 	fsg_common_set_inquiry_string(fsg_opts->common, fsg_config.vendor_name,
 				      fsg_config.product_name);
@@ -360,7 +355,7 @@ static int nokia_bind(struct usb_composite_dev *cdev)
 	status = usb_add_config(cdev, &nokia_config_500ma_driver,
 			nokia_bind_config);
 	if (status < 0)
-		goto err_msg_set_cdev;
+		goto err_msg_luns;
 
 	status = usb_add_config(cdev, &nokia_config_100ma_driver,
 			nokia_bind_config);
@@ -381,10 +376,8 @@ err_put_cfg1:
 	if (!IS_ERR_OR_NULL(f_phonet_cfg1))
 		usb_put_function(f_phonet_cfg1);
 	usb_put_function(f_ecm_cfg1);
-err_msg_set_cdev:
+err_msg_luns:
 	fsg_common_remove_luns(fsg_opts->common);
-err_msg_set_nluns:
-	fsg_common_free_luns(fsg_opts->common);
 err_msg_buf:
 	fsg_common_free_buffers(fsg_opts->common);
 err_msg_inst:

@@ -245,7 +245,7 @@ static void omap2_mcspi_set_enable(const struct spi_device *spi, int enable)
 
 static void omap2_mcspi_set_cs(struct spi_device *spi, bool enable)
 {
-       struct omap2_mcspi *mcspi = spi_master_get_devdata(spi->master);
+	struct omap2_mcspi *mcspi = spi_master_get_devdata(spi->master);
 	u32 l;
 
 	/* The controller handles the inverted chip selects
@@ -256,7 +256,11 @@ static void omap2_mcspi_set_cs(struct spi_device *spi, bool enable)
 		enable = !enable;
 
 	if (spi->controller_state) {
-               pm_runtime_get_sync(mcspi->dev);
+		int err = pm_runtime_get_sync(mcspi->dev);
+		if (err < 0) {
+			dev_err(mcspi->dev, "failed to get sync: %d\n", err);
+			return;
+		}
 
 		l = mcspi_cached_chconf0(spi);
 
@@ -267,8 +271,8 @@ static void omap2_mcspi_set_cs(struct spi_device *spi, bool enable)
 
 		mcspi_write_chconf0(spi, l);
 
-               pm_runtime_mark_last_busy(mcspi->dev);
-               pm_runtime_put_autosuspend(mcspi->dev);
+		pm_runtime_mark_last_busy(mcspi->dev);
+		pm_runtime_put_autosuspend(mcspi->dev);
 	}
 }
 
