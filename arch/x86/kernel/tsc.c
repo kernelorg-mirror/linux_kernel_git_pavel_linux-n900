@@ -21,6 +21,7 @@
 #include <asm/hypervisor.h>
 #include <asm/nmi.h>
 #include <asm/x86_init.h>
+#include <asm/geode.h>
 
 unsigned int __read_mostly cpu_khz;	/* TSC clocks / usec, not used here */
 EXPORT_SYMBOL(cpu_khz);
@@ -38,7 +39,7 @@ static int __read_mostly tsc_unstable;
    erroneous rdtsc usage on !cpu_has_tsc processors */
 static int __read_mostly tsc_disabled = -1;
 
-static struct static_key __use_tsc = STATIC_KEY_INIT;
+static DEFINE_STATIC_KEY_FALSE(__use_tsc);
 
 int tsc_clocksource_reliable;
 
@@ -274,7 +275,12 @@ done:
  */
 u64 native_sched_clock(void)
 {
-	u64 tsc_now;
+	if (static_branch_likely(&__use_tsc)) {
+		u64 tsc_now = rdtsc();
+
+		/* return the value in ns */
+		return cycles_2_ns(tsc_now);
+	}
 
 	/*
 	 * Fall back to jiffies if there's no TSC available:
@@ -284,16 +290,9 @@ u64 native_sched_clock(void)
 	 *   very important for it to be as fast as the platform
 	 *   can achieve it. )
 	 */
-	if (!static_key_false(&__use_tsc)) {
-		/* No locking but a rare wrong value is not a big deal: */
-		return (jiffies_64 - INITIAL_JIFFIES) * (1000000000 / HZ);
-	}
 
-	/* read the Time Stamp Counter: */
-	tsc_now = rdtsc();
-
-	/* return the value in ns */
-	return cycles_2_ns(tsc_now);
+	/* No locking but a rare wrong value is not a big deal: */
+	return (jiffies_64 - INITIAL_JIFFIES) * (1000000000 / HZ);
 }
 
 /*
@@ -1015,15 +1014,17 @@ EXPORT_SYMBOL_GPL(mark_tsc_unstable);
 
 static void __init check_system_tsc_reliable(void)
 {
-#ifdef CONFIG_MGEODE_LX
-	/* RTSC counts during suspend */
+#if defined(CONFIG_MGEODEGX1) || defined(CONFIG_MGEODE_LX) || defined(CONFIG_X86_GENERIC)
+	if (is_geode_lx()) {
+		/* RTSC counts during suspend */
 #define RTSC_SUSP 0x100
-	unsigned long res_low, res_high;
+		unsigned long res_low, res_high;
 
-	rdmsr_safe(MSR_GEODE_BUSCONT_CONF0, &res_low, &res_high);
-	/* Geode_LX - the OLPC CPU has a very reliable TSC */
-	if (res_low & RTSC_SUSP)
-		tsc_clocksource_reliable = 1;
+		rdmsr_safe(MSR_GEODE_BUSCONT_CONF0, &res_low, &res_high);
+		/* Geode_LX - the OLPC CPU has a very reliable TSC */
+		if (res_low & RTSC_SUSP)
+			tsc_clocksource_reliable = 1;
+	}
 #endif
 	if (boot_cpu_has(X86_FEATURE_TSC_RELIABLE))
 		tsc_clocksource_reliable = 1;
@@ -1212,7 +1213,7 @@ void __init tsc_init(void)
 	/* now allow native_sched_clock() to use rdtsc */
 
 	tsc_disabled = 0;
-	static_key_slow_inc(&__use_tsc);
+	static_branch_enable(&__use_tsc);
 
 	if (!no_sched_irq_time)
 		enable_sched_clock_irqtime();

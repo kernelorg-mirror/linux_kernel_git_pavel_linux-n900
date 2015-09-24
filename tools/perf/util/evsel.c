@@ -787,7 +787,7 @@ void perf_evsel__config(struct perf_evsel *evsel, struct record_opts *opts)
 		perf_evsel__config_callgraph(evsel, opts, &callchain_param);
 
 	if (opts->sample_intr_regs) {
-		attr->sample_regs_intr = PERF_REGS_MASK;
+		attr->sample_regs_intr = opts->sample_intr_regs;
 		perf_evsel__set_sample_bit(evsel, REGS_INTR);
 	}
 
@@ -1033,6 +1033,7 @@ void perf_evsel__exit(struct perf_evsel *evsel)
 	perf_evsel__free_config_terms(evsel);
 	close_cgroup(evsel->cgrp);
 	cpu_map__put(evsel->cpus);
+	cpu_map__put(evsel->own_cpus);
 	thread_map__put(evsel->threads);
 	zfree(&evsel->group_name);
 	zfree(&evsel->name);
