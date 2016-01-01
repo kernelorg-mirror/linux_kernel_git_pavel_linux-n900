@@ -58,8 +58,8 @@
 
 #define BT_SECURITY	4
 struct bt_security {
-	__u8 level;
-	__u8 key_size;
+	u8 level;
+	u8 key_size;
 };
 #define BT_SECURITY_SDP		0
 #define BT_SECURITY_LOW		1
@@ -76,7 +76,7 @@ struct bt_security {
 
 #define BT_POWER	9
 struct bt_power {
-	__u8 force_active;
+	u8 force_active;
 };
 #define BT_POWER_FORCE_ACTIVE_OFF 0
 #define BT_POWER_FORCE_ACTIVE_ON  1
@@ -110,7 +110,7 @@ struct bt_power {
 
 #define BT_VOICE		11
 struct bt_voice {
-	__u16 setting;
+	u16 setting;
 };
 
 #define BT_VOICE_TRANSPARENT			0x0003
@@ -186,7 +186,7 @@ static inline const char *state_to_string(int state)
 
 /* BD Address */
 typedef struct {
-	__u8 b[6];
+	u8 b[6];
 } __packed bdaddr_t;
 
 /* BD Address type */
@@ -194,7 +194,7 @@ typedef struct {
 #define BDADDR_LE_PUBLIC	0x01
 #define BDADDR_LE_RANDOM	0x02
 
-static inline bool bdaddr_type_is_valid(__u8 type)
+static inline bool bdaddr_type_is_valid(u8 type)
 {
 	switch (type) {
 	case BDADDR_BREDR:
@@ -206,7 +206,7 @@ static inline bool bdaddr_type_is_valid(__u8 type)
 	return false;
 }
 
-static inline bool bdaddr_type_is_le(__u8 type)
+static inline bool bdaddr_type_is_le(u8 type)
 {
 	switch (type) {
 	case BDADDR_LE_PUBLIC:
@@ -276,15 +276,16 @@ struct sock *bt_accept_dequeue(struct sock *parent, struct socket *newsock);
 
 /* Skb helpers */
 struct l2cap_ctrl {
-	__u8	sframe:1,
+	u8	sframe:1,
 		poll:1,
 		final:1,
 		fcs:1,
 		sar:2,
 		super:2;
-	__u16	reqseq;
-	__u16	txseq;
-	__u8	retries;
+
+	u16	reqseq;
+	u16	txseq;
+	u8	retries;
 	__le16  psm;
 	bdaddr_t bdaddr;
 	struct l2cap_chan *chan;
@@ -297,7 +298,7 @@ typedef void (*hci_req_complete_skb_t)(struct hci_dev *hdev, u8 status,
 				       u16 opcode, struct sk_buff *skb);
 
 struct hci_ctrl {
-	__u16 opcode;
+	u16 opcode;
 	bool req_start;
 	u8 req_event;
 	hci_req_complete_t req_complete;
@@ -305,10 +306,10 @@ struct hci_ctrl {
 };
 
 struct bt_skb_cb {
-	__u8 pkt_type;
-	__u8 force_active;
-	__u16 expect;
-	__u8 incoming:1;
+	u8 pkt_type;
+	u8 force_active;
+	u16 expect;
+	u8 incoming:1;
 	union {
 		struct l2cap_ctrl l2cap;
 		struct hci_ctrl hci;
@@ -358,7 +359,7 @@ out:
 	return NULL;
 }
 
-int bt_to_errno(__u16 code);
+int bt_to_errno(u16 code);
 
 void hci_sock_set_flag(struct sock *sk, int nr);
 void hci_sock_clear_flag(struct sock *sk, int nr);
