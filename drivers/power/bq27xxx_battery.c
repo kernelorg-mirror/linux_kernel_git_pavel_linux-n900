@@ -470,8 +470,9 @@ static inline int bq27xxx_read(struct bq27xxx_device_info *di, int reg_index,
 static int bq27xxx_battery_read_soc(struct bq27xxx_device_info *di)
 {
 	int soc;
+	bool single = di->chip == BQ27000 || di->chip == BQ27010;
 
-	soc = bq27xxx_read(di, BQ27XXX_REG_SOC, false);
+	soc = bq27xxx_read(di, BQ27XXX_REG_SOC, single);
 
 	if (soc < 0)
 		dev_dbg(di->dev, "error reading State-of-Charge\n");
