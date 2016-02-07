@@ -789,6 +789,7 @@ static int twl4030_shutdown(struct twl4030_usb *twl)
 {
 	int val;
 
+	usb_remove_phy(&twl->phy);
 	pm_runtime_get_sync(twl->dev);
 	cancel_delayed_work(&twl->id_workaround_work);
 
