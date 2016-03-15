@@ -130,7 +130,8 @@ struct dev_data {
 					setup_can_stall : 1,
 					setup_out_ready : 1,
 					setup_out_error : 1,
-					setup_abort : 1;
+					setup_abort : 1,
+					gadget_registered : 1;
 	unsigned			setup_wLength;
 
 	/* the rest is basically write-once */
@@ -1179,7 +1180,8 @@ dev_release (struct inode *inode, struct file *fd)
 
 	/* closing ep0 === shutdown all */
 
-	usb_gadget_unregister_driver (&gadgetfs_driver);
+	if (dev->gadget_registered)
+		usb_gadget_unregister_driver (&gadgetfs_driver);
 
 	/* at this point "good" hardware has disconnected the
 	 * device from USB; the host won't see it any more.
@@ -1521,10 +1523,10 @@ static void destroy_ep_files (struct dev_data *dev)
 		spin_unlock_irq (&dev->lock);
 
 		/* break link to dcache */
-		mutex_lock (&parent->i_mutex);
+		inode_lock(parent);
 		d_delete (dentry);
 		dput (dentry);
-		mutex_unlock (&parent->i_mutex);
+		inode_unlock(parent);
 
 		spin_lock_irq (&dev->lock);
 	}
@@ -1847,6 +1849,7 @@ dev_config (struct file *fd, const char __user *buf, size_t len, loff_t *ptr)
 		 * kick in after the ep0 descriptor is closed.
 		 */
 		value = len;
+		dev->gadget_registered = true;
 	}
 	return value;
 

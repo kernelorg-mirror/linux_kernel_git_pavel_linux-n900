@@ -799,7 +799,7 @@ static int twl4030_shutdown(struct twl4030_usb *twl)
 
 	/* idle ulpi before powering off */
 	if (cable_present(twl->linkstat))
-	pm_runtime_put_noidle(twl->dev);
+		pm_runtime_put_noidle(twl->dev);
 	pm_runtime_mark_last_busy(twl->dev);
 	pm_runtime_put_sync_suspend(twl->dev);
 	pm_runtime_disable(twl->dev);
