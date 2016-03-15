@@ -541,14 +541,13 @@ err1:
 	return ret;
 }
 
-int usb_gadget_probe_driver(struct usb_gadget_driver *driver)
+#define USB_GADGET_BIND_RETRIES                5
+#define USB_GADGET_BIND_TIMEOUT                (3 * HZ)
+static void usb_gadget_work(struct work_struct *work)
 {
-	struct usb_gadget_driver *driver = container_of(work,
-						struct usb_gadget_driver,
-						work.work);
 	struct usb_udc		*udc = NULL;
 	int			ret = -ENODEV;
-
+	
 	if (driver->retries++ > USB_GADGET_BIND_RETRIES) {
 		pr_err("couldn't find an available UDC\n");
 		return;
@@ -571,11 +570,9 @@ int usb_gadget_probe_driver(struct usb_gadget_driver *driver)
 		}
 	}
 
-	list_add_tail(&driver->pending, &gadget_driver_pending_list);
-	pr_info("udc-core: couldn't find an available UDC - added [%s] to list of pending drivers\n",
-		driver->function);
-	mutex_unlock(&udc_lock);
-	return 0;
+       schedule_delayed_work(&driver->work, USB_GADGET_BIND_TIMEOUT);
+      return;
+
 found:
 	ret = udc_bind_to_driver(udc, driver);
 	mutex_unlock(&udc_lock);
