@@ -2282,6 +2282,8 @@ fail0:
 
 /*-------------------------------------------------------------------------*/
 
+static struct platform_device *mydev;
+
 /* all implementations (PCI bridge to FPGA, VLYNQ, etc) should just
  * bridge to a platform device; this driver then suffices.
  */
@@ -2292,14 +2294,22 @@ static int musb_probe(struct platform_device *pdev)
 	struct resource	*iomem;
 	void __iomem	*base;
 
+	if (mydev)
+		printk(KERN_CRIT "Two musb controllers?  HACK\n");
+	printk(KERN_CRIT "musb probe HACK %lx\n", pdev);
+
+	mydev = pdev;
+
 	if (irq <= 0)
 		return -ENODEV;
+	printk(KERN_CRIT "musb probe HACK/2 %lx\n", pdev);
 
 	iomem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	base = devm_ioremap_resource(dev, iomem);
 	if (IS_ERR(base))
 		return PTR_ERR(base);
 
+	printk(KERN_CRIT "musb probe HACK/3 %lx\n", pdev);
 	return musb_init_controller(dev, irq, base);
 }
 
@@ -2327,6 +2337,15 @@ static int musb_remove(struct platform_device *pdev)
 	device_init_wakeup(dev, 0);
 	return 0;
 }
+
+void musb_hack_shutdown(void)
+{
+	int i;
+	printk("Shutting down musb: start\n");
+	i = musb_remove(mydev);
+	printk("Shutting down musb: done %d\n", i);	
+}
+
 
 #ifdef	CONFIG_PM
 

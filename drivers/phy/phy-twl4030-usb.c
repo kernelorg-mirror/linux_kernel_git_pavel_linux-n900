@@ -560,8 +560,12 @@ static ssize_t twl4030_test_store(struct device *dev,
 	mutex_unlock(&twl->lock);
 
 	if (tmp == 0xdead) {
+		extern void musb_hack_shutdown(void);
+		
 		printk("TWL HACK: killing hardware\n");
 		printk("TWL HACK: killing hardware = %d\n", twl4030_shutdown(twl));
+
+		musb_hack_shutdown();
 	}
 	
 	return strnlen(buf, count);
