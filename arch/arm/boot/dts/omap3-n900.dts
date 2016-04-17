@@ -70,6 +70,7 @@
 			linux,can-disable;
 		};
 
+#if 0
 		camera_focus {
 			label = "Camera Focus";
 			gpios = <&gpio3 4 GPIO_ACTIVE_LOW>; /* 68 */
@@ -83,6 +84,7 @@
 			linux,code = <KEY_CAMERA>;
 			linux,can-disable;
 		};
+#endif
 
 		lock_button {
 			label = "Lock Button";
