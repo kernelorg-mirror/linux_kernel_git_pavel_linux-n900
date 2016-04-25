@@ -223,6 +223,10 @@ obj-$(CONFIG_SOC_DRA7XX)		+= omap_hwmod_7xx_data.o
 # EMU peripherals
 obj-$(CONFIG_HW_PERF_EVENTS)		+= pmu.o
 
+ifneq ($(CONFIG_TIDSPBRIDGE),)
+obj-y					+= dsp.o
+endif
+
 # OMAP2420 MSDI controller integration support ("MMC")
 obj-$(CONFIG_SOC_OMAP2420)		+= msdi.o
 
@@ -233,6 +237,7 @@ obj-$(CONFIG_MACH_NOKIA_N8X0)		+= board-n8x0.o
 obj-$(CONFIG_MACH_NOKIA_RX51)		+= board-rx51.o sdram-nokia.o
 obj-$(CONFIG_MACH_NOKIA_RX51)		+= board-rx51-peripherals.o
 obj-$(CONFIG_MACH_NOKIA_RX51)		+= board-rx51-video.o
+obj-$(CONFIG_MACH_NOKIA_RX51)		+= board-rx51-compat.o
 
 # Platform specific device init code
 

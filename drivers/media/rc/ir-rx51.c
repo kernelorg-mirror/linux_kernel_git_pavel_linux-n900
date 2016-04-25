@@ -25,9 +25,9 @@
 #include <linux/platform_device.h>
 #include <linux/sched.h>
 #include <linux/wait.h>
+#include <linux/clk.h>
 
-#include <plat/dmtimer.h>
-#include <plat/clock.h>
+#include "../../../arch/arm/plat-omap/include/plat/dmtimer.h"
 
 #include <media/lirc.h>
 #include <media/lirc_dev.h>
@@ -208,7 +208,7 @@ static int lirc_rx51_init_port(struct lirc_rx51 *lirc_rx51)
 	}
 
 	clk_fclk = omap_dm_timer_get_fclk(lirc_rx51->pwm_timer);
-	lirc_rx51->fclk_khz = clk_fclk->rate / 1000;
+	lirc_rx51->fclk_khz = clk_get_rate(clk_fclk) / 1000;
 
 	return 0;
 

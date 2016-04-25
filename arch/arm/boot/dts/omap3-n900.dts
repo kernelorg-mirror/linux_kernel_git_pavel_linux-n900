@@ -26,6 +26,23 @@
 	status = "disabled";
 };
 
+&mmu_iva {
+	status = "ok";
+};
+
+&iva {
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	memory-region = <&dsp_reserved>;
+	iommus = <&mmu_iva>;
+	mboxes = <&mailbox &mbox_dsp>;
+
+	iva@0 {
+		reg = <0>;
+	};
+};
+
 / {
 	model = "Nokia N900";
 	compatible = "nokia,omap3-n900", "ti,omap3430", "ti,omap3";
@@ -57,6 +74,23 @@
 	memory {
 		device_type = "memory";
 		reg = <0x80000000 0x10000000>; /* 256 MB */
+	};
+
+	reserved-memory {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		dsp_reserved: dsp {
+			size = <0x900000>;
+			alignment = <0x100000>;
+			compatible = "ti,dsp-memsize";
+		};
+		omapfb_reserved: omapfb {
+			size = <0x700000>;
+			alignment = <0x100000>;
+			compatible = "ti,omapfb-memsize";
+		};
 	};
 
 	gpio_keys {
@@ -144,6 +178,83 @@
 		compatible = "nokia,n900-battery";
 		io-channels = <&twl_madc 0>, <&twl_madc 4>, <&twl_madc 12>;
 		io-channel-names = "temp", "bsi", "vbat";
+	};
+
+	rear_camera: camera@0 {
+		compatible = "linux,camera";
+
+		module {
+			model = "TCM8341MD";
+			sensor = <&cam1>;
+		};
+	};
+
+	front_camera: camera@1 {
+		compatible = "linux,camera";
+
+		module {
+			model = "VS6555";
+			sensor = <&cam2>;
+		};
+	};
+
+	video-bus-switch {
+		compatible = "video-bus-switch";
+
+		switch-gpios = <&gpio4 1 GPIO_ACTIVE_HIGH>; /* 97 */
+
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			port@0 {
+				reg = <0>;
+
+				csi_switch_in: endpoint {
+					remote-endpoint = <&csi_isp>;
+				};
+			};
+
+			port@1 {
+				reg = <1>;
+
+				csi_switch_out1: endpoint {
+					remote-endpoint = <&csi_cam1>;
+				};
+			};
+
+			port@2 {
+				reg = <2>;
+
+				csi_switch_out2: endpoint {
+					remote-endpoint = <&csi_cam2>;
+				};
+			};
+		};
+	};
+};
+
+&isp {
+	vdds_csib-supply = <&vaux2>;
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&camera_pins>;
+
+	ports {
+		port@1 {
+			reg = <1>;
+
+			csi_isp: endpoint {
+				remote-endpoint = <&csi_switch_in>;
+				bus-type = <3>; /* CCP2 */
+				clock-lanes = <0>;
+				data-lanes = <1>;
+				lane-polarity = <0 0>;
+				clock-inv = <0>;
+				strobe = <0>;
+				crc = <0>;
+			};
+		};
 	};
 };
 
@@ -309,6 +420,22 @@
 			OMAP3_CORE1_IOPAD(0x218e, PIN_OUTPUT | MUX_MODE4)		/* gpio 157 => cmt_bsi */
 		>;
 	};
+
+	camera_pins: pinmux_camera {
+		pinctrl-single,pins = <
+			OMAP3_CORE1_IOPAD(0x210c, PIN_OUTPUT | MUX_MODE7)       /* cam_hs */
+			OMAP3_CORE1_IOPAD(0x210e, PIN_OUTPUT | MUX_MODE7)       /* cam_vs */
+			OMAP3_CORE1_IOPAD(0x2110, PIN_OUTPUT | MUX_MODE0)       /* cam_xclka */
+			OMAP3_CORE1_IOPAD(0x211e, PIN_OUTPUT | MUX_MODE7)       /* cam_d4 */
+			OMAP3_CORE1_IOPAD(0x2122, PIN_INPUT | MUX_MODE0)        /* cam_d6 */
+			OMAP3_CORE1_IOPAD(0x2124, PIN_INPUT | MUX_MODE0)        /* cam_d7 */
+			OMAP3_CORE1_IOPAD(0x2126, PIN_INPUT | MUX_MODE0)        /* cam_d8 */
+			OMAP3_CORE1_IOPAD(0x2128, PIN_INPUT | MUX_MODE0)        /* cam_d9 */
+			OMAP3_CORE1_IOPAD(0x212a, PIN_OUTPUT | MUX_MODE7)       /* cam_d10 */
+			OMAP3_CORE1_IOPAD(0x212e, PIN_OUTPUT | MUX_MODE7)       /* cam_xclkb */
+			OMAP3_CORE1_IOPAD(0x2132, PIN_OUTPUT | MUX_MODE0)       /* cam_strobe */
+		>;
+	};
 };
 
 &i2c1 {
@@ -331,6 +458,7 @@
 	regulator-name = "V28";
 	regulator-min-microvolt = <2800000>;
 	regulator-max-microvolt = <2800000>;
+	regulator-initial-mode = <0x0e>; /* RES_STATE_ACTIVE */
 	regulator-always-on; /* due to battery cover sensor */
 };
 
@@ -338,30 +466,35 @@
 	regulator-name = "VCSI";
 	regulator-min-microvolt = <1800000>;
 	regulator-max-microvolt = <1800000>;
+	regulator-initial-mode = <0x0e>; /* RES_STATE_ACTIVE */
 };
 
 &vaux3 {
 	regulator-name = "VMMC2_30";
 	regulator-min-microvolt = <2800000>;
 	regulator-max-microvolt = <3000000>;
+	regulator-initial-mode = <0x0e>; /* RES_STATE_ACTIVE */
 };
 
 &vaux4 {
 	regulator-name = "VCAM_ANA_28";
 	regulator-min-microvolt = <2800000>;
 	regulator-max-microvolt = <2800000>;
+	regulator-initial-mode = <0x0e>; /* RES_STATE_ACTIVE */
 };
 
 &vmmc1 {
 	regulator-name = "VMMC1";
 	regulator-min-microvolt = <1850000>;
 	regulator-max-microvolt = <3150000>;
+	regulator-initial-mode = <0x0e>; /* RES_STATE_ACTIVE */
 };
 
 &vmmc2 {
 	regulator-name = "V28_A";
 	regulator-min-microvolt = <2800000>;
 	regulator-max-microvolt = <3000000>;
+	regulator-initial-mode = <0x0e>; /* RES_STATE_ACTIVE */
 	regulator-always-on; /* due VIO leak to AIC34 VDDs */
 };
 
@@ -369,6 +502,7 @@
 	regulator-name = "VPLL";
 	regulator-min-microvolt = <1800000>;
 	regulator-max-microvolt = <1800000>;
+	regulator-initial-mode = <0x0e>; /* RES_STATE_ACTIVE */
 	regulator-always-on;
 };
 
@@ -376,6 +510,7 @@
 	regulator-name = "VSDI_CSI";
 	regulator-min-microvolt = <1800000>;
 	regulator-max-microvolt = <1800000>;
+	regulator-initial-mode = <0x0e>; /* RES_STATE_ACTIVE */
 	regulator-always-on;
 };
 
@@ -383,6 +518,7 @@
 	regulator-name = "VMMC2_IO_18";
 	regulator-min-microvolt = <1800000>;
 	regulator-max-microvolt = <1800000>;
+	regulator-initial-mode = <0x0e>; /* RES_STATE_ACTIVE */
 };
 
 &vio {
@@ -487,6 +623,28 @@
 	pinctrl-0 = <&i2c2_pins>;
 
 	clock-frequency = <100000>;
+
+	cam2: camera@10 {
+		compatible = "nokia,smia";
+		reg = <0x10>;
+
+		vana-supply = <&vaux4>;
+
+		clocks = <&isp 0>;
+		clock-frequency = <9600000>;
+
+		port {
+			csi_cam2: endpoint {
+				link-frequencies = /bits/ 64 <60000000>;
+				bus-type = <3>; /* CCP2 */
+				strobe = <0>;
+				clock-inv = <0>;
+				crc = <0>;
+
+				remote-endpoint = <&csi_switch_out2>;
+			};
+		};
+	};
 
 	tlv320aic3x: tlv320aic3x@18 {
 		compatible = "ti,tlv320aic3x";
@@ -697,9 +855,34 @@
 		st,max-limit-y = <32>;
 		st,max-limit-z = <32>;
 	};
+
+	cam1: camera@3e {
+		compatible = "toshiba,et8ek8";
+		reg = <0x3e>;
+
+		vana-supply = <&vaux4>;
+
+		clocks = <&isp 0>;
+		clock-names = "extclk";
+		clock-frequency = <9600000>;
+
+		reset-gpio = <&gpio4 6 GPIO_ACTIVE_HIGH>; /* 102 */
+
+		port {
+			csi_cam1: endpoint {
+				bus-type = <3>; /* CCP2 */
+				strobe = <1>;
+				clock-inv = <0>;
+				crc = <1>;
+
+				remote-endpoint = <&csi_switch_out1>;
+			};
+		};
+	};
 };
 
 &mmc1 {
+	slot-name = "external";
 	pinctrl-names = "default";
 	pinctrl-0 = <&mmc1_pins>;
 	vmmc-supply = <&vmmc1>;
@@ -712,6 +895,7 @@
 
 /* most boards use vaux3, only some old versions use vmmc2 instead */
 &mmc2 {
+	slot-name = "internal";
 	pinctrl-names = "default";
 	pinctrl-0 = <&mmc2_pins>;
 	vmmc-supply = <&vaux3>;
@@ -920,9 +1104,19 @@
 };
 
 &uart2 {
+        compatible = "ti+brcm,omap3-uart,bcm2048", "ti,omap3-uart";
 	interrupts-extended = <&intc 73 &omap3_pmx_core OMAP3_UART2_RX>;
 	pinctrl-names = "default";
 	pinctrl-0 = <&uart2_pins>;
+
+	clocks = <&uart2_fck>, <&uart2_ick>;
+	clock-names = "fck", "ick";
+
+	device {
+		  reset-gpios = <&gpio3 27 GPIO_ACTIVE_HIGH>; /* 91 */
+		  host-wakeup-gpios = <&gpio4 5 GPIO_ACTIVE_HIGH>; /* 101 */
+		  bluetooth-wakeup-gpios = <&gpio2 5 GPIO_ACTIVE_HIGH>; /* 37 */
+	};
 };
 
 &uart3 {
@@ -938,6 +1132,8 @@
 	pinctrl-0 = <&dss_sdi_pins>;
 
 	vdds_sdi-supply = <&vaux1>;
+
+	memory-region = <&omapfb_reserved>;
 
 	ports {
 		#address-cells = <1>;
