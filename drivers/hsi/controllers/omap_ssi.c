@@ -24,7 +24,6 @@
 #include <linux/err.h>
 #include <linux/ioport.h>
 #include <linux/io.h>
-#include <linux/gpio.h>
 #include <linux/clk.h>
 #include <linux/device.h>
 #include <linux/platform_device.h>
@@ -413,7 +412,7 @@ static int __init ssi_hw_init(struct hsi_controller *ssi)
 	}
 	/* Reseting GDD */
 	writel_relaxed(SSI_SWRESET, omap_ssi->gdd + SSI_GDD_GRST_REG);
-	/* Get FCK rate in KHz */
+	/* Get FCK rate in kHz */
 	omap_ssi->fck_rate = DIV_ROUND_CLOSEST(ssi_get_clk_rate(ssi), 1000);
 	dev_dbg(&ssi->device, "SSI fck rate %lu KHz\n", omap_ssi->fck_rate);
 	/* Set default PM settings */
