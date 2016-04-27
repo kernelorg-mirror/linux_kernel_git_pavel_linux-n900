@@ -251,7 +251,7 @@
 				data-lanes = <1>;
 				lane-polarity = <0 0>;
 				clock-inv = <0>;
-				strobe = <0>;
+				strobe = <1>;
 				crc = <0>;
 			};
 		};
