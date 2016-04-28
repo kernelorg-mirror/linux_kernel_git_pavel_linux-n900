@@ -306,6 +306,8 @@ adp1653_init_device(struct adp1653_flash *flash)
 		return -EIO;
 	}
 
+	dev_info(&client->dev, "adp1653 device ok\n", __func__);
+
 	return 0;
 }
 
@@ -492,6 +494,8 @@ static int adp1653_probe(struct i2c_client *client,
 	if (flash == NULL)
 		return -ENOMEM;
 
+	dev_info(&client->dev, "adp1653 probe\n");
+	
 	if (client->dev.of_node) {
 		ret = adp1653_of_init(client, flash, client->dev.of_node);
 		if (ret)
@@ -505,6 +509,7 @@ static int adp1653_probe(struct i2c_client *client,
 		flash->platform_data = client->dev.platform_data;
 	}
 
+	dev_info(&client->dev, "adp1653 probe: subdev\n", __func__);	
 	mutex_init(&flash->power_lock);
 
 	v4l2_i2c_subdev_init(&flash->subdev, client, &adp1653_ops);
@@ -518,6 +523,8 @@ static int adp1653_probe(struct i2c_client *client,
 	ret = media_entity_pads_init(&flash->subdev.entity, 0, NULL);
 	if (ret < 0)
 		goto free_and_quit;
+
+	dev_info(&client->dev, "adp1653 probe: should be ok\n");		
 
 	flash->subdev.entity.function = MEDIA_ENT_F_FLASH;
 
@@ -537,6 +544,8 @@ static int adp1653_remove(struct i2c_client *client)
 	v4l2_device_unregister_subdev(&flash->subdev);
 	v4l2_ctrl_handler_free(&flash->ctrls);
 	media_entity_cleanup(&flash->subdev.entity);
+
+	dev_info(&client->dev, "adp1653 remove\n");			
 
 	return 0;
 }
