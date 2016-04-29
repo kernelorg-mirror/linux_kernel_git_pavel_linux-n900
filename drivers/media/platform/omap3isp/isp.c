@@ -2396,8 +2396,7 @@ static int isp_probe(struct platform_device *pdev)
 	if (ret < 0)
 		goto error_register_entities;
 
-	//if (IS_ENABLED(CONFIG_OF) && pdev->dev.of_node) {
-	if (1) {
+	if (IS_ENABLED(CONFIG_OF) && pdev->dev.of_node) {
 		isp->notifier.bound = isp_subdev_notifier_bound;
 		isp->notifier.complete = isp_subdev_notifier_complete;
 
