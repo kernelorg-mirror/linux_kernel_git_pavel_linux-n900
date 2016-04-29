@@ -304,7 +304,7 @@ ad5820_registered(struct v4l2_subdev *subdev)
 		dev_err(&client->dev, "could not get regulator for vana\n");
 		return -ENODEV;
 	}
-
+#if 0
 	printk("detect\n");
 	/* Detect that the chip is there */
 	rval = ad5820_power_on(coil, 0);
@@ -332,7 +332,7 @@ ad5820_registered(struct v4l2_subdev *subdev)
 
 	printk("detect ok, poweroff\n");	
 	ad5820_power_off(coil, 1);
-
+#endif
 	printk("controls\n");	
 	return ad5820_init_controls(coil);
 
