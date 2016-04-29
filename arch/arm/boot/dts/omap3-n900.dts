@@ -240,6 +240,7 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&camera_pins>;
 	ti,camera-flashes = <&adp1653 &cam1>;
+	//ti,camera-flashes = <&ad5820 &cam1>;
 
 	ports {
 		port@1 {
@@ -879,6 +880,16 @@
 				remote-endpoint = <&csi_switch_out1>;
 			};
 		};
+	};
+
+	/* D/A converter for auto-focus */
+	ad5820: dac@0c {
+		compatible = "adi,ad5820";
+		reg = <0x0c>;
+
+		VANA-supply = <&vaux4>;
+
+		#io-channel-cells = <0>;
 	};
 };
 

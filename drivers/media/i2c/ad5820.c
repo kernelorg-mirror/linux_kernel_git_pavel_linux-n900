@@ -137,7 +137,7 @@ static int ad5820_power_off(struct ad5820_device *coil, int standby)
 		ret = ad5820_update_hw(coil);
 	}
 
-	ret |= coil->platform_data->set_xshutdown(&coil->subdev, 0);
+//	ret |= coil->platform_data->set_xshutdown(&coil->subdev, 0);
 	ret |= regulator_disable(coil->vana);
 
 	return ret;
@@ -147,28 +147,38 @@ static int ad5820_power_on(struct ad5820_device *coil, int restore)
 {
 	int ret;
 
+	printk("ad5820_power_on: 1\n");
 	ret = regulator_enable(coil->vana);
 	if (ret < 0)
 		return ret;
 
+	printk("ad5820_power_on: 2\n");
+#if 0	
+	printk("ad5820_power_on: pd %lx\n", coil->platform_data);
+	printk("ad5820_power_on: xs %lx\n", coil->platform_data->set_xshutdown);
 	ret = coil->platform_data->set_xshutdown(&coil->subdev, 1);
 	if (ret)
 		goto fail;
+#endif
 
+	printk("ad5820_power_on: 3\n");
 	if (restore) {
 		/* Restore the hardware settings. */
 		coil->standby = 0;
+		printk("ad5820_power_on: 4\n");		
 		ret = ad5820_update_hw(coil);
 		if (ret)
 			goto fail;
 	}
-
+	printk("ad5820_power_on: 5\n"); 
 	return 0;
 
 fail:
 	coil->standby = 1;
 
+#if 0
 	coil->platform_data->set_xshutdown(&coil->subdev, 0);
+#endif
 	regulator_disable(coil->vana);
 
 	return ret;
@@ -288,12 +298,14 @@ ad5820_registered(struct v4l2_subdev *subdev)
 	u16 status = AD5820_POWER_DOWN | CHECK_VALUE;
 	int rval;
 
+	printk("registered\n");
 	coil->vana = regulator_get(&client->dev, "VANA");
 	if (IS_ERR(coil->vana)) {
 		dev_err(&client->dev, "could not get regulator for vana\n");
 		return -ENODEV;
 	}
 
+	printk("detect\n");
 	/* Detect that the chip is there */
 	rval = ad5820_power_on(coil, 0);
 	if (rval)
@@ -305,8 +317,23 @@ ad5820_registered(struct v4l2_subdev *subdev)
 	if (rval != status)
 		goto not_detected;
 
+
+	{
+		int i, j;
+		for (j = 0; j<5; j++) {
+			printk("hwtest: phase %d\n", j);
+			for (i=0; i<1023; i++) {
+				coil->focus_absolute = i;
+				msleep(1);
+				ad5820_update_hw(coil);
+			}
+		}
+	}	
+
+	printk("detect ok, poweroff\n");	
 	ad5820_power_off(coil, 1);
 
+	printk("controls\n");	
 	return ad5820_init_controls(coil);
 
 not_detected:
@@ -413,17 +440,29 @@ static int ad5820_probe(struct i2c_client *client,
 	if (coil == NULL)
 		return -ENOMEM;
 
-	coil->platform_data = client->dev.platform_data;
+	coil->platform_data = NULL; // client->dev.platform_data;
 
 	mutex_init(&coil->power_lock);
 
 	v4l2_i2c_subdev_init(&coil->subdev, client, &ad5820_ops);
 	coil->subdev.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
 	coil->subdev.internal_ops = &ad5820_internal_ops;
+	strcpy(coil->subdev.name, "ad5820 focus");
 
 	ret = media_entity_pads_init(&coil->subdev.entity, 0, NULL);
+	if (ret < 0) {
+		kfree(coil);
+		return ret;
+	}
+
+	ret = v4l2_async_register_subdev(&coil->subdev);
 	if (ret < 0)
 		kfree(coil);
+
+	printk("Hack -- testing hw\n");
+	ad5820_registered(coil);
+
+	printk("hw test done\n");
 
 	return ret;
 }
