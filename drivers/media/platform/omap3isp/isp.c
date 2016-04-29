@@ -2267,7 +2267,7 @@ static int isp_subdev_notifier_bound(struct v4l2_async_notifier *async,
 	struct isp_async_subdev *isd =
 		container_of(asd, struct isp_async_subdev, asd);
 
-	subdev->entity.group_id = isd->group_id;
+//	subdev->entity.group_id = isd->group_id;
 	isd->sd = subdev;
 	isd->sd->host_priv = isd->bus;
 
