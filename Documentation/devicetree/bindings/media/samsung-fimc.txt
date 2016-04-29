@@ -148,7 +148,7 @@ Example:
 			clock-names = "mclk";
 
 			port {
-				s5c73m3_1: endpoint {
+				s5c73m3_ep: endpoint {
 					data-lanes = <1 2 3 4>;
 					remote-endpoint = <&csis0_ep>;
 				};
