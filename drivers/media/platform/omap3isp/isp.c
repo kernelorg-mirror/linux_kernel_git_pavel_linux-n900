@@ -2095,12 +2095,19 @@ static void isp_of_parse_node_csi2(struct device *dev,
 	buscfg->bus.csi2.crc = 1;
 }
 
-static int isp_of_parse_node(struct device *dev, struct device_node *node,
-			     struct isp_async_subdev *isd)
+static int isp_of_parse_node_endpoint(struct device *dev,
+				      struct device_node *node,
+				      struct isp_async_subdev *isd)
 {
-	struct isp_bus_cfg *buscfg = &isd->bus;
+	struct isp_bus_cfg *buscfg;
 	struct v4l2_of_endpoint vep;
 	int ret;
+
+	isd->bus = devm_kzalloc(dev, sizeof(*isd->bus), GFP_KERNEL);
+	if (!isd->bus)
+		return -ENOMEM;
+
+	buscfg = isd->bus;
 
 	ret = v4l2_of_parse_endpoint(node, &vep);
 	if (ret)
@@ -2144,10 +2151,48 @@ static int isp_of_parse_node(struct device *dev, struct device_node *node,
 	return 0;
 }
 
+static int isp_of_parse_node(struct device *dev, struct device_node *node,
+			     struct v4l2_async_notifier *notifier, bool link)
+{
+	struct isp_async_subdev *isd;
+
+	isd = devm_kzalloc(dev, sizeof(*isd), GFP_KERNEL);
+	if (!isd) {
+		of_node_put(node);
+		return -ENOMEM;
+	}
+
+	notifier->subdevs[notifier->num_subdevs] = &isd->asd;
+
+	if (link) {
+		if (isp_of_parse_node_endpoint(dev, node, isd)) {
+			of_node_put(node);
+			return -EINVAL;
+		}
+
+		isd->asd.match.of.node = of_graph_get_remote_port_parent(node);
+		of_node_put(node);
+	} else {
+		isd->asd.match.of.node = node;
+	}
+
+	if (!isd->asd.match.of.node) {
+		dev_warn(dev, "bad remote port parent\n");
+		return -EINVAL;
+	}
+
+	isd->asd.match_type = V4L2_ASYNC_MATCH_OF;
+	notifier->num_subdevs++;
+
+	return 0;
+}
+
 static int isp_of_parse_nodes(struct device *dev,
 			      struct v4l2_async_notifier *notifier)
 {
 	struct device_node *node = NULL;
+	int ret;
+	unsigned int flash = 0;
 
 	notifier->subdevs = devm_kcalloc(
 		dev, ISP_MAX_SUBDEVS, sizeof(*notifier->subdevs), GFP_KERNEL);
@@ -2156,30 +2201,25 @@ static int isp_of_parse_nodes(struct device *dev,
 
 	while (notifier->num_subdevs < ISP_MAX_SUBDEVS &&
 	       (node = of_graph_get_next_endpoint(dev->of_node, node))) {
-		struct isp_async_subdev *isd;
+		ret = isp_of_parse_node(dev, node, notifier, true);
+		if (ret)
+			return ret;
+	}
 
-		isd = devm_kzalloc(dev, sizeof(*isd), GFP_KERNEL);
-		if (!isd) {
-			of_node_put(node);
-			return -ENOMEM;
-		}
+	while (notifier->num_subdevs < ISP_MAX_SUBDEVS &&
+	       (node = of_parse_phandle(dev->of_node, "ti,camera-flashes",
+					flash++))) {
+		struct device_node *sensor_node =
+			of_parse_phandle(dev->of_node, "ti,camera-flashes",
+					 flash++);
+		unsigned int i;
 
-		notifier->subdevs[notifier->num_subdevs] = &isd->asd;
-
-		if (isp_of_parse_node(dev, node, isd)) {
-			of_node_put(node);
+		if (!sensor_node)
 			return -EINVAL;
-		}
 
-		isd->asd.match.of.node = of_graph_get_remote_port_parent(node);
-		of_node_put(node);
-		if (!isd->asd.match.of.node) {
-			dev_warn(dev, "bad remote port parent\n");
-			return -EINVAL;
-		}
-
-		isd->asd.match_type = V4L2_ASYNC_MATCH_OF;
-		notifier->num_subdevs++;
+		ret = isp_of_parse_node(dev, node, notifier, false);
+		if (ret)
+			return ret;
 	}
 
 	return notifier->num_subdevs;
@@ -2193,7 +2233,7 @@ static int isp_subdev_notifier_bound(struct v4l2_async_notifier *async,
 		container_of(asd, struct isp_async_subdev, asd);
 
 	isd->sd = subdev;
-	isd->sd->host_priv = &isd->bus;
+	isd->sd->host_priv = isd->bus;
 
 	return 0;
 }
