@@ -515,6 +515,7 @@ static int adp1653_probe(struct i2c_client *client,
 	v4l2_i2c_subdev_init(&flash->subdev, client, &adp1653_ops);
 	flash->subdev.internal_ops = &adp1653_internal_ops;
 	flash->subdev.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
+	strcpy(flash->subdev.name, "adp1653 flash");
 
 	ret = adp1653_init_controls(flash);
 	if (ret)
@@ -524,7 +525,13 @@ static int adp1653_probe(struct i2c_client *client,
 	if (ret < 0)
 		goto free_and_quit;
 
-	dev_info(&client->dev, "adp1653 probe: should be ok\n");		
+	dev_info(&client->dev, "adp1653 probe: should be ok\n");
+
+	ret = v4l2_async_register_subdev(&flash->subdev);
+	if (ret < 0)
+		goto free_and_quit;
+
+	dev_info(&client->dev, "adp1653 probe: async register subdev ok\n");	
 
 	flash->subdev.entity.function = MEDIA_ENT_F_FLASH;
 
