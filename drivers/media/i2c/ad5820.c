@@ -7,8 +7,8 @@
  * Copyright (C) 2007 Texas Instruments
  * Copyright (C) 2016 Pavel Machek <pavel@ucw.cz>
  *
- * Contact: Tuukka Toivonen <tuukka.o.toivonen@nokia.com>
- *          Sakari Ailus <sakari.ailus@nokia.com>
+ * Contact: Tuukka Toivonen
+ *          Sakari Ailus
  *
  * Based on af_d88.c by Texas Instruments.
  *
@@ -430,6 +430,6 @@ static void __exit ad5820_exit(void)
 module_init(ad5820_init);
 module_exit(ad5820_exit);
 
-MODULE_AUTHOR("Tuukka Toivonen <tuukka.o.toivonen@nokia.com>");
+MODULE_AUTHOR("Tuukka Toivonen");
 MODULE_DESCRIPTION("AD5820 camera lens driver");
 MODULE_LICENSE("GPL");
