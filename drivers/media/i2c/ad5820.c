@@ -5,6 +5,7 @@
  *
  * Copyright (C) 2008 Nokia Corporation
  * Copyright (C) 2007 Texas Instruments
+ * Copyright (C) 2016 Pavel Machek <pavel@ucw.cz>
  *
  * Contact: Tuukka Toivonen <tuukka.o.toivonen@nokia.com>
  *          Sakari Ailus <sakari.ailus@nokia.com>
@@ -72,35 +73,6 @@ static int ad5820_write(struct ad5820_device *coil, u16 data)
 	return 0;
 }
 
-/**
- * @brief I2C read using i2c_transfer().
- * @param coil - the driver data structure
- * @returns unsigned 16-bit register value on success, negative if failed
- */
-static int ad5820_read(struct ad5820_device *coil)
-{
-	struct i2c_client *client = v4l2_get_subdevdata(&coil->subdev);
-	struct i2c_msg msg;
-	int r;
-	u16 data = 0;
-
-	if (!client->adapter)
-		return -ENODEV;
-
-	msg.addr  = client->addr;
-	msg.flags = I2C_M_RD;
-	msg.len   = 2;
-	msg.buf   = (u8 *)&data;
-
-	r = i2c_transfer(client->adapter, &msg, 1);
-	if (r < 0) {
-		dev_err(&client->dev, "read failed, error %d\n", r);
-		return r;
-	}
-
-	return be16_to_cpu(data);
-}
-
 /*
  * Calculate status word and write it to the device based on current
  * values of V4L2 controls. It is assumed that the stored V4L2 control
@@ -137,7 +109,6 @@ static int ad5820_power_off(struct ad5820_device *coil, int standby)
 		ret = ad5820_update_hw(coil);
 	}
 
-//	ret |= coil->platform_data->set_xshutdown(&coil->subdev, 0);
 	ret |= regulator_disable(coil->vana);
 
 	return ret;
@@ -152,33 +123,17 @@ static int ad5820_power_on(struct ad5820_device *coil, int restore)
 	if (ret < 0)
 		return ret;
 
-	printk("ad5820_power_on: 2\n");
-#if 0	
-	printk("ad5820_power_on: pd %lx\n", coil->platform_data);
-	printk("ad5820_power_on: xs %lx\n", coil->platform_data->set_xshutdown);
-	ret = coil->platform_data->set_xshutdown(&coil->subdev, 1);
-	if (ret)
-		goto fail;
-#endif
-
-	printk("ad5820_power_on: 3\n");
 	if (restore) {
 		/* Restore the hardware settings. */
 		coil->standby = 0;
-		printk("ad5820_power_on: 4\n");		
 		ret = ad5820_update_hw(coil);
 		if (ret)
 			goto fail;
 	}
-	printk("ad5820_power_on: 5\n"); 
 	return 0;
 
 fail:
 	coil->standby = 1;
-
-#if 0
-	coil->platform_data->set_xshutdown(&coil->subdev, 0);
-#endif
 	regulator_disable(coil->vana);
 
 	return ret;
@@ -288,59 +243,20 @@ static int ad5820_init_controls(struct ad5820_device *coil)
 /*
  * V4L2 subdev operations
  */
-static int
-ad5820_registered(struct v4l2_subdev *subdev)
+static int ad5820_registered(struct v4l2_subdev *subdev)
 {
 	static const int CHECK_VALUE = 0x3FF0;
 
 	struct ad5820_device *coil = to_ad5820_device(subdev);
 	struct i2c_client *client = v4l2_get_subdevdata(subdev);
-	u16 status = AD5820_POWER_DOWN | CHECK_VALUE;
-	int rval;
 
-	printk("registered\n");
 	coil->vana = regulator_get(&client->dev, "VANA");
 	if (IS_ERR(coil->vana)) {
 		dev_err(&client->dev, "could not get regulator for vana\n");
 		return -ENODEV;
 	}
-#if 0
-	printk("detect\n");
-	/* Detect that the chip is there */
-	rval = ad5820_power_on(coil, 0);
-	if (rval)
-		goto not_detected;
-	rval = ad5820_write(coil, status);
-	if (rval)
-		goto not_detected;
-	rval = ad5820_read(coil);
-	if (rval != status)
-		goto not_detected;
 
-
-	{
-		int i, j;
-		for (j = 0; j<5; j++) {
-			printk("hwtest: phase %d\n", j);
-			for (i=0; i<1023; i++) {
-				coil->focus_absolute = i;
-				msleep(1);
-				ad5820_update_hw(coil);
-			}
-		}
-	}	
-
-	printk("detect ok, poweroff\n");	
-	ad5820_power_off(coil, 1);
-#endif
-	printk("controls\n");	
 	return ad5820_init_controls(coil);
-
-not_detected:
-	dev_err(&client->dev, "not detected\n");
-	ad5820_power_off(coil, 0);
-	regulator_put(coil->vana);
-	return -ENODEV;
 }
 
 static int
@@ -440,8 +356,6 @@ static int ad5820_probe(struct i2c_client *client,
 	if (coil == NULL)
 		return -ENOMEM;
 
-	coil->platform_data = NULL; // client->dev.platform_data;
-
 	mutex_init(&coil->power_lock);
 
 	v4l2_i2c_subdev_init(&coil->subdev, client, &ad5820_ops);
@@ -458,11 +372,6 @@ static int ad5820_probe(struct i2c_client *client,
 	ret = v4l2_async_register_subdev(&coil->subdev);
 	if (ret < 0)
 		kfree(coil);
-
-	printk("Hack -- testing hw\n");
-	ad5820_registered(coil);
-
-	printk("hw test done\n");
 
 	return ret;
 }
