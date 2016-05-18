@@ -147,7 +147,6 @@ static int ad5820_set_ctrl(struct v4l2_ctrl *ctrl)
 	struct ad5820_device *coil =
 		container_of(ctrl->handler, struct ad5820_device, ctrls);
 	u32 code;
-	int r = 0;
 
 	switch (ctrl->id) {
 	case V4L2_CID_FOCUS_ABSOLUTE:
@@ -165,7 +164,7 @@ static int ad5820_set_ctrl(struct v4l2_ctrl *ctrl)
 		break;
 	}
 
-	return r;
+	return 0;
 }
 
 static const struct v4l2_ctrl_ops ad5820_ctrl_ops = {
@@ -245,8 +244,6 @@ static int ad5820_init_controls(struct ad5820_device *coil)
  */
 static int ad5820_registered(struct v4l2_subdev *subdev)
 {
-	static const int CHECK_VALUE = 0x3FF0;
-
 	struct ad5820_device *coil = to_ad5820_device(subdev);
 	struct i2c_client *client = v4l2_get_subdevdata(subdev);
 
@@ -364,15 +361,18 @@ static int ad5820_probe(struct i2c_client *client,
 	strcpy(coil->subdev.name, "ad5820 focus");
 
 	ret = media_entity_pads_init(&coil->subdev.entity, 0, NULL);
-	if (ret < 0) {
-		kfree(coil);
-		return ret;
-	}
+	if (ret < 0)
+		goto free;
 
 	ret = v4l2_async_register_subdev(&coil->subdev);
 	if (ret < 0)
-		kfree(coil);
+		goto cleanup;
 
+	return ret;
+cleanup:
+	media_entity_cleanup(&coil->subdev.entity);
+free:
+	kfree(coil);
 	return ret;
 }
 
@@ -409,26 +409,7 @@ static struct i2c_driver ad5820_i2c_driver = {
 	.id_table	= ad5820_id_table,
 };
 
-static int __init ad5820_init(void)
-{
-	int rval;
-
-	rval = i2c_add_driver(&ad5820_i2c_driver);
-	if (rval)
-		printk(KERN_INFO "%s: failed registering " AD5820_NAME "\n",
-		       __func__);
-
-	return rval;
-}
-
-static void __exit ad5820_exit(void)
-{
-	i2c_del_driver(&ad5820_i2c_driver);
-}
-
-
-module_init(ad5820_init);
-module_exit(ad5820_exit);
+module_i2c_driver(ad5820_i2c_driver);
 
 MODULE_AUTHOR("Tuukka Toivonen");
 MODULE_DESCRIPTION("AD5820 camera lens driver");
