@@ -20,28 +20,46 @@
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
- * 02110-1301 USA
  */
 
 #include <linux/module.h>
 #include <linux/errno.h>
 #include <linux/i2c.h>
-#include <linux/slab.h>
-#include <linux/sched.h>
-#include <linux/delay.h>
-#include <linux/bitops.h>
 #include <linux/kernel.h>
 #include <linux/regulator/consumer.h>
 
-#include <media/ad5820.h>
 #include <media/v4l2-device.h>
+#include <media/v4l2-ctrls.h>
+#include <media/v4l2-subdev.h>
+
+#define AD5820_NAME		"ad5820"
+
+/* Register definitions */
+#define AD5820_POWER_DOWN		(1 << 15)
+#define AD5820_DAC_SHIFT		4
+#define AD5820_RAMP_MODE_LINEAR		(0 << 3)
+#define AD5820_RAMP_MODE_64_16		(1 << 3)
 
 #define CODE_TO_RAMP_US(s)	((s) == 0 ? 0 : (1 << ((s) - 1)) * 50)
 #define RAMP_US_TO_CODE(c)	fls(((c) + ((c)>>1)) / 50)
+
+#define to_ad5820_device(sd)	container_of(sd, struct ad5820_device, subdev)
+
+struct ad5820_device {
+	struct v4l2_subdev subdev;
+	struct ad5820_platform_data *platform_data;
+	struct regulator *vana;
+
+	struct v4l2_ctrl_handler ctrls;
+	u32 focus_absolute;
+	u32 focus_ramp_time;
+	u32 focus_ramp_mode;
+
+	struct mutex power_lock;
+	int power_count;
+
+	int standby : 1;
+};
 
 /**
  * @brief I2C write using i2c_transfer().
@@ -118,7 +136,6 @@ static int ad5820_power_on(struct ad5820_device *coil, int restore)
 {
 	int ret;
 
-	printk("ad5820_power_on: 1\n");
 	ret = regulator_enable(coil->vana);
 	if (ret < 0)
 		return ret;
@@ -171,7 +188,7 @@ static const struct v4l2_ctrl_ops ad5820_ctrl_ops = {
 	.s_ctrl = ad5820_set_ctrl,
 };
 
-static const char *ad5820_focus_menu[] = {
+static const char * const ad5820_focus_menu[] = {
 	"Linear ramp",
 	"64/16 ramp",
 };
@@ -236,6 +253,7 @@ static int ad5820_init_controls(struct ad5820_device *coil)
 	coil->focus_ramp_mode = 0;
 
 	coil->subdev.ctrl_handler = &coil->ctrls;
+
 	return 0;
 }
 
@@ -350,7 +368,7 @@ static int ad5820_probe(struct i2c_client *client,
 	int ret = 0;
 
 	coil = kzalloc(sizeof(*coil), GFP_KERNEL);
-	if (coil == NULL)
+	if (!coil)
 		return -ENOMEM;
 
 	mutex_init(&coil->power_lock);
@@ -369,10 +387,13 @@ static int ad5820_probe(struct i2c_client *client,
 		goto cleanup;
 
 	return ret;
+
 cleanup:
 	media_entity_cleanup(&coil->subdev.entity);
+
 free:
 	kfree(coil);
+
 	return ret;
 }
 
@@ -388,6 +409,7 @@ static int __exit ad5820_remove(struct i2c_client *client)
 		regulator_put(coil->vana);
 
 	kfree(coil);
+
 	return 0;
 }
 
