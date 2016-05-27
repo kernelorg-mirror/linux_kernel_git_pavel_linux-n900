@@ -8,7 +8,7 @@
  * Copyright (C) 2016 Pavel Machek <pavel@ucw.cz>
  *
  * Contact: Tuukka Toivonen
- *          Sakari Ailus
+ *	    Sakari Ailus
  *
  * Based on af_d88.c by Texas Instruments.
  *
@@ -263,13 +263,6 @@ static int ad5820_init_controls(struct ad5820_device *coil)
 static int ad5820_registered(struct v4l2_subdev *subdev)
 {
 	struct ad5820_device *coil = to_ad5820_device(subdev);
-	struct i2c_client *client = v4l2_get_subdevdata(subdev);
-
-	coil->vana = regulator_get(&client->dev, "VANA");
-	if (IS_ERR(coil->vana)) {
-		dev_err(&client->dev, "could not get regulator for vana\n");
-		return -ENODEV;
-	}
 
 	return ad5820_init_controls(coil);
 }
@@ -367,10 +360,18 @@ static int ad5820_probe(struct i2c_client *client,
 	struct ad5820_device *coil;
 	int ret = 0;
 
-	coil = kzalloc(sizeof(*coil), GFP_KERNEL);
+	coil = devm_kzalloc(&client->dev, sizeof(*coil), GFP_KERNEL);
 	if (!coil)
 		return -ENOMEM;
 
+	coil->vana = devm_regulator_get(&client->dev, "VANA");
+	if (IS_ERR(coil->vana)) {
+		ret = PTR_ERR(coil->vana);
+		if (ret != -EPROBE_DEFER)
+			dev_err(&client->dev, "could not get regulator for vana\n");
+		return ret;
+	}
+	
 	mutex_init(&coil->power_lock);
 
 	v4l2_i2c_subdev_init(&coil->subdev, client, &ad5820_ops);
@@ -380,7 +381,7 @@ static int ad5820_probe(struct i2c_client *client,
 
 	ret = media_entity_pads_init(&coil->subdev.entity, 0, NULL);
 	if (ret < 0)
-		goto free;
+		return ret;
 
 	ret = v4l2_async_register_subdev(&coil->subdev);
 	if (ret < 0)
@@ -390,10 +391,6 @@ static int ad5820_probe(struct i2c_client *client,
 
 cleanup:
 	media_entity_cleanup(&coil->subdev.entity);
-
-free:
-	kfree(coil);
-
 	return ret;
 }
 
@@ -405,11 +402,6 @@ static int __exit ad5820_remove(struct i2c_client *client)
 	v4l2_device_unregister_subdev(&coil->subdev);
 	v4l2_ctrl_handler_free(&coil->ctrls);
 	media_entity_cleanup(&coil->subdev.entity);
-	if (coil->vana)
-		regulator_put(coil->vana);
-
-	kfree(coil);
-
 	return 0;
 }
 
