@@ -7,8 +7,8 @@
  * Copyright (C) 2007 Texas Instruments
  * Copyright (C) 2016 Pavel Machek <pavel@ucw.cz>
  *
- * Contact: Tuukka Toivonen
- *	    Sakari Ailus
+ * Contact: Tuukka Toivonen <tuukkat76@gmail.com>
+ *	    Sakari Ailus <sakari.ailus@iki.fi>
  *
  * Based on af_d88.c by Texas Instruments.
  *
@@ -22,14 +22,14 @@
  * General Public License for more details.
  */
 
-#include <linux/module.h>
 #include <linux/errno.h>
 #include <linux/i2c.h>
 #include <linux/kernel.h>
+#include <linux/module.h>
 #include <linux/regulator/consumer.h>
 
-#include <media/v4l2-device.h>
 #include <media/v4l2-ctrls.h>
+#include <media/v4l2-device.h>
 #include <media/v4l2-subdev.h>
 
 #define AD5820_NAME		"ad5820"
@@ -61,12 +61,6 @@ struct ad5820_device {
 	int standby : 1;
 };
 
-/**
- * @brief I2C write using i2c_transfer().
- * @param coil - the driver data structure
- * @param data - register value to be written
- * @returns nonnegative on success, negative if failed
- */
 static int ad5820_write(struct ad5820_device *coil, u16 data)
 {
 	struct i2c_client *client = v4l2_get_subdevdata(&coil->subdev);
@@ -116,7 +110,7 @@ static int ad5820_update_hw(struct ad5820_device *coil)
  */
 static int ad5820_power_off(struct ad5820_device *coil, int standby)
 {
-	int ret = 0;
+	int ret = 0, ret2;
 
 	/*
 	 * Go to standby first as real power off my be denied by the hardware
@@ -127,9 +121,10 @@ static int ad5820_power_off(struct ad5820_device *coil, int standby)
 		ret = ad5820_update_hw(coil);
 	}
 
-	ret |= regulator_disable(coil->vana);
-
-	return ret;
+	ret2 = regulator_disable(coil->vana);
+	if (ret)
+		return ret;
+	return ret2;
 }
 
 static int ad5820_power_on(struct ad5820_device *coil, int restore)
@@ -358,7 +353,7 @@ static int ad5820_probe(struct i2c_client *client,
 			const struct i2c_device_id *devid)
 {
 	struct ad5820_device *coil;
-	int ret = 0;
+	int ret;
 
 	coil = devm_kzalloc(&client->dev, sizeof(*coil), GFP_KERNEL);
 	if (!coil)
@@ -381,7 +376,7 @@ static int ad5820_probe(struct i2c_client *client,
 
 	ret = media_entity_pads_init(&coil->subdev.entity, 0, NULL);
 	if (ret < 0)
-		return ret;
+		goto cleanup2;
 
 	ret = v4l2_async_register_subdev(&coil->subdev);
 	if (ret < 0)
@@ -389,6 +384,8 @@ static int ad5820_probe(struct i2c_client *client,
 
 	return ret;
 
+cleanup2:
+	mutex_destroy(&coil->power_lock);
 cleanup:
 	media_entity_cleanup(&coil->subdev.entity);
 	return ret;
@@ -402,6 +399,7 @@ static int __exit ad5820_remove(struct i2c_client *client)
 	v4l2_device_unregister_subdev(&coil->subdev);
 	v4l2_ctrl_handler_free(&coil->ctrls);
 	media_entity_cleanup(&coil->subdev.entity);
+	mutex_destroy(&coil->power_lock);
 	return 0;
 }
 
