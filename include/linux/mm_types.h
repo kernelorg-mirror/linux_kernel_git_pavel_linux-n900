@@ -12,6 +12,7 @@
 #include <linux/cpumask.h>
 #include <linux/uprobes.h>
 #include <linux/page-flags-layout.h>
+#include <linux/workqueue.h>
 #include <asm/page.h>
 #include <asm/mmu.h>
 
@@ -512,6 +513,9 @@ struct mm_struct {
 #endif
 #ifdef CONFIG_HUGETLB_PAGE
 	atomic_long_t hugetlb_usage;
+#endif
+#ifdef CONFIG_MMU
+	struct work_struct async_put_work;
 #endif
 };
 
