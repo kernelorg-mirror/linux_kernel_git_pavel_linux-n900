@@ -32,6 +32,8 @@
 #include <media/v4l2-device.h>
 #include <media/v4l2-subdev.h>
 
+#include <uapi/linux/ad5820.h>
+
 #define AD5820_NAME		"ad5820"
 
 /* Register definitions */
@@ -39,6 +41,8 @@
 #define AD5820_DAC_SHIFT		4
 #define AD5820_RAMP_MODE_LINEAR		(0 << 3)
 #define AD5820_RAMP_MODE_64_16		(1 << 3)
+
+
 
 #define CODE_TO_RAMP_US(s)	((s) == 0 ? 0 : (1 << ((s) - 1)) * 50)
 #define RAMP_US_TO_CODE(c)	fls(((c) + ((c)>>1)) / 50)
@@ -165,13 +169,13 @@ static int ad5820_set_ctrl(struct v4l2_ctrl *ctrl)
 		coil->focus_absolute = ctrl->val;
 		return ad5820_update_hw(coil);
 
-	case V4L2_CID_FOCUS_AD5820_RAMP_TIME:
+	case V4L2_CID_AD5820_RAMP_TIME:
 		code = RAMP_US_TO_CODE(ctrl->val);
 		ctrl->val = CODE_TO_RAMP_US(code);
 		coil->focus_ramp_time = ctrl->val;
 		break;
 
-	case V4L2_CID_FOCUS_AD5820_RAMP_MODE:
+	case V4L2_CID_AD5820_RAMP_MODE:
 		coil->focus_ramp_mode = ctrl->val;
 		break;
 	}
@@ -191,7 +195,7 @@ static const char * const ad5820_focus_menu[] = {
 static const struct v4l2_ctrl_config ad5820_ctrls[] = {
 	{
 		.ops		= &ad5820_ctrl_ops,
-		.id		= V4L2_CID_FOCUS_AD5820_RAMP_TIME,
+		.id		= V4L2_CID_AD5820_RAMP_TIME,
 		.type		= V4L2_CTRL_TYPE_INTEGER,
 		.name		= "Focus ramping time [us]",
 		.min		= 0,
@@ -202,7 +206,7 @@ static const struct v4l2_ctrl_config ad5820_ctrls[] = {
 	},
 	{
 		.ops		= &ad5820_ctrl_ops,
-		.id		= V4L2_CID_FOCUS_AD5820_RAMP_MODE,
+		.id		= V4L2_CID_AD5820_RAMP_MODE,
 		.type		= V4L2_CTRL_TYPE_MENU,
 		.name		= "Focus ramping mode",
 		.min		= 0,
