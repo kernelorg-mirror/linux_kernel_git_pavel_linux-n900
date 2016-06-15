@@ -4,8 +4,7 @@ Optional properties:
 - regulator-name: A string used as a descriptive name for regulator outputs
 - regulator-min-microvolt: smallest voltage consumers may set
 - regulator-max-microvolt: largest voltage consumers may set
-- regulator-microvolt-offset: Offset applied to voltages to compensate for
-  voltage drops
+- regulator-microvolt-offset: Offset applied to voltages to compensate for voltage drops
 - regulator-min-microamp: smallest current consumers may set
 - regulator-max-microamp: largest current consumers may set
 - regulator-always-on: boolean, regulator should never be disabled

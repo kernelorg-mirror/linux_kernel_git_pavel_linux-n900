@@ -270,7 +270,7 @@ static int rx51_battery_remove(struct platform_device *pdev)
 
 #ifdef CONFIG_OF
 static const struct of_device_id n900_battery_of_match[] = {
-	{ .compatible = "nokia,n900-battery", },
+	{.compatible = "nokia,n900-battery", },
 	{ },
 };
 MODULE_DEVICE_TABLE(of, n900_battery_of_match);
