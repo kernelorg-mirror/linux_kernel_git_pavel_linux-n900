@@ -542,39 +542,7 @@ err1:
 	return ret;
 }
 
-<<<<<<< HEAD
-int usb_udc_attach_driver(const char *name, struct usb_gadget_driver *driver)
-{
-	struct usb_udc *udc = NULL;
-	int ret = -ENODEV;
-
-	mutex_lock(&udc_lock);
-	list_for_each_entry(udc, &udc_list, list) {
-		ret = strcmp(name, dev_name(&udc->dev));
-		if (!ret)
-			break;
-	}
-	if (ret) {
-		ret = -ENODEV;
-		goto out;
-	}
-	if (udc->driver) {
-		ret = -EBUSY;
-		goto out;
-	}
-	ret = udc_bind_to_driver(udc, driver);
-out:
-	mutex_unlock(&udc_lock);
-	return ret;
-}
-EXPORT_SYMBOL_GPL(usb_udc_attach_driver);
-
-#define USB_GADGET_BIND_RETRIES		5
-#define USB_GADGET_BIND_TIMEOUT		(3 * HZ)
-static void usb_gadget_work(struct work_struct *work)
-=======
 int usb_gadget_probe_driver(struct usb_gadget_driver *driver)
->>>>>>> b562e44f507e863c6792946e4e1b1449fbbac85d
 {
 	struct usb_gadget_driver *driver = container_of(work,
 						struct usb_gadget_driver,
@@ -604,18 +572,11 @@ int usb_gadget_probe_driver(struct usb_gadget_driver *driver)
 		}
 	}
 
-<<<<<<< HEAD
-	mutex_unlock(&udc_lock);
-	schedule_delayed_work(&driver->work, USB_GADGET_BIND_TIMEOUT);
-	return;
-
-=======
 	list_add_tail(&driver->pending, &gadget_driver_pending_list);
 	pr_info("udc-core: couldn't find an available UDC - added [%s] to list of pending drivers\n",
 		driver->function);
 	mutex_unlock(&udc_lock);
 	return 0;
->>>>>>> b562e44f507e863c6792946e4e1b1449fbbac85d
 found:
 	ret = udc_bind_to_driver(udc, driver);
 	mutex_unlock(&udc_lock);
