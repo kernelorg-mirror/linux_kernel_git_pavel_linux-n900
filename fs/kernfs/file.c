@@ -790,10 +790,10 @@ static unsigned int kernfs_fop_poll(struct file *filp, poll_table *wait)
 	if (of->event != atomic_read(&on->event))
 		goto trigger;
 
-	return 0;
+	return DEFAULT_POLLMASK;
 
  trigger:
-	return POLLERR|POLLPRI;
+	return DEFAULT_POLLMASK|POLLERR|POLLPRI;
 }
 
 static void kernfs_notify_workfn(struct work_struct *work)

@@ -25,28 +25,21 @@
 #include <linux/gpio_keys.h>
 #include <linux/mmc/host.h>
 #include <linux/power/isp1704_charger.h>
-#include <linux/power/bq2415x_charger.h>
 #include <linux/platform_data/spi-omap2-mcspi.h>
 #include <linux/platform_data/mtd-onenand-omap2.h>
-#include <linux/hsi/hsi.h>
-#include <linux/cmt.h>
-#include <linux/platform_data/bt-nokia-h4p.h>
 
 #include <asm/system_info.h>
 
 #include "common.h"
 #include <linux/omap-dma.h>
 #include "gpmc-smc91x.h"
-#include <linux/platform_data/ssi.h>
 
 #include "board-rx51.h"
-#include "serial.h"
 
 #include <sound/tlv320aic3x.h>
 #include <sound/tpa6130a2-plat.h>
 #include <media/radio-si4713.h>
 #include <media/si4713.h>
-#include "../../../drivers/staging/media/bcm2048/radio-bcm2048.h"
 #include <linux/platform_data/leds-lp55xx.h>
 
 #include <linux/platform_data/tsl2563.h>
@@ -57,8 +50,6 @@
 #if defined(CONFIG_IR_RX51) || defined(CONFIG_IR_RX51_MODULE)
 #include <media/ir-rx51.h>
 #endif
-
-#include <plat/gpio-switch.h>
 
 #include "mux.h"
 #include "omap-pm.h"
@@ -76,8 +67,6 @@
 #define RX51_WL1251_IRQ_GPIO		42
 #define RX51_FMTX_RESET_GPIO		163
 #define RX51_FMTX_IRQ			53
-#define RX51_FMRX_IRQ			43
-
 #define RX51_LP5523_CHIP_EN_GPIO	41
 
 #define RX51_USB_TRANSCEIVER_RST_GPIO	67
@@ -87,10 +76,6 @@
 
 #define LIS302_IRQ1_GPIO 181
 #define LIS302_IRQ2_GPIO 180  /* Not yet in use */
-
-#define RX51_HCI_H4P_RESET_GPIO		91
-#define RX51_HCI_H4P_HOSTWU_GPIO	101
-#define RX51_HCI_H4P_BTWU_GPIO		37
 
 /* List all SPI devices here. Note that the list/probe order seems to matter! */
 enum {
@@ -315,139 +300,16 @@ static void __init rx51_charger_init(void)
 	platform_device_register(&rx51_charger_device);
 }
 
+#if defined(CONFIG_KEYBOARD_GPIO) || defined(CONFIG_KEYBOARD_GPIO_MODULE)
+
+#define RX51_GPIO_CAMERA_LENS_COVER	110
 #define RX51_GPIO_CAMERA_FOCUS		68
 #define RX51_GPIO_CAMERA_CAPTURE	69
-#define RX51_GPIO_CAMERA_LENS_COVER	110
-#define RX51_GPIO_CMT_APESLPX		70
-#define RX51_GPIO_CMT_BSI		157
-#define RX51_GPIO_CMT_EN		74
-#define RX51_GPIO_CMT_RST		75
-#define RX51_GPIO_CMT_RST_RQ		73
-#define RX51_GPIO_CMT_WDDIS		13
-#define RX51_GPIO_HEADPHONE		177
+#define RX51_GPIO_KEYPAD_SLIDE		71
 #define RX51_GPIO_LOCK_BUTTON		113
 #define RX51_GPIO_PROXIMITY		89
-#define RX51_GPIO_SLEEP_IND		162
-#define RX51_GPIO_KEYPAD_SLIDE		71
 
 #define RX51_GPIO_DEBOUNCE_TIMEOUT	10
-
-#if defined(CONFIG_OMAP_GPIO_SWITCH) || defined(CONFIG_OMAP_GPIO_SWITCH_MODULE)
-
-static struct omap_gpio_switch rx51_gpio_switches[] __initdata = {
-	{
-		.name			= "cam_focus",
-		.gpio			= RX51_GPIO_CAMERA_FOCUS,
-		.flags			= OMAP_GPIO_SWITCH_FLAG_INVERTED,
-		.type			= OMAP_GPIO_SWITCH_TYPE_ACTIVITY,
-		.debounce_rising	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-		.debounce_falling	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-	}, {
-		.name			= "cam_launch",
-		.gpio			= RX51_GPIO_CAMERA_CAPTURE,
-		.flags			= OMAP_GPIO_SWITCH_FLAG_INVERTED,
-		.type			= OMAP_GPIO_SWITCH_TYPE_ACTIVITY,
-		.debounce_rising	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-		.debounce_falling	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-	}, {
-		.name			= "cam_shutter",
-		.gpio			= RX51_GPIO_CAMERA_LENS_COVER,
-		.flags			= OMAP_GPIO_SWITCH_FLAG_INVERTED,
-		.type			= OMAP_GPIO_SWITCH_TYPE_COVER,
-		.debounce_rising	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-		.debounce_falling	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-	}, {
-		.name			= "cmt_apeslpx",
-		.gpio			= RX51_GPIO_CMT_APESLPX,
-		.flags			= OMAP_GPIO_SWITCH_FLAG_OUTPUT,
-		.type			= OMAP_GPIO_SWITCH_TYPE_ACTIVITY,
-		.debounce_rising	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-		.debounce_falling	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-	}, {
-		.name			= "cmt_bsi",
-		.gpio			= RX51_GPIO_CMT_BSI,
-		.flags			= OMAP_GPIO_SWITCH_FLAG_OUTPUT,
-		.type			= OMAP_GPIO_SWITCH_TYPE_ACTIVITY,
-		.debounce_rising	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-		.debounce_falling	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-	}, {
-		.name			= "cmt_en",
-		.gpio			= RX51_GPIO_CMT_EN,
-		.flags			= OMAP_GPIO_SWITCH_FLAG_OUTPUT,
-		.type			= OMAP_GPIO_SWITCH_TYPE_ACTIVITY,
-		.debounce_rising	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-		.debounce_falling	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-	}, {
-		.name			= "cmt_rst",
-		.gpio			= RX51_GPIO_CMT_RST,
-		.flags			= OMAP_GPIO_SWITCH_FLAG_OUTPUT | OMAP_GPIO_SWITCH_FLAG_OUTPUT_INIT_ACTIVE,
-		.type			= OMAP_GPIO_SWITCH_TYPE_ACTIVITY,
-		.debounce_rising	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-		.debounce_falling	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-	}, {
-		.name			= "cmt_rst_rq",
-		.gpio			= RX51_GPIO_CMT_RST_RQ,
-		.flags			= OMAP_GPIO_SWITCH_FLAG_OUTPUT | OMAP_GPIO_SWITCH_FLAG_OUTPUT_INIT_ACTIVE,
-		.type			= OMAP_GPIO_SWITCH_TYPE_ACTIVITY,
-		.debounce_rising	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-		.debounce_falling	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-	}, {
-		.name			= "cmt_wddis",
-		.gpio			= RX51_GPIO_CMT_WDDIS,
-		.flags			= OMAP_GPIO_SWITCH_FLAG_OUTPUT,
-		.type			= OMAP_GPIO_SWITCH_TYPE_ACTIVITY,
-		.debounce_rising	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-		.debounce_falling	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-	}, {
-		.name			= "headphone",
-		.gpio			= RX51_GPIO_HEADPHONE,
-		.flags			= OMAP_GPIO_SWITCH_FLAG_INVERTED,
-		.type			= OMAP_GPIO_SWITCH_TYPE_CONNECTION,
-		.debounce_rising	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-		.debounce_falling	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-	}, {
-		.name			= "kb_lock",
-		.gpio			= RX51_GPIO_LOCK_BUTTON,
-		.flags			= OMAP_GPIO_SWITCH_FLAG_INVERTED,
-		.type			= OMAP_GPIO_SWITCH_TYPE_COVER,
-		.debounce_rising	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-		.debounce_falling	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-	}, {
-		.name			= "proximity",
-		.gpio			= RX51_GPIO_PROXIMITY,
-		.flags			= 0,
-		.type			= OMAP_GPIO_SWITCH_TYPE_COVER,
-		.debounce_rising	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-		.debounce_falling	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-	}, {
-		.name			= "sleep_ind",
-		.gpio			= RX51_GPIO_SLEEP_IND,
-		.flags			= OMAP_GPIO_SWITCH_FLAG_OUTPUT,
-		.type			= OMAP_GPIO_SWITCH_TYPE_ACTIVITY,
-		.debounce_rising	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-		.debounce_falling	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-	}, {
-		.name			= "slide",
-		.gpio			= RX51_GPIO_KEYPAD_SLIDE,
-		.flags			= 0,
-		.type			= OMAP_GPIO_SWITCH_TYPE_COVER,
-		.debounce_rising	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-		.debounce_falling	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-	}
-};
-
-static void __init rx51_add_gpio_switches(void)
-{
-	omap_register_gpio_switches(rx51_gpio_switches,
-			ARRAY_SIZE(rx51_gpio_switches));
-}
-#else
-static void __init rx51_add_gpio_switches(void)
-{
-}
-#endif /* CONFIG_OMAP_GPIO_SWITCH || CONFIG_OMAP_GPIO_SWITCH_MODULE */
-
-#if defined(CONFIG_KEYBOARD_GPIO) || defined(CONFIG_KEYBOARD_GPIO_MODULE)
 
 static struct gpio_keys_button rx51_gpio_keys[] = {
 	{
@@ -660,9 +522,6 @@ static struct regulator_consumer_supply rx51_vmmc1_supply[] = {
 
 static struct regulator_consumer_supply rx51_vaux2_supply[] = {
 	REGULATOR_SUPPLY("vdds_csib", "omap3isp"),
-	{
-		.supply		= "vaux2",
-	},
 };
 
 static struct regulator_consumer_supply rx51_vaux3_supply[] = {
@@ -765,15 +624,6 @@ static struct regulator_init_data rx51_vaux3_mmc = {
 	.consumer_supplies	= rx51_vaux3_supply,
 };
 
-static struct regulator_consumer_supply rx51_vaux4_consumers[] = {
-	REGULATOR_SUPPLY("VANA", "3-003e"),	/* Main camera sensor */
-	REGULATOR_SUPPLY("VANA", "3-000c"),	/* Main camera lens */
-	REGULATOR_SUPPLY("VANA", "2-0010"),	/* Secondary camera sensor */
-	{
-		.supply		= "vaux4",
-	},
-};
-
 static struct regulator_init_data rx51_vaux4 = {
 	.constraints = {
 		.name			= "VCAM_ANA_28",
@@ -785,8 +635,6 @@ static struct regulator_init_data rx51_vaux4 = {
 		.valid_ops_mask		= REGULATOR_CHANGE_MODE
 					| REGULATOR_CHANGE_STATUS,
 	},
-	.num_consumer_supplies	= ARRAY_SIZE(rx51_vaux4_consumers),
-	.consumer_supplies	= rx51_vaux4_consumers,
 };
 
 static struct regulator_init_data rx51_vmmc1 = {
@@ -952,86 +800,6 @@ static __init void rx51_init_si4713(void)
 	}
 	rx51_si4713_board_info.irq = gpio_to_irq(RX51_FMTX_IRQ);
 	platform_device_register(&rx51_si4713_dev);
-}
-
-static struct platform_device rx51_bcm2048_dev = {
-	.name	= "radio-bcm2048",
-	.id	= -1,
-};
-
-static __init void rx51_init_bcm2048(void)
-{
-	int err;
-
-	err = gpio_request(RX51_FMRX_IRQ, "BCM2048");
-	if (err) {
-		printk(KERN_ERR "Failed to request gpio for FMRX IRQ %d\n", err);
-		return;
-	}
-
-	gpio_direction_input(RX51_FMRX_IRQ);
-	platform_device_register(&rx51_bcm2048_dev);
-}
-
-static struct cmt_platform_data rx51_cmt_pdata = {
-	.cmt_rst_ind_gpio = 72,
-	.cmt_ver = 1,
-};
-
-static struct platform_device rx51_cmt_device = {
-	.name = "cmt",
-	.id = -1,
-	.dev =  {
-		.platform_data = &rx51_cmt_pdata,
-	},
-};
-
-static void __init rx51_cmt_init(void)
-{
-	int err;
-
-	err = platform_device_register(&rx51_cmt_device);
-	if (err < 0)
-		pr_err("Could not register CMT device\n");
-}
-
-static struct omap_ssi_board_config __initdata rx51_ssi_config = {
-	.num_ports = 1,
-	.cawake_gpio = { 151 },
-};
-
-static struct hsi_board_info __initdata rx51_ssi_cl[] = {
-	[0] =	{
-		.name = "hsi_char",
-		.hsi_id = 0,
-		.port = 0,
-		},
-	[1] = 	{
-		.name = "ssi_protocol",
-		.hsi_id = 0,
-		.port = 0,
-		.tx_cfg = {
-			.mode = HSI_MODE_FRAME,
-			.channels = 4,
-			.speed = 55000,
-			.arb_mode = HSI_ARB_RR,
-			},
-		.rx_cfg = {
-			.mode = HSI_MODE_FRAME,
-			.channels = 4,
-			},
-		},
-	[2] =	{
-		.name = "cmt_speech",
-		.hsi_id = 0,
-		.port = 0,
-		},
-};
-
-static void __init rx51_ssi_init(void)
-{
-	omap_ssi_config(&rx51_ssi_config);
-	hsi_register_board_info(rx51_ssi_cl, ARRAY_SIZE(rx51_ssi_cl));
 }
 
 static int rx51_twlgpio_setup(struct device *dev, unsigned gpio, unsigned n)
@@ -1213,10 +981,6 @@ static struct twl4030_power_data rx51_t2scripts_data __initdata = {
 	.resource_config = twl4030_rconfig,
 };
 
-static struct twl4030_power_data rx51_power_data __initdata = {
-	.use_poweroff	= true,
-};
-
 static struct twl4030_vibra_data rx51_vibra_data __initdata = {
 	.coexist	= 0,
 };
@@ -1230,7 +994,7 @@ static struct twl4030_platform_data rx51_twldata __initdata = {
 	/* platform_data for children goes here */
 	.gpio			= &rx51_gpio_data,
 	.keypad			= &rx51_kp_data,
-	.power			= &rx51_power_data,
+	.power			= &rx51_t2scripts_data,
 	.audio			= &rx51_audio_data,
 
 	.vaux1			= &rx51_vaux1,
@@ -1265,16 +1029,6 @@ static struct aic3x_pdata rx51_aic3x_data2 = {
 	.gpio_reset = 60,
 };
 
-static struct bq2415x_platform_data rx51_bq24150a_platform_data = {
-	.current_limit = 100,			/* mA */
-	.weak_battery_voltage = 3400,		/* mV */
-	.battery_regulation_voltage = 4200,	/* mV */
-	.charge_current = 650,			/* mA */
-	.termination_current = 100,		/* mA */
-	.resistor_sense = 68,			/* m ohm */
-	.notify_device = "isp1704",
-};
-
 static struct i2c_board_info __initdata rx51_peripherals_i2c_board_info_2[] = {
 	{
 		I2C_BOARD_INFO("tlv320aic3x", 0x18),
@@ -1302,11 +1056,7 @@ static struct i2c_board_info __initdata rx51_peripherals_i2c_board_info_2[] = {
 	{
 		I2C_BOARD_INFO("tpa6130a2", 0x60),
 		.platform_data = &rx51_tpa6130a2_data,
-	},
-	{
-		I2C_BOARD_INFO("bq24150a", 0x6b),
-		.platform_data = &rx51_bq24150a_platform_data,
-	},
+	}
 };
 
 static struct i2c_board_info __initdata rx51_peripherals_i2c_board_info_3[] = {
@@ -1316,10 +1066,6 @@ static struct i2c_board_info __initdata rx51_peripherals_i2c_board_info_3[] = {
 		.platform_data = &rx51_lis3lv02d_data,
 	},
 #endif
-	{
-		I2C_BOARD_INFO(BCM2048_NAME, BCM2048_I2C_ADDR),
-	}
-
 };
 
 static int __init rx51_i2c_init(void)
@@ -1347,7 +1093,6 @@ static int __init rx51_i2c_init(void)
 	rx51_lis3lv02d_data.irq2 = gpio_to_irq(LIS302_IRQ2_GPIO);
 	rx51_peripherals_i2c_board_info_3[0].irq = gpio_to_irq(LIS302_IRQ1_GPIO);
 #endif
-	rx51_peripherals_i2c_board_info_3[1].irq = RX51_FMRX_IRQ;
 	omap_register_i2c_bus(3, 400, rx51_peripherals_i2c_board_info_3,
 			      ARRAY_SIZE(rx51_peripherals_i2c_board_info_3));
 	return 0;
@@ -1462,16 +1207,6 @@ error:
 	 */
 }
 
-static struct platform_device rx51_audio_device = {
-	.name	= "rx51-audio",
-	.id	= -1,
-};
-
-static void __init rx51_init_audio(void)
-{
-	platform_device_register(&rx51_audio_device);
-}
-
 static struct tsc2005_platform_data tsc2005_pdata = {
 	.ts_pressure_max	= 2048,
 	.ts_pressure_fudge	= 2,
@@ -1563,43 +1298,6 @@ static void __init rx51_init_omap3_rom_rng(void)
 	}
 }
 
-/* Allow C6 state {1, 3120, 5788, 10000} */
-#define H4P_WAKEUP_LATENCY	5700
-
-/* Use wakeup latency only for now */
-static void rx51_bt_set_pm_limits(struct device *dev, bool set)
-{
-	omap_pm_set_max_mpu_wakeup_lat(dev, set ? H4P_WAKEUP_LATENCY : -1);
-}
-
-struct hci_h4p_platform_data bt_plat_data = {
-	.chip_type		= 3,
-	.bt_sysclk		= 2,
-	.bt_wakeup_gpio		= RX51_HCI_H4P_BTWU_GPIO,
-	.host_wakeup_gpio	= RX51_HCI_H4P_HOSTWU_GPIO,
-	.reset_gpio		= RX51_HCI_H4P_RESET_GPIO,
-	.reset_gpio_shared	= 0,
-	.uart_irq		= 73 + OMAP_INTC_START,
-	.uart_base		= OMAP3_UART2_BASE,
-	.uart_iclk		= "uart2_ick",
-	.uart_fclk		= "uart2_fck",
-	.set_pm_limits		= rx51_bt_set_pm_limits,
-};
-
-static struct platform_device rx51_bt_device = {
-	.name		= "hci_h4p",
-	.id		= -1,
-	.num_resources	= 0,
-	.dev = {
-		.platform_data = &bt_plat_data,
-	}
-};
-
-void __init rx51_bt_init(void)
-{
-	platform_device_register(&rx51_bt_device);
-}
-
 void __init rx51_peripherals_init(void)
 {
 	rx51_i2c_init();
@@ -1607,16 +1305,10 @@ void __init rx51_peripherals_init(void)
 	gpmc_onenand_init(board_onenand_data);
 	board_smc91x_init();
 	rx51_add_gpio_keys();
-	rx51_add_gpio_switches();
-	rx51_init_audio();
 	rx51_init_wl1251();
 	rx51_init_tsc2005();
 	rx51_init_si4713();
 	rx51_init_lirc();
-	rx51_init_bcm2048();
-	rx51_cmt_init();
-	rx51_ssi_init();
-	rx51_bt_init();
 	spi_register_board_info(rx51_peripherals_spi_board_info,
 				ARRAY_SIZE(rx51_peripherals_spi_board_info));
 

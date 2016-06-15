@@ -90,7 +90,7 @@ Some terms used in this document:-
                    operating parameters and is specified in the regulator
                    datasheet. i.e.
 
-                     - voltage output is in the range 800mV .. 3500mV.
+                     - voltage output is in the range 800mV -> 3500mV.
                      - regulator current output limit is 20mA @ 5V but is
                        10mA @ 10V.
 
@@ -99,8 +99,8 @@ Some terms used in this document:-
                    power domain to a particular power range. i.e.
 
                      - Domain-1 voltage is 3300mV
-                     - Domain-2 voltage is 1400mV .. 1600mV
-                     - Domain-3 current limit is 0mA .. 20mA.
+                     - Domain-2 voltage is 1400mV -> 1600mV
+                     - Domain-3 current limit is 0mA -> 20mA.
 
                    Consumer Level: This is defined by consumer drivers
                    dynamically setting voltage or current limit levels.

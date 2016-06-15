@@ -10,10 +10,6 @@ obj-y := id.o io.o control.o mux.o devices.o fb.o serial.o gpmc.o timer.o pm.o \
 	 common.o gpio.o dma.o wd_timer.o display.o i2c.o hdq1w.o omap_hwmod.o \
 	 omap_device.o sram.o drm.o
 
-ifneq ($(CONFIG_MACH_NOKIA_RX51),y)
-# obj-y +=  board-rx51-tmp.o
-endif
-
 hwmod-common				= omap_hwmod.o omap_hwmod_reset.o \
 					  omap_hwmod_common_data.o
 clock-common				= clock.o clock_common_data.o \
@@ -241,9 +237,6 @@ obj-y					+= $(iommu-m) $(iommu-y)
 # OMAP2420 MSDI controller integration support ("MMC")
 obj-$(CONFIG_SOC_OMAP2420)		+= msdi.o
 
-omap-ssi-$(CONFIG_OMAP_SSI)		:= ssi.o
-obj-y					+= $(omap-ssi-m) $(omap-ssi-y)
-
 # Specific board support
 obj-$(CONFIG_MACH_OMAP_GENERIC)		+= board-generic.o pdata-quirks.o
 obj-$(CONFIG_MACH_OMAP3_BEAGLE)		+= board-omap3beagle.o
@@ -258,8 +251,6 @@ obj-$(CONFIG_MACH_NOKIA_N8X0)		+= board-n8x0.o
 obj-$(CONFIG_MACH_NOKIA_RX51)		+= board-rx51.o sdram-nokia.o
 obj-$(CONFIG_MACH_NOKIA_RX51)		+= board-rx51-peripherals.o
 obj-$(CONFIG_MACH_NOKIA_RX51)		+= board-rx51-video.o
-obj-$(CONFIG_MACH_NOKIA_RX51)		+= board-rx51-camera.o
-obj-$(CONFIG_MACH_NOKIA_RX51)		+= board-rx51-compat.o
 obj-$(CONFIG_MACH_CM_T35)		+= board-cm-t35.o
 obj-$(CONFIG_MACH_CM_T3517)		+= board-cm-t3517.o
 obj-$(CONFIG_MACH_TOUCHBOOK)		+= board-omap3touchbook.o
