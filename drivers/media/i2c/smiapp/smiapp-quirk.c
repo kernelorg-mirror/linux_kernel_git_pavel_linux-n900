@@ -22,8 +22,6 @@
  *
  */
 
-#define DEBUG
-
 #include <linux/delay.h>
 
 #include "smiapp.h"

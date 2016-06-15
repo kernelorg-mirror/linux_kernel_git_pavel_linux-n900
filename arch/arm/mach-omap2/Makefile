@@ -11,7 +11,7 @@ obj-y := id.o io.o control.o mux.o devices.o fb.o serial.o gpmc.o timer.o pm.o \
 	 omap_device.o sram.o drm.o
 
 ifneq ($(CONFIG_MACH_NOKIA_RX51),y)
-obj-y +=  board-rx51-tmp.o
+# obj-y +=  board-rx51-tmp.o
 endif
 
 hwmod-common				= omap_hwmod.o omap_hwmod_reset.o \

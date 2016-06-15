@@ -22,8 +22,6 @@
  *
  */
 
-#define DEBUG
-
 #include "smiapp.h"
 
 struct smiapp_reg_limits smiapp_reg_limits[] = {

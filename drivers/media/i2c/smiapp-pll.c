@@ -22,8 +22,6 @@
  *
  */
 
-#define DEBUG
-
 #include <linux/gcd.h>
 #include <linux/lcm.h>
 #include <linux/module.h>
@@ -171,8 +169,7 @@ static int __smiapp_pll_calculate(struct device *dev,
 
 	more_mul_factor = lcm(div, pll->pre_pll_clk_div) / div;
 	dev_dbg(dev, "more_mul_factor: %d\n", more_mul_factor);
-	more_mul_factor = lcm(more_mul_factor,
-			      DIV_ROUND_UP(limits->op.min_sys_clk_div, div));
+	more_mul_factor = lcm(more_mul_factor, limits->op.min_sys_clk_div);
 	dev_dbg(dev, "more_mul_factor: min_op_sys_clk_div: %d\n",
 		more_mul_factor);
 	i = roundup(more_mul_min, more_mul_factor);
