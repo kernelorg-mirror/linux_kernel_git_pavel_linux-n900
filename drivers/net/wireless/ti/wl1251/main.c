@@ -27,7 +27,6 @@
 #include <linux/crc32.h>
 #include <linux/etherdevice.h>
 #include <linux/vmalloc.h>
-#include <linux/platform_device.h>
 #include <linux/slab.h>
 #include <linux/netdevice.h>
 
@@ -43,7 +42,6 @@
 #include "init.h"
 #include "debugfs.h"
 #include "boot.h"
-#include "netlink.h"
 
 void wl1251_enable_interrupts(struct wl1251 *wl)
 {
@@ -1389,283 +1387,6 @@ static const struct ieee80211_ops wl1251_ops = {
 	.get_survey = wl1251_op_get_survey,
 };
 
-static ssize_t wl1251_sysfs_show_address(struct device *dev,
-					 struct device_attribute *attr,
-					 char *buf)
-{
-	struct wl1251 *wl = dev_get_drvdata(dev);
-	ssize_t len;
-
-	/* FIXME: what's the maximum length of buf? page size?*/
-	len = 500;
-
-	len = snprintf(buf, len, "%.2x:%.2x:%.2x:%.2x:%.2x:%.2x\n",
-		       wl->mac_addr[0], wl->mac_addr[1], wl->mac_addr[2],
-		       wl->mac_addr[3], wl->mac_addr[4], wl->mac_addr[5]);
-
-	return len;
-}
-
-static ssize_t wl1251_sysfs_store_address(struct device *dev,
-					  struct device_attribute *attr,
-					  const char *buf, size_t count)
-{
-	struct wl1251 *wl = dev_get_drvdata(dev);
-	unsigned int addr[6];
-	int ret, i;
-
-	ret = sscanf(buf, "%2x:%2x:%2x:%2x:%2x:%2x\n",
-			&addr[0], &addr[1], &addr[2],
-			&addr[3], &addr[4], &addr[5]);
-
-	if (ret != 6)
-		return -EINVAL;
-
-	for (i = 0; i < 6; i++)
-		wl->mac_addr[i] = addr[i] & 0xff;
-
-	SET_IEEE80211_PERM_ADDR(wl->hw, wl->mac_addr);
-
-	return count;
-}
-
-static ssize_t wl1251_sysfs_show_tx_mgmt_frm_rate(struct device *dev,
-						  struct device_attribute *attr,
-						  char *buf)
-{
-	struct wl1251 *wl = dev_get_drvdata(dev);
-	ssize_t len;
-	int val;
-
-	/* FIXME: what's the maximum length of buf? page size?*/
-	len = 500;
-
-	switch (wl->tx_mgmt_frm_rate) {
-		/* skip 1 and 12 Mbps because they have same value 0x0a */
-	case RATE_2MBPS:
-		val = 20;
-		break;
-	case RATE_5_5MBPS:
-		val = 55;
-		break;
-	case RATE_11MBPS:
-		val = 110;
-		break;
-	case RATE_6MBPS:
-		val = 60;
-		break;
-	case RATE_9MBPS:
-		val = 90;
-		break;
-	case RATE_12MBPS:
-		val = 120;
-		break;
-	case RATE_18MBPS:
-		val = 180;
-		break;
-	case RATE_24MBPS:
-		val = 240;
-		break;
-	case RATE_36MBPS:
-		val = 360;
-		break;
-	case RATE_48MBPS:
-		val = 480;
-		break;
-	case RATE_54MBPS:
-		val = 540;
-		break;
-	default:
-		val = 10;
-	}
-
-	/* for 1 and 12 Mbps we have to check the modulation */
-	if (wl->tx_mgmt_frm_rate == RATE_1MBPS) {
-		switch (wl->tx_mgmt_frm_rate) {
-		case CCK_LONG:
-			val = 10;
-			break;
-		case OFDM:
-			val = 120;
-			break;
-		default:
-			val = 10;
-			break;
-		}
-	}
-	len = snprintf(buf, len, "%d", val);
-
-	return len;
-}
-
-static ssize_t wl1251_sysfs_store_tx_mgmt_frm_rate(struct device *dev,
-					struct device_attribute *attr,
-					const char *buf, size_t count)
-{
-	struct wl1251 *wl = dev_get_drvdata(dev);
-	unsigned long res;
-	int ret;
-
-	ret = kstrtoul(buf, 10, &res);
-
-	if (ret < 0) {
-		wl1251_warning("incorrect value written to tx_mgmt_frm_rate");
-		return 0;
-	}
-
-	switch (res) {
-	case 10:
-		wl->tx_mgmt_frm_rate = RATE_1MBPS;
-		wl->tx_mgmt_frm_mod = CCK_LONG;
-		break;
-	case 20:
-		wl->tx_mgmt_frm_rate = RATE_2MBPS;
-		wl->tx_mgmt_frm_mod = CCK_LONG;
-		break;
-	case 55:
-		wl->tx_mgmt_frm_rate = RATE_5_5MBPS;
-		wl->tx_mgmt_frm_mod = CCK_LONG;
-		break;
-	case 110:
-		wl->tx_mgmt_frm_rate = RATE_11MBPS;
-		wl->tx_mgmt_frm_mod = CCK_LONG;
-		break;
-	case 60:
-		wl->tx_mgmt_frm_rate = RATE_6MBPS;
-		wl->tx_mgmt_frm_mod = OFDM;
-		break;
-	case 90:
-		wl->tx_mgmt_frm_rate = RATE_9MBPS;
-		wl->tx_mgmt_frm_mod = OFDM;
-		break;
-	case 120:
-		wl->tx_mgmt_frm_rate = RATE_12MBPS;
-		wl->tx_mgmt_frm_mod = OFDM;
-		break;
-	case 180:
-		wl->tx_mgmt_frm_rate = RATE_18MBPS;
-		wl->tx_mgmt_frm_mod = OFDM;
-		break;
-	case 240:
-		wl->tx_mgmt_frm_rate = RATE_24MBPS;
-		wl->tx_mgmt_frm_mod = OFDM;
-		break;
-	case 360:
-		wl->tx_mgmt_frm_rate = RATE_36MBPS;
-		wl->tx_mgmt_frm_mod = OFDM;
-		break;
-	case 480:
-		wl->tx_mgmt_frm_rate = RATE_48MBPS;
-		wl->tx_mgmt_frm_mod = OFDM;
-		break;
-	case 540:
-		wl->tx_mgmt_frm_rate = RATE_54MBPS;
-		wl->tx_mgmt_frm_mod = OFDM;
-		break;
-	default:
-		wl1251_warning("incorrect value written to tx_mgmt_frm_rate");
-		return 0;
-	}
-
-	return count;
-}
-
-static ssize_t wl1251_sysfs_show_bt_coex_mode(struct device *dev,
-					      struct device_attribute *attr,
-					      char *buf)
-{
-	struct wl1251 *wl = dev_get_drvdata(dev);
-	ssize_t len;
-
-	/* FIXME: what's the maximum length of buf? page size?*/
-	len = 500;
-
-	mutex_lock(&wl->mutex);
-	len = snprintf(buf, len, "%d\n\n%d - off\n%d - on\n%d - monoaudio\n",
-		       wl->bt_coex_mode,
-		       WL1251_BT_COEX_OFF,
-		       WL1251_BT_COEX_ENABLE,
-		       WL1251_BT_COEX_MONOAUDIO);
-	mutex_unlock(&wl->mutex);
-
-	return len;
-
-}
-
-static ssize_t wl1251_sysfs_store_bt_coex_mode(struct device *dev,
-					       struct device_attribute *attr,
-					       const char *buf, size_t count)
-{
-	struct wl1251 *wl = dev_get_drvdata(dev);
-	unsigned long res;
-	int ret;
-
-	ret = kstrtoul(buf, 10, &res);
-
-	if (ret < 0) {
-		wl1251_warning("incorrect value written to bt_coex_mode");
-		return count;
-	}
-
-	mutex_lock(&wl->mutex);
-
-	if (res == wl->bt_coex_mode)
-		goto out;
-
-	switch (res) {
-	case WL1251_BT_COEX_OFF:
-	case WL1251_BT_COEX_ENABLE:
-	case WL1251_BT_COEX_MONOAUDIO:
-		wl->bt_coex_mode = res;
-		break;
-	default:
-		wl1251_warning("incorrect value written to bt_coex_mode");
-		goto out;
-	}
-
-	if (wl->state == WL1251_STATE_OFF)
-		goto out;
-
-	ret = wl1251_ps_elp_wakeup(wl);
-	if (ret < 0)
-		goto out;
-
-	wl1251_acx_sg_configure(wl, false);
-	wl1251_ps_elp_sleep(wl);
-
-out:
-	mutex_unlock(&wl->mutex);
-	return count;
-}
-
-static DEVICE_ATTR(address, S_IRUGO | S_IWUSR,
-		   wl1251_sysfs_show_address,
-		   wl1251_sysfs_store_address);
-
-static DEVICE_ATTR(tx_mgmt_frm_rate, S_IRUGO | S_IWUSR,
-		   wl1251_sysfs_show_tx_mgmt_frm_rate,
-		   wl1251_sysfs_store_tx_mgmt_frm_rate);
-
-static DEVICE_ATTR(bt_coex_mode, S_IRUGO | S_IWUSR,
-		   wl1251_sysfs_show_bt_coex_mode,
-		   wl1251_sysfs_store_bt_coex_mode);
-
-static void wl1251_device_release(struct device *dev)
-{
-
-}
-
-static struct platform_device wl1251_device = {
-	/* FIXME: use wl12xx name to not break the user space */
-	.name		= "wl12xx",
-	.id		= -1,
-
-	/* device model insists to have a release function */
-	.dev            = {
-		.release = wl1251_device_release,
-	},
-};
-
 static int wl1251_read_eeprom_byte(struct wl1251 *wl, off_t offset, u8 *data)
 {
 	unsigned long timeout;
@@ -1777,41 +1498,6 @@ int wl1251_init_ieee80211(struct wl1251 *wl)
 	if (ret)
 		goto out;
 
-	ret = wl1251_nl_register();
-	if (ret)
-		goto out;
-
-	/* Register platform device */
-	ret = platform_device_register(&wl1251_device);
-	if (ret) {
-		wl1251_error("couldn't register platform device");
-		goto out;
-	}
-	dev_set_drvdata(&wl1251_device.dev, wl);
-
-	/* Create sysfs file address */
-	ret = device_create_file(&wl1251_device.dev,
-				 &dev_attr_address);
-	if (ret < 0) {
-		wl1251_error("failed to create sysfs file address");
-		goto out;
-	}
-
-	/* Create sysfs file tx_mgmt_frm_rate */
-	ret = device_create_file(&wl1251_device.dev,
-				 &dev_attr_tx_mgmt_frm_rate);
-	if (ret < 0) {
-		wl1251_error("failed to create sysfs file tx_mgmt_frm_rate");
-		goto out;
-	}
-
-	/* Create sysfs file to control bt coex state */
-	ret = device_create_file(&wl1251_device.dev, &dev_attr_bt_coex_mode);
-	if (ret < 0) {
-		wl1251_error("failed to create sysfs file bt_coex_mode");
-		goto out;
-	}
-
 	wl1251_debugfs_init(wl);
 	wl1251_notice("initialized");
 
@@ -1868,7 +1554,6 @@ struct ieee80211_hw *wl1251_alloc_hw(void)
 	wl->beacon_int = WL1251_DEFAULT_BEACON_INT;
 	wl->dtim_period = WL1251_DEFAULT_DTIM_PERIOD;
 	wl->vif = NULL;
-	wl->bt_coex_mode = WL1251_BT_COEX_OFF;
 
 	for (i = 0; i < FW_TX_CMPLT_BLOCK_SIZE; i++)
 		wl->tx_frames[i] = NULL;
@@ -1904,13 +1589,9 @@ EXPORT_SYMBOL_GPL(wl1251_alloc_hw);
 
 int wl1251_free_hw(struct wl1251 *wl)
 {
-	wl1251_nl_unregister();
-
 	ieee80211_unregister_hw(wl->hw);
 
 	wl1251_debugfs_exit(wl);
-
-	platform_device_unregister(&wl1251_device);
 
 	kfree(wl->target_mem_map);
 	kfree(wl->data_path);

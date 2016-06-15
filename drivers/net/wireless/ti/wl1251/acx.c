@@ -542,7 +542,7 @@ out:
 	return ret;
 }
 
-int wl1251_acx_sg_enable(struct wl1251 *wl, u8 mode)
+int wl1251_acx_sg_enable(struct wl1251 *wl)
 {
 	struct acx_bt_wlan_coex *pta;
 	int ret;
@@ -553,7 +553,7 @@ int wl1251_acx_sg_enable(struct wl1251 *wl, u8 mode)
 	if (!pta)
 		return -ENOMEM;
 
-	pta->enable = mode;
+	pta->enable = SG_ENABLE;
 
 	ret = wl1251_cmd_configure(wl, ACX_SG_ENABLE, pta, sizeof(*pta));
 	if (ret < 0) {
@@ -566,7 +566,7 @@ out:
 	return ret;
 }
 
-int wl1251_acx_sg_cfg(struct wl1251 *wl, u16 wake_up_beacon)
+int wl1251_acx_sg_cfg(struct wl1251 *wl)
 {
 	struct acx_bt_wlan_coex_param *param;
 	int ret;
@@ -589,7 +589,7 @@ int wl1251_acx_sg_cfg(struct wl1251 *wl, u16 wake_up_beacon)
 	param->wlan_cycle_fast = PTA_CYCLE_TIME_FAST_DEF;
 	param->bt_anti_starvation_period = PTA_ANTI_STARVE_PERIOD_DEF;
 	param->next_bt_lp_packet = PTA_TIMEOUT_NEXT_BT_LP_PACKET_DEF;
-	param->wake_up_beacon = wake_up_beacon;
+	param->wake_up_beacon = PTA_TIME_BEFORE_BEACON_DEF;
 	param->hp_dm_max_guard_time = PTA_HPDM_MAX_TIME_DEF;
 	param->next_wlan_packet = PTA_TIME_OUT_NEXT_WLAN_DEF;
 	param->antenna_type = PTA_ANTENNA_TYPE_DEF;
@@ -615,41 +615,6 @@ int wl1251_acx_sg_cfg(struct wl1251 *wl, u16 wake_up_beacon)
 
 out:
 	kfree(param);
-	return ret;
-}
-
-int wl1251_acx_sg_configure(struct wl1251 *wl, bool force)
-{
-	int ret;
-
-	if (wl->state == WL1251_STATE_OFF && !force)
-		return 0;
-
-	switch (wl->bt_coex_mode) {
-	case WL1251_BT_COEX_OFF:
-		ret = wl1251_acx_sg_enable(wl, SG_DISABLE);
-		if (ret)
-			break;
-		ret = wl1251_acx_sg_cfg(wl, 0);
-		break;
-	case WL1251_BT_COEX_ENABLE:
-		ret = wl1251_acx_sg_enable(wl, SG_ENABLE);
-		if (ret)
-			break;
-		ret = wl1251_acx_sg_cfg(wl, PTA_TIME_BEFORE_BEACON_DEF);
-		break;
-	case WL1251_BT_COEX_MONOAUDIO:
-		ret = wl1251_acx_sg_enable(wl, SG_ENABLE);
-		if (ret)
-			break;
-		ret = wl1251_acx_sg_cfg(wl, PTA_TIME_BEFORE_BEACON_MONO_AUDIO);
-		break;
-	default:
-		wl1251_error("Invalid BT co-ex mode!");
-		ret = -EOPNOTSUPP;
-		break;
-	}
-
 	return ret;
 }
 
