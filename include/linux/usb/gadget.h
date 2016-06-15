@@ -402,6 +402,9 @@ static inline void usb_ep_free_request(struct usb_ep *ep,
 static inline int usb_ep_queue(struct usb_ep *ep,
 			       struct usb_request *req, gfp_t gfp_flags)
 {
+	if (WARN_ON_ONCE(!ep->enabled && ep->address))
+		return -ESHUTDOWN;
+
 	return ep->ops->queue(ep, req, gfp_flags);
 }
 
@@ -1014,6 +1017,9 @@ static inline int usb_gadget_activate(struct usb_gadget *gadget)
  * @work: Gadget work used to bind to the USB controller.
  * @retries: Gadget retries to bind to the USB controller.
  * @driver: Driver model state for this driver.
+ * @udc_name: A name of UDC this driver should be bound to. If udc_name is NULL,
+ *	this driver will be bound to any available UDC.
+ * @pending: UDC core private data used for deferred probe of this driver.
  *
  * Devices are disabled till a gadget driver successfully bind()s, which
  * means the driver will handle setup() requests needed to enumerate (and
@@ -1076,6 +1082,9 @@ struct usb_gadget_driver {
 
 	/* FIXME support safe rmmod */
 	struct device_driver	driver;
+
+	char			*udc_name;
+	struct list_head	pending;
 };
 
 
@@ -1121,8 +1130,6 @@ extern int usb_add_gadget_udc_release(struct device *parent,
 		struct usb_gadget *gadget, void (*release)(struct device *dev));
 extern int usb_add_gadget_udc(struct device *parent, struct usb_gadget *gadget);
 extern void usb_del_gadget_udc(struct usb_gadget *gadget);
-extern int usb_udc_attach_driver(const char *name,
-		struct usb_gadget_driver *driver);
 
 /*-------------------------------------------------------------------------*/
 
