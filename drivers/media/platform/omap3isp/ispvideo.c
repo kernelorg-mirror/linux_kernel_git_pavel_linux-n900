@@ -867,9 +867,12 @@ isp_video_set_param(struct file *file, void *fh, struct v4l2_streamparm *a)
 	struct isp_video_fh *vfh = to_isp_video_fh(fh);
 	struct isp_video *video = video_drvdata(file);
 
+	printk("video_set_param\n");
 	if (video->type != V4L2_BUF_TYPE_VIDEO_OUTPUT ||
-	    video->type != a->type)
+	    video->type != a->type) {
+		printk("bad type\n");
 		return -EINVAL;
+	}
 
 	if (a->parm.output.timeperframe.denominator == 0)
 		a->parm.output.timeperframe.denominator = 1;
@@ -1068,8 +1071,12 @@ isp_video_streamon(struct file *file, void *fh, enum v4l2_buf_type type)
 	unsigned long flags;
 	int ret;
 
-	if (type != video->type)
+	printk("Streamon\n");
+
+	if (type != video->type) {
+		printk("bad type\n");
 		return -EINVAL;
+	}
 
 	mutex_lock(&video->stream_lock);
 
@@ -1080,30 +1087,38 @@ isp_video_streamon(struct file *file, void *fh, enum v4l2_buf_type type)
 	     ? to_isp_pipeline(&video->video.entity) : &video->pipe;
 
 	ret = media_entity_enum_init(&pipe->ent_enum, &video->isp->media_dev);
-	if (ret)
+	if (ret) {
+		printk("enum_init problem\n");
 		goto err_enum_init;
+	}
 
 	/* TODO: Implement PM QoS */
 	pipe->l3_ick = clk_get_rate(video->isp->clock[ISP_CLK_L3_ICK]);
 	pipe->max_rate = pipe->l3_ick;
 
 	ret = media_entity_pipeline_start(&video->video.entity, &pipe->pipe);
-	if (ret < 0)
+	if (ret < 0) {
+		printk("pipeline_start problem\n");
 		goto err_pipeline_start;
+	}
 
 	/* Verify that the currently configured format matches the output of
 	 * the connected subdev.
 	 */
 	ret = isp_video_check_format(video, vfh);
-	if (ret < 0)
+	if (ret < 0) {
+		printk("check_format problem\n");
 		goto err_check_format;
+	}
 
 	video->bpl_padding = ret;
 	video->bpl_value = vfh->format.fmt.pix.bytesperline;
 
 	ret = isp_video_get_graph_data(video, pipe);
-	if (ret < 0)
+	if (ret < 0) {
+		printk("graph_data problem\n");
 		goto err_check_format;
+	}
 
 	if (video->type == V4L2_BUF_TYPE_VIDEO_CAPTURE)
 		state = ISP_PIPELINE_STREAM_OUTPUT | ISP_PIPELINE_IDLE_OUTPUT;
@@ -1111,8 +1126,10 @@ isp_video_streamon(struct file *file, void *fh, enum v4l2_buf_type type)
 		state = ISP_PIPELINE_STREAM_INPUT | ISP_PIPELINE_IDLE_INPUT;
 
 	ret = isp_video_check_external_subdevs(video, pipe);
-	if (ret < 0)
+	if (ret < 0) {
+		printk("external_subdevs problem\n");
 		goto err_check_format;
+	}
 
 	pipe->error = false;
 
@@ -1136,11 +1153,14 @@ isp_video_streamon(struct file *file, void *fh, enum v4l2_buf_type type)
 	mutex_lock(&video->queue_lock);
 	ret = vb2_streamon(&vfh->queue, type);
 	mutex_unlock(&video->queue_lock);
-	if (ret < 0)
+	if (ret < 0) {
+		printk("vb2_streamon problem\n");
 		goto err_check_format;
+	}
 
 	mutex_unlock(&video->stream_lock);
 
+	printk("stream on success\n");
 	return 0;
 
 err_check_format:
