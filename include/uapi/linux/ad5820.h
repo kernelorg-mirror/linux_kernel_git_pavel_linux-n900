@@ -12,7 +12,7 @@
 #include <linux/v4l2-controls.h>
 
 /* Control IDs specific to the AD5820 driver as defined by V4L2 */
-#define V4L2_CID_AD5820_RAMP_TIME	(V4L2_CID_AD5820_BASE+0)
-#define V4L2_CID_AD5820_RAMP_MODE	(V4L2_CID_AD5820_BASE+1)
+#define V4L2_CID_AD5820_RAMP_TIME	(V4L2_CID_AD5820_BASE + 0)
+#define V4L2_CID_AD5820_RAMP_MODE	(V4L2_CID_AD5820_BASE + 1)
 
 #endif
