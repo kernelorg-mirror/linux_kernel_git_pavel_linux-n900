@@ -252,7 +252,8 @@
 				data-lanes = <1>;
 				lane-polarity = <0 0>;
 				clock-inv = <0>;
-				strobe = <1>;
+				/* Select strobe = <1> for back camera, <0> for front camera */
+				strobe = <0>;
 				crc = <0>;
 			};
 		};
