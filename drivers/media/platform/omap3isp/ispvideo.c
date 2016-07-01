@@ -311,8 +311,17 @@ isp_video_check_format(struct isp_video *video, struct isp_video_fh *vfh)
 
 	memcpy(&format, &vfh->format, sizeof(format));
 	ret = __isp_video_get_format(video, &format);
-	if (ret < 0)
+	if (ret < 0) {
+		printk("check_format: could not get format\n");
 		return ret;
+	}
+
+	printk("check_format checking px %d %d, h %d %d, w %d %d, bpline %d %d, size %d %d field %d %d\n", vfh->format.fmt.pix.pixelformat, format.fmt.pix.pixelformat,
+	       vfh->format.fmt.pix.height, format.fmt.pix.height,
+	       vfh->format.fmt.pix.width, format.fmt.pix.width,
+	       vfh->format.fmt.pix.bytesperline, format.fmt.pix.bytesperline,
+	       vfh->format.fmt.pix.sizeimage, format.fmt.pix.sizeimage,
+	       vfh->format.fmt.pix.field, format.fmt.pix.field);
 
 	if (vfh->format.fmt.pix.pixelformat != format.fmt.pix.pixelformat ||
 	    vfh->format.fmt.pix.height != format.fmt.pix.height ||
