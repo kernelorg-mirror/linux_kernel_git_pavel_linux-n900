@@ -626,9 +626,12 @@ int __usb_gadget_probe_driver(struct usb_gadget_driver *driver)
 		}
 	}
 
-//	list_add_tail(&driver->pending, &gadget_driver_pending_list); FIXME
-	pr_info("udc-core: couldn't find an available UDC - added [%s] to list of pending drivers\n",
-		driver->function);
+	if (!driver->match_existing_only) {
+		list_add_tail(&driver->pending, &gadget_driver_pending_list);
+		pr_info("udc-core: couldn't find an available UDC - added [%s] to list of pending drivers\n",
+			driver->function);
+		ret = 0;
+	}
 
 	mutex_unlock(&udc_lock);
 	return ret;
