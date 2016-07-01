@@ -21,10 +21,11 @@
 #include <linux/regulator/fixed.h>
 
 #include <linux/platform_data/pinctrl-single.h>
-#include <linux/platform_data/dsp-omap.h>
+#include <linux/platform_data/hsmmc-omap.h>
 #include <linux/platform_data/iommu-omap.h>
 #include <linux/platform_data/wkup_m3.h>
 #include <linux/platform_data/pwm_omap_dmtimer.h>
+#include <linux/platform_data/media/ir-rx51.h>
 #include <plat/dmtimer.h>
 
 #include "common.h"
@@ -32,11 +33,14 @@
 #include "dss-common.h"
 #include "control.h"
 #include "omap_device.h"
+#include "omap-pm.h"
 #include "omap-secure.h"
 #include "soc.h"
 #include "hsmmc.h"
 #include "cm2xxx_3xxx.h"
 #include "prm2xxx_3xxx.h"
+
+static struct omap_hsmmc_platform_data __maybe_unused mmc_pdata[2];
 
 struct pdata_init {
 	const char *compatible;
@@ -271,151 +275,13 @@ static struct platform_device omap3_rom_rng_device = {
 	},
 };
 
-#if defined(CONFIG_OMAP_GPIO_SWITCH) || defined(CONFIG_OMAP_GPIO_SWITCH_MODULE)
-
-#include "plat/gpio-switch.h"
-
-#define RX51_GPIO_CAMERA_FOCUS		68
-#define RX51_GPIO_CAMERA_CAPTURE	69
-#define RX51_GPIO_CAMERA_LENS_COVER	110
-#define RX51_GPIO_CMT_APESLPX		70
-#define RX51_GPIO_CMT_BSI		157
-#define RX51_GPIO_CMT_EN		74
-#define RX51_GPIO_CMT_RST		75
-#define RX51_GPIO_CMT_RST_RQ		73
-#define RX51_GPIO_CMT_WDDIS		13
-#define RX51_GPIO_HEADPHONE		177
-#define RX51_GPIO_LOCK_BUTTON		113
-#define RX51_GPIO_PROXIMITY		89
-#define RX51_GPIO_SLEEP_IND		162
-#define RX51_GPIO_KEYPAD_SLIDE		71
-
-#define RX51_GPIO_DEBOUNCE_TIMEOUT	10
-static struct omap_gpio_switch rx51_gpio_switches[] __initdata = {
-	{
-		.name			= "cam_focus",
-		.gpio			= RX51_GPIO_CAMERA_FOCUS,
-		.flags			= OMAP_GPIO_SWITCH_FLAG_INVERTED,
-		.type			= OMAP_GPIO_SWITCH_TYPE_ACTIVITY,
-		.debounce_rising	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-		.debounce_falling	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-		.failed			= true,
-	}, {
-		.name			= "cam_launch",
-		.gpio			= RX51_GPIO_CAMERA_CAPTURE,
-		.flags			= OMAP_GPIO_SWITCH_FLAG_INVERTED,
-		.type			= OMAP_GPIO_SWITCH_TYPE_ACTIVITY,
-		.debounce_rising	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-		.debounce_falling	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-		.failed			= true,
-	}, {
-		.name			= "cam_shutter",
-		.gpio			= RX51_GPIO_CAMERA_LENS_COVER,
-		.flags			= OMAP_GPIO_SWITCH_FLAG_INVERTED,
-		.type			= OMAP_GPIO_SWITCH_TYPE_COVER,
-		.debounce_rising	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-		.debounce_falling	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-		.failed			= true,
-	}, {
-		.name			= "cmt_apeslpx",
-		.gpio			= RX51_GPIO_CMT_APESLPX,
-		.flags			= OMAP_GPIO_SWITCH_FLAG_OUTPUT,
-		.type			= OMAP_GPIO_SWITCH_TYPE_ACTIVITY,
-		.debounce_rising	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-		.debounce_falling	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-	}, {
-		.name			= "cmt_bsi",
-		.gpio			= RX51_GPIO_CMT_BSI,
-		.flags			= OMAP_GPIO_SWITCH_FLAG_OUTPUT,
-		.type			= OMAP_GPIO_SWITCH_TYPE_ACTIVITY,
-		.debounce_rising	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-		.debounce_falling	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-	}, {
-		.name			= "cmt_en",
-		.gpio			= RX51_GPIO_CMT_EN,
-		.flags			= OMAP_GPIO_SWITCH_FLAG_OUTPUT,
-		.type			= OMAP_GPIO_SWITCH_TYPE_ACTIVITY,
-		.debounce_rising	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-		.debounce_falling	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-	}, {
-		.name			= "cmt_rst",
-		.gpio			= RX51_GPIO_CMT_RST,
-		.flags			= OMAP_GPIO_SWITCH_FLAG_OUTPUT | OMAP_GPIO_SWITCH_FLAG_OUTPUT_INIT_ACTIVE,
-		.type			= OMAP_GPIO_SWITCH_TYPE_ACTIVITY,
-		.debounce_rising	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-		.debounce_falling	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-	}, {
-		.name			= "cmt_rst_rq",
-		.gpio			= RX51_GPIO_CMT_RST_RQ,
-		.flags			= OMAP_GPIO_SWITCH_FLAG_OUTPUT | OMAP_GPIO_SWITCH_FLAG_OUTPUT_INIT_ACTIVE,
-		.type			= OMAP_GPIO_SWITCH_TYPE_ACTIVITY,
-		.debounce_rising	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-		.debounce_falling	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-	}, {
-		.name			= "cmt_wddis",
-		.gpio			= RX51_GPIO_CMT_WDDIS,
-		.flags			= OMAP_GPIO_SWITCH_FLAG_OUTPUT,
-		.type			= OMAP_GPIO_SWITCH_TYPE_ACTIVITY,
-		.debounce_rising	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-		.debounce_falling	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-	}, {
-		.name			= "headphone",
-		.gpio			= RX51_GPIO_HEADPHONE,
-		.flags			= OMAP_GPIO_SWITCH_FLAG_INVERTED,
-		.type			= OMAP_GPIO_SWITCH_TYPE_CONNECTION,
-		.debounce_rising	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-		.debounce_falling	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-		.failed			= true,
-	}, {
-		.name			= "kb_lock",
-		.gpio			= RX51_GPIO_LOCK_BUTTON,
-		.flags			= OMAP_GPIO_SWITCH_FLAG_INVERTED,
-		.type			= OMAP_GPIO_SWITCH_TYPE_COVER,
-		.debounce_rising	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-		.debounce_falling	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-		.failed			= true,
-	}, {
-		.name			= "proximity",
-		.gpio			= RX51_GPIO_PROXIMITY,
-		.flags			= 0,
-		.type			= OMAP_GPIO_SWITCH_TYPE_COVER,
-		.debounce_rising	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-		.debounce_falling	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-		.failed			= true,
-	}, {
-		.name			= "sleep_ind",
-		.gpio			= RX51_GPIO_SLEEP_IND,
-		.flags			= OMAP_GPIO_SWITCH_FLAG_OUTPUT,
-		.type			= OMAP_GPIO_SWITCH_TYPE_ACTIVITY,
-		.debounce_rising	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-		.debounce_falling	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-		.failed			= true,
-	}, {
-		.name			= "slide",
-		.gpio			= RX51_GPIO_KEYPAD_SLIDE,
-		.flags			= 0,
-		.type			= OMAP_GPIO_SWITCH_TYPE_COVER,
-		.debounce_rising	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-		.debounce_falling	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-		.failed			= true,
-	}
-};
-
-static void __init rx51_add_gpio_switches(void)
-{
-	pr_info("RX-51: Add gpio switches\n");
-	omap_register_gpio_switches(rx51_gpio_switches,
-			ARRAY_SIZE(rx51_gpio_switches));
-}
-#else
-static void __init rx51_add_gpio_switches(void)
-{
-}
-#endif /* CONFIG_OMAP_GPIO_SWITCH || CONFIG_OMAP_GPIO_SWITCH_MODULE */
+static struct platform_device rx51_lirc_device;
 
 static void __init nokia_n900_legacy_init(void)
 {
 	hsmmc2_internal_input_clk();
+	mmc_pdata[0].name = "external";
+	mmc_pdata[1].name = "internal";
 
 	rx51_add_gpio_switches();
 
@@ -433,6 +299,8 @@ static void __init nokia_n900_legacy_init(void)
 		platform_device_register(&omap3_rom_rng_device);
 
 	}
+
+	platform_device_register(&rx51_lirc_device);
 }
 
 static void __init omap3_tao3530_legacy_init(void)
@@ -600,8 +468,14 @@ void omap_auxdata_legacy_init(struct device *dev)
 
 /* Dual mode timer PWM callbacks platdata */
 #if IS_ENABLED(CONFIG_OMAP_DM_TIMER)
-struct pwm_omap_dmtimer_pdata pwm_dmtimer_pdata = {
+static struct pwm_omap_dmtimer_pdata pwm_dmtimer_pdata = {
 	.request_by_node = omap_dm_timer_request_by_node,
+	.request_specific = omap_dm_timer_request_specific,
+	.request = omap_dm_timer_request,
+	.set_source = omap_dm_timer_set_source,
+	.get_irq = omap_dm_timer_get_irq,
+	.set_int_enable = omap_dm_timer_set_int_enable,
+	.set_int_disable = omap_dm_timer_set_int_disable,
 	.free = omap_dm_timer_free,
 	.enable = omap_dm_timer_enable,
 	.disable = omap_dm_timer_disable,
@@ -612,9 +486,28 @@ struct pwm_omap_dmtimer_pdata pwm_dmtimer_pdata = {
 	.set_match = omap_dm_timer_set_match,
 	.set_pwm = omap_dm_timer_set_pwm,
 	.set_prescaler = omap_dm_timer_set_prescaler,
+	.read_counter = omap_dm_timer_read_counter,
 	.write_counter = omap_dm_timer_write_counter,
+	.read_status = omap_dm_timer_read_status,
+	.write_status = omap_dm_timer_write_status,
 };
 #endif
+
+static struct lirc_rx51_platform_data __maybe_unused rx51_lirc_data = {
+	.set_max_mpu_wakeup_lat = omap_pm_set_max_mpu_wakeup_lat,
+	.pwm_timer = 9, /* Use GPT 9 for CIR */
+#if IS_ENABLED(CONFIG_OMAP_DM_TIMER)
+	.dmtimer = &pwm_dmtimer_pdata,
+#endif
+};
+
+static struct platform_device __maybe_unused rx51_lirc_device = {
+	.name           = "lirc_rx51",
+	.id             = -1,
+	.dev            = {
+		.platform_data = &rx51_lirc_data,
+	},
+};
 
 /*
  * Few boards still need auxdata populated before we populate
@@ -702,11 +595,10 @@ static struct of_dev_auxdata omap_auxdata_lookup[] __initdata = {
 	OF_DEV_AUXDATA("tlv320aic3x", 0x18, "2-0018", &n810_aic33_data),
 #endif
 #ifdef CONFIG_ARCH_OMAP3
-	OF_DEV_AUXDATA("ti,omap3-padconf", 0x48002030, "48002030.pinmux", &pcs_pdata),
-	OF_DEV_AUXDATA("ti,omap3-padconf", 0x480025a0, "480025a0.pinmux", &pcs_pdata),
-	OF_DEV_AUXDATA("ti,omap3-padconf", 0x48002a00, "48002a00.pinmux", &pcs_pdata),
 	OF_DEV_AUXDATA("ti,omap2-iommu", 0x5d000000, "5d000000.mmu",
 		       &omap3_iommu_pdata),
+	OF_DEV_AUXDATA("ti,omap3-hsmmc", 0x4809c000, "4809c000.mmc", &mmc_pdata[0]),
+	OF_DEV_AUXDATA("ti,omap3-hsmmc", 0x480b4000, "480b4000.mmc", &mmc_pdata[1]),
 	/* Only on am3517 */
 	OF_DEV_AUXDATA("ti,davinci_mdio", 0x5c030000, "davinci_mdio.0", NULL),
 	OF_DEV_AUXDATA("ti,am3517-emac", 0x5c000000, "davinci_emac.0",
@@ -716,19 +608,7 @@ static struct of_dev_auxdata omap_auxdata_lookup[] __initdata = {
 	OF_DEV_AUXDATA("ti,am3352-wkup-m3", 0x44d00000, "44d00000.wkup_m3",
 		       &wkup_m3_data),
 #endif
-#ifdef CONFIG_ARCH_OMAP4
-	OF_DEV_AUXDATA("ti,omap4-padconf", 0x4a100040, "4a100040.pinmux", &pcs_pdata),
-	OF_DEV_AUXDATA("ti,omap4-padconf", 0x4a31e040, "4a31e040.pinmux", &pcs_pdata),
-#endif
-#ifdef CONFIG_SOC_OMAP5
-	OF_DEV_AUXDATA("ti,omap5-padconf", 0x4a002840, "4a002840.pinmux", &pcs_pdata),
-	OF_DEV_AUXDATA("ti,omap5-padconf", 0x4ae0c840, "4ae0c840.pinmux", &pcs_pdata),
-#endif
-#ifdef CONFIG_SOC_DRA7XX
-	OF_DEV_AUXDATA("ti,dra7-padconf", 0x4a003400, "4a003400.pinmux", &pcs_pdata),
-#endif
 #ifdef CONFIG_SOC_AM43XX
-	OF_DEV_AUXDATA("ti,am437-padconf", 0x44e10800, "44e10800.pinmux", &pcs_pdata),
 	OF_DEV_AUXDATA("ti,am4372-wkup-m3", 0x44d00000, "44d00000.wkup_m3",
 		       &wkup_m3_data),
 #endif
@@ -741,9 +621,8 @@ static struct of_dev_auxdata omap_auxdata_lookup[] __initdata = {
 	OF_DEV_AUXDATA("ti,omap4-iommu", 0x55082000, "55082000.mmu",
 		       &omap4_iommu_pdata),
 #endif
-#if IS_ENABLED(CONFIG_TIDSPBRIDGE)
-	OF_DEV_AUXDATA("ti,iva2.2", 0, "omap-dsp", &omap_dsp_pdata),
-#endif
+	/* Common auxdata */
+	OF_DEV_AUXDATA("pinctrl-single", 0, NULL, &pcs_pdata),
 	{ /* sentinel */ },
 };
 

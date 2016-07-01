@@ -389,8 +389,14 @@ static int twl4030reg_set_mode(struct regulator_dev *rdev, unsigned mode)
 
 static inline unsigned int twl4030reg_map_mode(unsigned int mode)
 {
-	return mode == RES_STATE_ACTIVE ?
-				REGULATOR_MODE_NORMAL : REGULATOR_MODE_STANDBY;
+	switch (mode) {
+	case RES_STATE_ACTIVE:
+		return REGULATOR_MODE_NORMAL;
+	case RES_STATE_SLEEP:
+		return REGULATOR_MODE_STANDBY;
+	default:
+		return -EINVAL;
+	}
 }
 
 static int twl6030reg_set_mode(struct regulator_dev *rdev, unsigned mode)
