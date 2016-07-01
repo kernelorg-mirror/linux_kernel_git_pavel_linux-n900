@@ -283,8 +283,6 @@ static void __init nokia_n900_legacy_init(void)
 	mmc_pdata[0].name = "external";
 	mmc_pdata[1].name = "internal";
 
-	rx51_add_gpio_switches();
-
 	if (omap_type() == OMAP2_DEVICE_TYPE_SEC) {
 		if (IS_ENABLED(CONFIG_ARM_ERRATA_430973)) {
 			pr_info("RX-51: Enabling ARM errata 430973 workaround\n");

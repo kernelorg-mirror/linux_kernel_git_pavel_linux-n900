@@ -463,8 +463,7 @@ static int twl4030_phy_power_on(struct phy *phy)
 	twl4030_usb_set_mode(twl, twl->usb_mode);
 	if (twl->usb_mode == T2_USB_MODE_ULPI)
 		twl4030_i2c_access(twl, 0);
-	twl->linkstat = MUSB_UNKNOWN;
-	schedule_delayed_work(&twl->id_workaround_work, HZ);
+	schedule_delayed_work(&twl->id_workaround_work, 0);
 
 	return 0;
 }
@@ -575,7 +574,6 @@ static irqreturn_t twl4030_usb_irq(int irq, void *_twl)
 	struct twl4030_usb *twl = _twl;
 	enum musb_vbus_id_status status;
 	bool status_changed = false;
-	int err;
 
 	status = twl4030_usb_linkstat(twl);
 
@@ -606,9 +604,7 @@ static irqreturn_t twl4030_usb_irq(int irq, void *_twl)
 			pm_runtime_mark_last_busy(twl->dev);
 			pm_runtime_put_autosuspend(twl->dev);
 		}
-		err = musb_mailbox(status);
-		if (err)
-			twl->linkstat = MUSB_UNKNOWN;
+		musb_mailbox(status);
 	}
 
 	/* don't schedule during sleep - irq works right then */
@@ -636,8 +632,7 @@ static int twl4030_phy_init(struct phy *phy)
 	struct twl4030_usb *twl = phy_get_drvdata(phy);
 
 	pm_runtime_get_sync(twl->dev);
-	twl->linkstat = MUSB_UNKNOWN;
-	schedule_delayed_work(&twl->id_workaround_work, HZ);
+	schedule_delayed_work(&twl->id_workaround_work, 0);
 	pm_runtime_mark_last_busy(twl->dev);
 	pm_runtime_put_autosuspend(twl->dev);
 
@@ -806,8 +801,7 @@ static int twl4030_shutdown(struct twl4030_usb *twl)
 	if (cable_present(twl->linkstat))
 		pm_runtime_put_noidle(twl->dev);
 	pm_runtime_mark_last_busy(twl->dev);
-	pm_runtime_dont_use_autosuspend(&pdev->dev);
-	pm_runtime_put_sync(twl->dev);
+	pm_runtime_put_sync_suspend(twl->dev);
 	pm_runtime_disable(twl->dev);
 
 	/* autogate 60MHz ULPI clock,
