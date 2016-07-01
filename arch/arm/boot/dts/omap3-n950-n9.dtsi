@@ -163,6 +163,10 @@
 
 /include/ "twl4030.dtsi"
 
+&charger {
+	compatible =  "ti,twl5031-bcc";
+};
+
 &twl {
 	compatible = "ti,twl5031";
 
