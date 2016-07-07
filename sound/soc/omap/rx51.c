@@ -468,8 +468,7 @@ static int rx51_soc_probe(struct platform_device *pdev)
 	pdata->eci_sw_gpio = devm_gpiod_get(card->dev, "eci-switch",
 					    GPIOD_OUT_HIGH);
 	if (IS_ERR(pdata->eci_sw_gpio)) {
-		dev_err(card->dev, "could not get eci switch gpio\n");
-		return PTR_ERR(pdata->eci_sw_gpio);
+		dev_err(card->dev, "could not get eci switch gpio, continuing\n");
 	}
 
 	pdata->speaker_amp_gpio = devm_gpiod_get(card->dev,
