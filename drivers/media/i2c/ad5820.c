@@ -318,7 +318,7 @@ static int ad5820_probe(struct i2c_client *client,
 			dev_err(&client->dev, "could not get regulator for vana\n");
 		return ret;
 	}
-	
+
 	mutex_init(&coil->power_lock);
 
 	v4l2_i2c_subdev_init(&coil->subdev, client, &ad5820_ops);
