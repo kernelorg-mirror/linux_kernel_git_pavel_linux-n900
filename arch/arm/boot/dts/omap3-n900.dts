@@ -242,6 +242,18 @@
 			};
 		};
 	};
+
+	pwm9: dmtimer-pwm {
+		compatible = "ti,omap-dmtimer-pwm";
+		#pwm-cells = <3>;
+		ti,timers = <&timer9>;
+		ti,clock-source = <0x00>; /* timer_sys_ck */
+	};
+
+	ir: n900-ir {
+		compatible = "nokia,n900-ir";
+		pwms = <&pwm9 0 26316 0>; /* 38000 Hz */
+	};
 };
 
 &isp {
@@ -267,17 +279,6 @@
 				crc = <0>;
 			};
 		};
-
-	pwm9: dmtimer-pwm {
-		compatible = "ti,omap-dmtimer-pwm";
-		#pwm-cells = <3>;
-		ti,timers = <&timer9>;
-		ti,clock-source = <0x00>; /* timer_sys_ck */
-	};
-
-	ir: n900-ir {
-		compatible = "nokia,n900-ir";
-		pwms = <&pwm9 0 26316 0>; /* 38000 Hz */
 	};
 };
 
