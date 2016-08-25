@@ -104,6 +104,17 @@
 			linux,can-disable;
 		};
 
+		/*
+			/data/l/maemo/kernel-power/kernel-power-2.6.28/drivers/misc/nokia-av.c
+			sound/soc/omap/rx51.c
+			*/
+		eci_switch {
+			label = "Headset button";
+			gpios = <&gpio6 22 GPIO_ACTIVE_HIGH>; /* 182 */
+			linux,code = <KEY_PHONE>;
+			linux,can-disable;
+ 		};
+
 #if 0
 		camera_focus {
 			label = "Camera Focus";
@@ -170,7 +181,6 @@
 
 		tvout-selection-gpios = <&gpio2 8 GPIO_ACTIVE_HIGH>; /* 40 */
 		jack-detection-gpios = <&gpio6 17 GPIO_ACTIVE_HIGH>; /* 177 */
-		eci-switch-gpios = <&gpio6 22 GPIO_ACTIVE_HIGH>; /* 182 */
 		speaker-amplifier-gpios = <&twl_gpio 7 GPIO_ACTIVE_HIGH>;
 	};
 
@@ -257,6 +267,17 @@
 				crc = <0>;
 			};
 		};
+
+	pwm9: dmtimer-pwm {
+		compatible = "ti,omap-dmtimer-pwm";
+		#pwm-cells = <3>;
+		ti,timers = <&timer9>;
+		ti,clock-source = <0x00>; /* timer_sys_ck */
+	};
+
+	ir: n900-ir {
+		compatible = "nokia,n900-ir";
+		pwms = <&pwm9 0 26316 0>; /* 38000 Hz */
 	};
 };
 

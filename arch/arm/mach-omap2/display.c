@@ -30,7 +30,7 @@
 #include <linux/regmap.h>
 #include <linux/of_reserved_mem.h>
 
-#include <video/omapdss.h>
+#include <linux/platform_data/omapdss.h>
 #include "omap_hwmod.h"
 #include "omap_device.h"
 #include "omap-pm.h"
