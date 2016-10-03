@@ -482,11 +482,9 @@ static inline int bq27xxx_battery_read_fcc(struct bq27xxx_device_info *di)
 static int bq27xxx_battery_read_dcap(struct bq27xxx_device_info *di)
 {
 	int dcap;
+	bool single = di->chip == BQ27000 || di->chip == BQ27010;
 
-	if (di->chip == BQ27000 || di->chip == BQ27010)
-		dcap = bq27xxx_read(di, BQ27XXX_REG_DCAP, true);
-	else
-		dcap = bq27xxx_read(di, BQ27XXX_REG_DCAP, false);
+	dcap = bq27xxx_read(di, BQ27XXX_REG_DCAP, single);
 
 	if (dcap < 0) {
 		dev_dbg(di->dev, "error reading initial last measured discharge\n");
@@ -817,8 +815,8 @@ static int bq27xxx_battery_capacity_level(struct bq27xxx_device_info *di,
 }
 
 /*
- * Return the battery Voltage in millivolts
- * Or < 0 if something fails.
+ * Set val->intval to the battery Voltage in millivolts.
+ * Return < 0 if something fails.
  */
 static int bq27xxx_battery_voltage(struct bq27xxx_device_info *di,
 				   union power_supply_propval *val)
