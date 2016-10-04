@@ -56,7 +56,7 @@ static int __init bootreason_init(void)
 	return 0;
 }
 
-late_initcall(bootreason_init);
+//late_initcall(bootreason_init);
 
 /*** /proc/component_version ***/
 
