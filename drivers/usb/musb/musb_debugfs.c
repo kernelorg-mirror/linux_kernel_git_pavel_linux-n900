@@ -147,34 +147,28 @@ static int musb_test_mode_show(struct seq_file *s, void *unused)
 
 	test = musb_readb(musb->mregs, MUSB_TESTMODE);
 
-	if (test & (MUSB_TEST_FORCE_HOST | MUSB_TEST_FORCE_FS))
-		seq_printf(s, "force host full-speed\n");
-
-	else if (test & (MUSB_TEST_FORCE_HOST | MUSB_TEST_FORCE_HS))
-		seq_printf(s, "force host high-speed\n");
-
-	else if (test & MUSB_TEST_FORCE_HOST)
+	if (test & MUSB_TEST_FORCE_HOST)
 		seq_printf(s, "force host\n");
 
-	else if (test & MUSB_TEST_FIFO_ACCESS)
+	if (test & MUSB_TEST_FIFO_ACCESS)
 		seq_printf(s, "fifo access\n");
 
-	else if (test & MUSB_TEST_FORCE_FS)
+	if (test & MUSB_TEST_FORCE_FS)
 		seq_printf(s, "force full-speed\n");
 
-	else if (test & MUSB_TEST_FORCE_HS)
+	if (test & MUSB_TEST_FORCE_HS)
 		seq_printf(s, "force high-speed\n");
 
-	else if (test & MUSB_TEST_PACKET)
+	if (test & MUSB_TEST_PACKET)
 		seq_printf(s, "test packet\n");
 
-	else if (test & MUSB_TEST_K)
+	if (test & MUSB_TEST_K)
 		seq_printf(s, "test K\n");
 
-	else if (test & MUSB_TEST_J)
+	if (test & MUSB_TEST_J)
 		seq_printf(s, "test J\n");
 
-	else if (test & MUSB_TEST_SE0_NAK)
+	if (test & MUSB_TEST_SE0_NAK)
 		seq_printf(s, "test SE0 NAK\n");
 
 	return 0;
@@ -212,36 +206,30 @@ static ssize_t musb_test_mode_write(struct file *file,
 	if (copy_from_user(buf, ubuf, min_t(size_t, sizeof(buf) - 1, count)))
 		return -EFAULT;
 
-	if (strstarts(buf, "force host full-speed"))
-		test = MUSB_TEST_FORCE_HOST | MUSB_TEST_FORCE_FS;
-
-	else if (strstarts(buf, "force host high-speed"))
-		test = MUSB_TEST_FORCE_HOST | MUSB_TEST_FORCE_HS;
-
-	else if (strstarts(buf, "force host"))
+	if (strstarts(buf, "force host"))
 		test = MUSB_TEST_FORCE_HOST;
 
-	else if (strstarts(buf, "fifo access"))
+	if (strstarts(buf, "fifo access"))
 		test = MUSB_TEST_FIFO_ACCESS;
 
-	else if (strstarts(buf, "force full-speed"))
+	if (strstarts(buf, "force full-speed"))
 		test = MUSB_TEST_FORCE_FS;
 
-	else if (strstarts(buf, "force high-speed"))
+	if (strstarts(buf, "force high-speed"))
 		test = MUSB_TEST_FORCE_HS;
 
-	else if (strstarts(buf, "test packet")) {
+	if (strstarts(buf, "test packet")) {
 		test = MUSB_TEST_PACKET;
 		musb_load_testpacket(musb);
 	}
 
-	else if (strstarts(buf, "test K"))
+	if (strstarts(buf, "test K"))
 		test = MUSB_TEST_K;
 
-	else if (strstarts(buf, "test J"))
+	if (strstarts(buf, "test J"))
 		test = MUSB_TEST_J;
 
-	else if (strstarts(buf, "test SE0 NAK"))
+	if (strstarts(buf, "test SE0 NAK"))
 		test = MUSB_TEST_SE0_NAK;
 
 	musb_writeb(musb->mregs, MUSB_TESTMODE, test);
