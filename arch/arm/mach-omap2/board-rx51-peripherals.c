@@ -321,28 +321,6 @@ static void __init rx51_charger_init(void)
 #if defined(CONFIG_OMAP_GPIO_SWITCH) || defined(CONFIG_OMAP_GPIO_SWITCH_MODULE)
 
 static struct omap_gpio_switch rx51_gpio_switches[] __initdata = {
-	{
-		.name			= "cam_focus",
-		.gpio			= RX51_GPIO_CAMERA_FOCUS,
-		.flags			= OMAP_GPIO_SWITCH_FLAG_INVERTED,
-		.type			= OMAP_GPIO_SWITCH_TYPE_ACTIVITY,
-		.debounce_rising	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-		.debounce_falling	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-	}, {
-		.name			= "cam_launch",
-		.gpio			= RX51_GPIO_CAMERA_CAPTURE,
-		.flags			= OMAP_GPIO_SWITCH_FLAG_INVERTED,
-		.type			= OMAP_GPIO_SWITCH_TYPE_ACTIVITY,
-		.debounce_rising	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-		.debounce_falling	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-	}, {
-		.name			= "cam_shutter",
-		.gpio			= RX51_GPIO_CAMERA_LENS_COVER,
-		.flags			= OMAP_GPIO_SWITCH_FLAG_INVERTED,
-		.type			= OMAP_GPIO_SWITCH_TYPE_COVER,
-		.debounce_rising	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-		.debounce_falling	= RX51_GPIO_DEBOUNCE_TIMEOUT,
-	}
 };
 
 static void __init rx51_add_gpio_switches(void)
