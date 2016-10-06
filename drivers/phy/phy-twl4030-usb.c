@@ -582,6 +582,7 @@ static irqreturn_t twl4030_usb_irq(int irq, void *_twl)
 	struct twl4030_usb *twl = _twl;
 	enum musb_vbus_id_status status;
 	bool status_changed = false;
+	int err;
 
 	status = twl4030_usb_linkstat(twl);
 
