@@ -17,19 +17,29 @@
  */
 
 #include <linux/module.h>
+
 #include <linux/clk.h>
 #include <linux/kernel.h>
+#include <linux/init.h>
 #include <linux/types.h>
+#include <linux/fcntl.h>
 #include <linux/interrupt.h>
+#include <linux/ptrace.h>
+#include <linux/poll.h>
 #include <linux/pm_runtime.h>
 #include <linux/firmware.h>
 #include <linux/slab.h>
-#include <linux/string.h>
 #include <linux/tty.h>
 #include <linux/errno.h>
+#include <linux/string.h>
+#include <linux/signal.h>
+#include <linux/ioctl.h>
 #include <linux/skbuff.h>
+#include <linux/delay.h>
 #include <linux/platform_device.h>
+
 #include <linux/gpio/consumer.h>
+
 #include <linux/unaligned/le_struct.h>
 #include <net/bluetooth/bluetooth.h>
 #include <net/bluetooth/hci_core.h>
@@ -62,7 +72,19 @@ struct nokia_bt_dev {
 	uint8_t ver_id;
 };
 
-static int nokia_enqueue(struct hci_uart *hu, struct sk_buff *skb);
+static char *nokia_get_fw_name(struct nokia_bt_dev *btdev)
+{
+	switch (btdev->man_id) {
+	case NOKIA_ID_CSR:
+		return FIRMWARE_CSR;
+	case NOKIA_ID_BCM2048:
+		return FIRMWARE_BCM2048;
+	case NOKIA_ID_TI1271:
+		return FIRMWARE_TI1271;
+	default:
+		return NULL;
+	}
+}
 
 static int hci_uart_wait_for_cts(struct hci_uart *hu, bool state,
 				 int timeout_ms)
@@ -71,22 +93,26 @@ static int hci_uart_wait_for_cts(struct hci_uart *hu, bool state,
 	int signal;
 
 	timeout = jiffies + msecs_to_jiffies(timeout_ms);
-	while (!time_after(jiffies, timeout)) {
+	for (;;) {
 		signal = hu->tty->ops->tiocmget(hu->tty) & TIOCM_CTS;
 		if (!!signal == !!state) {
 			dev_dbg(hu->tty->dev, "wait for cts... received!\n");
 			return 0;
 		}
+		if (time_after(jiffies, timeout)) {
+			dev_dbg(hu->tty->dev, "wait for cts... timeout!\n");
+			return -ETIMEDOUT;
+		}
 		usleep_range(1000, 2000);
 	}
-
-	dev_dbg(hu->tty->dev, "wait for cts... timeout!\n");
-	return -ETIMEDOUT;
 }
 
 static int btdev_match(struct device *child, void *data)
 {
-	return !strcmp(child->driver->name, "nokia-bluetooth");
+	if (!strcmp(child->driver->name, "nokia-bluetooth"))
+		return 1;
+	else
+		return 0;
 }
 
 static irqreturn_t wakeup_handler(int irq, void *data)
@@ -136,7 +162,7 @@ static int nokia_reset(struct hci_uart *hu)
 	/* init uart */
 	hci_uart_init_tty(hu);
 	hci_uart_set_flow_control(hu, true);
-	hci_uart_set_baudrate(hu, INIT_BAUD_RATE);
+	hci_uart_set_baudrate(hu, INIT_SPEED);
 
 	gpiod_set_value_cansleep(btdev->btdata->reset, 1);
 	gpiod_set_value_cansleep(btdev->btdata->wakeup_bt, 0);
@@ -187,7 +213,7 @@ static int nokia_send_alive_packet(struct hci_uart *hu)
 	pkt = (struct hci_nokia_alive_pkt *)skb_put(skb, sizeof(*pkt));
 	pkt->mid = NOKIA_ALIVE_REQ;
 
-	nokia_enqueue(hu, skb);
+	hu->hdev->send(hu->hdev, skb);
 
 	if (!wait_for_completion_interruptible_timeout(&btdev->init_completion,
 		msecs_to_jiffies(1000))) {
@@ -207,7 +233,7 @@ static int nokia_send_negotiation(struct hci_uart *hu)
 	struct hci_nokia_neg_hdr *neg_hdr;
 	struct sk_buff *skb;
 	int len, err;
-	u16 baud = DIV_ROUND_CLOSEST(BT_BAUDRATE_DIVIDER, SETUP_BAUD_RATE);
+	u16 baud = DIV_ROUND_CLOSEST(BT_BAUDRATE_DIVIDER, MAX_BAUD_RATE);
 	int sysclk = btdev->btdata->sysclk_speed / 1000;
 
 	dev_dbg(hu->tty->dev, "Sending negotiation...\n");
@@ -233,7 +259,7 @@ static int nokia_send_negotiation(struct hci_uart *hu)
 	btdev->init_error = 0;
 	init_completion(&btdev->init_completion);
 
-	nokia_enqueue(hu, skb);
+	hu->hdev->send(hu->hdev, skb);
 
 	if (!wait_for_completion_interruptible_timeout(&btdev->init_completion,
 		msecs_to_jiffies(10000))) {
@@ -243,16 +269,17 @@ static int nokia_send_negotiation(struct hci_uart *hu)
 	if (btdev->init_error < 0)
 		return btdev->init_error;
 
-	/* Change to previously negotiated speed. Flow Control
-	 * is disabled until bluetooth adapter is ready to avoid
-	 * broken bytes being ready by the bluetooth adapter */
+	/* Change to operational settings */
+	hci_uart_set_flow_control(hu, true); // disable flow control
 
-	hci_uart_set_flow_control(hu, true);
-	hci_uart_set_baudrate(hu, SETUP_BAUD_RATE);
+	/* setup negotiated max. baudrate */
+	hci_uart_set_baudrate(hu, MAX_BAUD_RATE);
+
 	err = hci_uart_wait_for_cts(hu, true, 100);
 	if (err < 0)
 		return err;
-	hci_uart_set_flow_control(hu, false);
+
+	hci_uart_set_flow_control(hu, false); // re-enable flow control
 
 	dev_dbg(hu->tty->dev, "Negotiation successful...\n");
 
@@ -263,28 +290,13 @@ static int nokia_setup_fw(struct hci_uart *hu)
 {
 	struct nokia_bt_dev *btdev = hu->priv;
 	const struct firmware *fw;
-	char *fwname = NULL;
 	const u8 *fw_ptr;
 	size_t fw_size;
 	int err;
 
 	BT_DBG("hu %p", hu);
 
-	switch (btdev->man_id) {
-	case NOKIA_ID_BCM2048:
-		fwname = FIRMWARE_BCM2048;
-		break;
-	case NOKIA_ID_TI1271:
-		fwname = FIRMWARE_TI1271;
-		break;
-	}
-
-	if (!fwname) {
-		dev_err(hu->tty->dev, "Unknown device!\n");
-		return -ENODEV;
-	}
-
-	err = request_firmware(&fw, fwname, hu->tty->dev);
+	err = request_firmware(&fw, nokia_get_fw_name(btdev), hu->tty->dev);
 	if (err < 0) {
 		BT_ERR("%s: Failed to load Nokia firmware file (%d)",
 		       hu->hdev->name, err);
@@ -369,7 +381,7 @@ static int nokia_setup(struct hci_uart *hu)
 	}
 
 	hci_uart_set_flow_control(hu, true);
-	hci_uart_set_baudrate(hu, MAX_BAUD_RATE);
+	hci_uart_set_baudrate(hu, BC4_MAX_BAUD_RATE);
 	hci_uart_set_flow_control(hu, false);
 
 	dev_dbg(hu->tty->dev, "Nokia H4+ protocol setup done!\n");
@@ -574,7 +586,7 @@ static int nokia_recv_radio(struct hci_dev *hdev, struct sk_buff *skb)
 	/* Packets received on the dedicated radio channel are
 	 * HCI events and so feed them back into the core.
 	 */
-	hci_skb_pkt_type(skb) = HCI_EVENT_PKT;
+	bt_cb(skb)->pkt_type = HCI_EVENT_PKT;
 	return hci_recv_frame(hdev, skb);
 }
 
