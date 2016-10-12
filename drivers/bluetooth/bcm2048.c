@@ -34,20 +34,22 @@ static int bcm2048_probe(struct platform_device *pdev)
 	struct clk *sysclk;
 	int err = 0;
 
-	if(!bcmdev->parent) {
+	printk("bcm2048: probe\n");
+
+	if (!bcmdev->parent) {
 		dev_err(bcmdev, "parent device missing!\n");
 		return -ENODEV;
 	}
 
 	bcm2048 = devm_kmalloc(bcmdev, sizeof(*bcm2048), GFP_KERNEL);
-	if(!bcm2048)
+	if (!bcm2048)
 		return -ENOMEM;
 
 	bcm2048->dev = bcmdev;
 	dev_set_drvdata(bcmdev, bcm2048);
 
 	bcm2048->port = dev_get_drvdata(bcmdev->parent);
-	if(!bcm2048->port) {
+	if (!bcm2048->port) {
 		dev_err(bcmdev, "port data missing in parent device!\n");
 		return -ENODEV;
 	}
@@ -91,6 +93,7 @@ static int bcm2048_probe(struct platform_device *pdev)
 
 	/* TODO: open tty and setup line disector */
 
+	dev_dbg(bcmdev, "probe: %d\n", err);
 	return err;
 }
 
