@@ -463,8 +463,7 @@ static int twl4030_phy_power_on(struct phy *phy)
 	twl4030_usb_set_mode(twl, twl->usb_mode);
 	if (twl->usb_mode == T2_USB_MODE_ULPI)
 		twl4030_i2c_access(twl, 0);
-	twl->linkstat = MUSB_UNKNOWN;
-	schedule_delayed_work(&twl->id_workaround_work, HZ);
+	schedule_delayed_work(&twl->id_workaround_work, 0);
 
 	return 0;
 }
@@ -533,12 +532,48 @@ static ssize_t twl4030_usb_vbus_show(struct device *dev,
 }
 static DEVICE_ATTR(vbus, 0444, twl4030_usb_vbus_show, NULL);
 
+static ssize_t twl4030_test_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct twl4030_usb *twl = dev_get_drvdata(dev);
+	int ret = -EINVAL;
+
+	mutex_lock(&twl->lock);
+	ret = sprintf(buf, "%s\n", "hello, world");
+	mutex_unlock(&twl->lock);
+
+	return ret;
+}
+
+static int twl4030_shutdown(struct twl4030_usb *twl);
+
+static ssize_t twl4030_test_store(struct device *dev,
+		 struct device_attribute *attr, const char *buf, size_t count)
+{
+	unsigned long tmp;
+
+	struct twl4030_usb *twl = dev_get_drvdata(dev);
+
+	mutex_lock(&twl->lock);
+	sscanf(buf, "%lX", &tmp);
+	printk("TWL HACK: tmp = 0x%lX\n", tmp);
+	mutex_unlock(&twl->lock);
+
+	if (tmp == 0xdead) {
+		printk("TWL HACK: killing hardware\n");
+		printk("TWL HACK: killing hardware = %d\n", twl4030_shutdown(twl));
+	}
+	
+	return strnlen(buf, count);
+}
+
+static DEVICE_ATTR(test, 0664, twl4030_test_show, twl4030_test_store);
+
 static irqreturn_t twl4030_usb_irq(int irq, void *_twl)
 {
 	struct twl4030_usb *twl = _twl;
 	enum musb_vbus_id_status status;
 	bool status_changed = false;
-	int err;
 
 	status = twl4030_usb_linkstat(twl);
 
@@ -569,9 +604,7 @@ static irqreturn_t twl4030_usb_irq(int irq, void *_twl)
 			pm_runtime_mark_last_busy(twl->dev);
 			pm_runtime_put_autosuspend(twl->dev);
 		}
-		err = musb_mailbox(status);
-		if (err)
-			twl->linkstat = MUSB_UNKNOWN;
+		musb_mailbox(status);
 	}
 
 	/* don't schedule during sleep - irq works right then */
@@ -599,8 +632,7 @@ static int twl4030_phy_init(struct phy *phy)
 	struct twl4030_usb *twl = phy_get_drvdata(phy);
 
 	pm_runtime_get_sync(twl->dev);
-	twl->linkstat = MUSB_UNKNOWN;
-	schedule_delayed_work(&twl->id_workaround_work, HZ);
+	schedule_delayed_work(&twl->id_workaround_work, 0);
 	pm_runtime_mark_last_busy(twl->dev);
 	pm_runtime_put_autosuspend(twl->dev);
 
@@ -715,6 +747,9 @@ static int twl4030_usb_probe(struct platform_device *pdev)
 	if (device_create_file(&pdev->dev, &dev_attr_vbus))
 		dev_warn(&pdev->dev, "could not create sysfs file\n");
 
+	if (device_create_file(&pdev->dev, &dev_attr_test))
+		dev_warn(&pdev->dev, "could not create sysfs file #2\n");
+	
 	ATOMIC_INIT_NOTIFIER_HEAD(&twl->phy.notifier);
 
 	pm_runtime_use_autosuspend(&pdev->dev);
@@ -751,15 +786,13 @@ static int twl4030_usb_probe(struct platform_device *pdev)
 	return 0;
 }
 
-static int twl4030_usb_remove(struct platform_device *pdev)
+static int twl4030_shutdown(struct twl4030_usb *twl)
 {
-	struct twl4030_usb *twl = platform_get_drvdata(pdev);
 	int val;
 
 	usb_remove_phy(&twl->phy);
 	pm_runtime_get_sync(twl->dev);
 	cancel_delayed_work(&twl->id_workaround_work);
-	device_remove_file(twl->dev, &dev_attr_vbus);
 
 	/* set transceiver mode to power on defaults */
 	twl4030_usb_set_mode(twl, -1);
@@ -768,8 +801,7 @@ static int twl4030_usb_remove(struct platform_device *pdev)
 	if (cable_present(twl->linkstat))
 		pm_runtime_put_noidle(twl->dev);
 	pm_runtime_mark_last_busy(twl->dev);
-	pm_runtime_dont_use_autosuspend(&pdev->dev);
-	pm_runtime_put_sync(twl->dev);
+	pm_runtime_put_sync_suspend(twl->dev);
 	pm_runtime_disable(twl->dev);
 
 	/* autogate 60MHz ULPI clock,
@@ -787,6 +819,17 @@ static int twl4030_usb_remove(struct platform_device *pdev)
 	twl4030_usb_clear_bits(twl, POWER_CTRL, POWER_CTRL_OTG_ENAB);
 
 	return 0;
+}
+
+
+static int twl4030_usb_remove(struct platform_device *pdev)
+{
+	struct twl4030_usb *twl = platform_get_drvdata(pdev);
+
+	device_remove_file(twl->dev, &dev_attr_vbus);
+	device_remove_file(twl->dev, &dev_attr_test);
+	
+	return twl4030_shutdown(twl);
 }
 
 #ifdef CONFIG_OF

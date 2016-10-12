@@ -1,0 +1,99 @@
+Running Linux on Cellphones
+===========================
+
+At this moment (2014), there are no modern cellphones completely
+supported by mainline kernel. Another problem is lack of hackable
+userspace to run on cellphone, even when kernel support is available.
+
+Openmoko was first phone running Linux with X. GSM support there was
+based on freesmartphone.org daemons.
+
+Sony has project to merge kernel support for Xperia Z1.
+
+Mainline has support for Mitac Mio A701, but that having only 64MiB
+RAM, QTopia is the software to use there.
+
+Nokia N900
+----------
+
+Nokia N900 orignally shipped with Maemo-based userland, which is close
+enough to GNU/X/apt based Linux; key components communicate using dbus
+and application can be written in pygtk. Kernel patches were
+relatively clean, and the core stuff is merged, unfortunately there's
+quite a lot of non-core stuff and pieces of userland are closed
+source; including some critical support such as bridge between CPU and
+modem for voice calls.
+
+Unfortunately, that means that kernel development is hard, because it
+is non-trivial to test all the various devices in the phone due to
+lack of suitable userspace and userspace development is hard, because
+there's no suitable kernel to work with.
+
+Here are instructions for getting usable userspace for kernel testing,
+and suggestions for some tests. Setting up nfsroot (needs non-mainline
+patch) is strongly recommended for development.
+
+I'm using Debian 7 for testing/development. It works well including
+touchscreen and X support, as of 3.18-rc1. Instructions are here:
+
+https://wiki.debian.org/n900-wheezy-armhf
+https://wiki.debian.org/MaemoAndSqueeze
+
+Following packages are useful on N900:
+
+libts-bin evtest ntpdate module-init-tools udev netbase ifupdown openssh-server
+locales whiptail less mpg123 mplayer ofono gcc strace mdbus2
+
+This calibrates display to usable state on recent kernel and Debian 7:
+
+DISPLAY=:0.0 xinput --set-prop --type=float 8 115  1.10 0.00 -0.05  0.00 1.18 -0.10  0.00 0.00 1.00
+DISPLAY=:0.0 xinput --set-prop --type=int 8 249 0 1
+
+And these are commands you can use to test various subsystems
+
+# Test vibrations
+echo 5 | fftest /dev/input/event2
+
+# Test LEDs
+VAL=30
+echo $VAL > lp5523\:kb1/brightness
+echo $VAL > lp5523\:kb1/brightness
+echo $VAL > lp5523\:kb2/brightness
+echo $VAL > lp5523\:kb3/brightness
+echo $VAL > lp5523\:kb4/brightness
+echo $VAL > lp5523\:kb5/brightness
+echo $VAL > lp5523\:kb6/brightness
+echo $VAL > lp5523\:r/brightness
+echo $VAL > lp5523\:g/brightness
+echo $VAL > lp5523\:b/brightness
+echo 100 > /sys/class/backlight/acx565akm/brightness
+echo mem > /sys/power/state
+
+# Display battery/charging state
+cd /sys/bus/i2c/drivers/bq27x00-battery/2-0055/power_supply/bq27200-0
+grep -r . .
+
+# Start	up ofono in debug mode
+rmdir /dev/cmt
+ln -s /sys/bus/hsi/devices/n900-modem/ /dev/cmt
+killall  ofonod
+sleep .1
+ofonod --nodetach --debug &
+
+# Test modem works
+# enable the modem
+mdbus2 -s org.ofono /n900_0 org.ofono.Modem.SetProperty Powered true
+# enable modem's RF parts
+mdbus2 -s org.ofono /n900_0 org.ofono.Modem.SetProperty Online true
+# scan for available networks (takes some time)
+mdbus2 -s org.ofono /n900_0 org.ofono.NetworkRegistration.Scan
+
+ofone python script can be used to provide GUI for calls and
+messages. Note that audio connection does not yet work.
+
+Useful information about merge progress is at http://elinux.org/N900 .
+
+								Good luck!
+
+								Pavel
+
