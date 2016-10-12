@@ -607,6 +607,11 @@ static irqreturn_t h4p_interrupt(int irq, void *data)
 
 	iir &= UART_IIR_ID;
 
+	if (iir == UART_IIR_RX_TIMEOUT) {
+		printk("Got IIR_RX_TIMEOUT, handling it as IIR_RDI\n");
+		iir = UART_IIR_RDI;
+	}
+
 	if (iir == UART_IIR_MSI) {
 		msr = h4p_inb(info, UART_MSR);
 		ret = IRQ_HANDLED;
