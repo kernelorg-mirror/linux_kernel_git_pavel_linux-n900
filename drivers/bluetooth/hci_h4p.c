@@ -321,7 +321,7 @@ static int h4p_send_negotiation(struct hci_uart *hu)
 		return h4p->init_error;
 
 	/* Change to operational settings */
-	hci_uart_set_flow_control(hu, true); // disable flow control
+	hci_uart_set_flow_control(hu, true); /* disable flow control */
 
 	/* setup negotiated max. baudrate */
 	h4p_set_speed(hu, MAX_BAUD_RATE);
@@ -330,7 +330,7 @@ static int h4p_send_negotiation(struct hci_uart *hu)
 	if (err < 0)
 		return err;
 
-	hci_uart_set_flow_control(hu, false); // re-enable flow control
+	hci_uart_set_flow_control(hu, false); /* re-enable flow control */
 
 	dev_dbg(hu->tty->dev, "Negotiation successful...\n");
 

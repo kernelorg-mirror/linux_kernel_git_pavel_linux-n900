@@ -585,6 +585,10 @@ static irqreturn_t omap8250_irq(int irq, void *dev_id)
 
 	serial8250_rpm_get(up);
 	iir = serial_port_in(port, UART_IIR);
+	if ((iir & UART_IIR_ID) == UART_IIR_RX_TIMEOUT) {
+		printk("rx_timeout: fixup\n");
+		iir &= ~8;
+	}
 	ret = serial8250_handle_irq(port, iir);
 	serial8250_rpm_put(up);
 

@@ -368,14 +368,20 @@ static void serial_omap_stop_rx(struct uart_port *port)
 	pm_runtime_put_autosuspend(up->dev);
 }
 
+static void transmit_char(struct uart_omap_port *up, u8 ch)
+{
+	printk("Transmiting: %x\n", ch);
+	serial_out(up, UART_TX, ch);
+	up->port.icount.tx++;
+}
+
 static void transmit_chars(struct uart_omap_port *up, unsigned int lsr)
 {
 	struct circ_buf *xmit = &up->port.state->xmit;
 	int count;
 
 	if (up->port.x_char) {
-		serial_out(up, UART_TX, up->port.x_char);
-		up->port.icount.tx++;
+		transmit_char(up, up->port.x_char);
 		up->port.x_char = 0;
 		return;
 	}
@@ -385,9 +391,8 @@ static void transmit_chars(struct uart_omap_port *up, unsigned int lsr)
 	}
 	count = up->port.fifosize / 4;
 	do {
-		serial_out(up, UART_TX, xmit->buf[xmit->tail]);
+		transmit_char(up, xmit->buf[xmit->tail]);
 		xmit->tail = (xmit->tail + 1) & (UART_XMIT_SIZE - 1);
-		up->port.icount.tx++;
 		if (uart_circ_empty(xmit))
 			break;
 	} while (--count > 0);
@@ -503,6 +508,7 @@ static void serial_omap_rlsi(struct uart_omap_port *up, unsigned int lsr)
 		ch = serial_in(up, UART_RX);
 
 	up->port.icount.rx++;
+	printk("Receive rlsi: %x\n", ch);
 	flag = TTY_NORMAL;
 
 	if (lsr & UART_LSR_BI) {
@@ -552,8 +558,9 @@ static void serial_omap_rdi(struct uart_omap_port *up, unsigned int lsr)
 
 	ch = serial_in(up, UART_RX);
 	flag = TTY_NORMAL;
+	printk("Receive rdi: %x\n", ch);
+	
 	up->port.icount.rx++;
-
 	if (uart_handle_sysrq_char(&up->port, ch))
 		return;
 
@@ -580,6 +587,13 @@ static irqreturn_t serial_omap_irq(int irq, void *dev_id)
 		iir = serial_in(up, UART_IIR);
 		if (iir & UART_IIR_NO_INT)
 			break;
+
+		printk("omap_irq: iir = %x\n", iir);
+
+		if ((iir & UART_IIR_ID) == UART_IIR_RX_TIMEOUT) {
+			printk("rx_timeout: fixup\n");
+			iir &= ~8;
+		}
 
 		ret = IRQ_HANDLED;
 		lsr = serial_in(up, UART_LSR);
