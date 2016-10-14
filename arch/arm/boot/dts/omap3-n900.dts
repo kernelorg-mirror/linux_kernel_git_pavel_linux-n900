@@ -27,7 +27,7 @@
 };
 
 / {
-	model = "Nokia N900";
+	model = "Nokia RX-51 board";
 	compatible = "nokia,omap3-n900", "ti,omap3430", "ti,omap3";
 
 	aliases {
@@ -47,7 +47,7 @@
 		compatible = "gpio-leds";
 		heartbeat {
 			label = "debug::sleep";
-			gpios = <&gpio6 2 GPIO_ACTIVE_HIGH>;  /* gpio162 */
+			gpios = <&gpio6 2 GPIO_ACTIVE_HIGH>;  /* 162 */
 			linux,default-trigger = "default-on";
 			pinctrl-names = "default";
 			pinctrl-0 = <&debug_leds>;
@@ -646,6 +646,7 @@
 		reg = <0x55>;
 	};
 
+	/* Stereo headphone amplifier */
 	tpa6130a2: tpa6130a2@60 {
 		compatible = "ti,tpa6130a2";
 		reg = <0x60>;
@@ -685,6 +686,18 @@
 	pinctrl-0 = <&i2c3_pins>;
 
 	clock-frequency = <400000>;
+
+	/* bus 3, same as ad5820, et8ek8 */
+	/* bus 2, adp1653, smiapp */
+	ad5820: ad5820@c {
+		compatible = "adi,ad5820";
+		reg = <0x0c>;
+	};
+
+	et8ek8: et8ek8@3e {
+		compatible = "et,et8ek8";
+		reg = <0x3e>;
+ 	};
 
 	lis302dl: lis3lv02d@1d {
 		compatible = "st,lis3lv02d";
@@ -962,17 +975,20 @@
 };
 
 &uart2 {
+        compatible = "brcm,uart,bcm2048";
 	interrupts-extended = <&intc 73 &omap3_pmx_core OMAP3_UART2_RX>;
 	pinctrl-names = "default";
 	pinctrl-0 = <&uart2_pins>;
 
+	clocks = <&uart2_fck>, <&uart2_ick>;
+	clock-names = "fck", "ick";
+
 	bcm2048: bluetooth {
-		compatible = "brcm,bcm2048";
-		reset-gpios = <&gpio3 27 GPIO_ACTIVE_HIGH>; /* 91 */
-		host-wakeup-gpios = <&gpio4 5 GPIO_ACTIVE_HIGH>; /* 101 */
-		bluetooth-wakeup-gpios = <&gpio2 5 GPIO_ACTIVE_HIGH>; /* 37 */
-		clocks = <&vctcxo>;
-		clock-names = "sysclk";
+		  compatible = "brcm,bcm2048";
+		  reset-gpios = <&gpio3 27 GPIO_ACTIVE_HIGH>; /* 91 */
+		  host-wakeup-gpios = <&gpio4 5 GPIO_ACTIVE_HIGH>; /* 101 */
+		  bluetooth-wakeup-gpios = <&gpio2 5 GPIO_ACTIVE_HIGH>; /* 37 */
+		  bt-sysclk = <2>;
 	};
 };
 
