@@ -94,6 +94,8 @@ int h4p_reset_uart(struct h4p_info *info)
 {
 	int count = 0;
 
+	printk("h4p: reset uart\n");
+
 	/* Reset the UART */
 	h4p_outb(info, UART_OMAP_SYSC, UART_SYSC_OMAP_RESET);
 	while (!(h4p_inb(info, UART_OMAP_SYSS) & UART_SYSS_RESETDONE)) {

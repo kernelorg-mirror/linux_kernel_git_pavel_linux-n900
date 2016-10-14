@@ -45,7 +45,11 @@
 #include <net/bluetooth/hci_core.h>
 #include <net/bluetooth/hci.h>
 
+//#define BT_DBG printk
+
 #include "nokia_h4p.h"
+
+static int debug;
 
 /* This should be used in function that cannot release clocks */
 static void h4p_set_clk(struct h4p_info *info, int *clock, bool enable)
@@ -486,7 +490,8 @@ static void h4p_rx_tasklet(unsigned long data)
 
 	while (h4p_inb(info, UART_LSR) & UART_LSR_DR) {
 		byte = h4p_inb(info, UART_RX);
-		BT_DBG("[in: %02x]", byte);
+		if (debug++ < 100)
+			printk("[in: %02x]", byte);
 		if (info->garbage_bytes) {
 			info->garbage_bytes--;
 			continue;
@@ -569,7 +574,8 @@ static void h4p_tx_tasklet(unsigned long data)
 	/* Copy data to tx fifo */
 	while (!(h4p_inb(info, UART_OMAP_SSR) & UART_OMAP_SSR_TXFULL) &&
 	       (sent < skb->len)) {
-		BT_DBG("%02x ", skb->data[sent]);
+		if (debug++ < 100)
+			printk("%02x ", skb->data[sent]);
 		h4p_outb(info, UART_TX, skb->data[sent]);
 		sent++;
 	}
