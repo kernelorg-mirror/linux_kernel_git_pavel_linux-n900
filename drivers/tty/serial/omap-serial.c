@@ -1878,6 +1878,7 @@ static const struct of_device_id omap_serial_of_match[] = {
 	{ .compatible = "ti,omap2-uart" },
 	{ .compatible = "ti,omap3-uart" },
 	{ .compatible = "ti,omap4-uart" },
+	{ .compatible = "brcm,uart,bcm2048" },
 	{},
 };
 MODULE_DEVICE_TABLE(of, omap_serial_of_match);

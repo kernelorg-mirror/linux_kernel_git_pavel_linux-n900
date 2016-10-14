@@ -292,8 +292,7 @@
 		};
 
 		uart2: serial@4806c000 {
-		// This is bluetooth on n900, ttyO1
-			compatible = "not-a-ti,omap3-not-a-uart";
+			compatible = "ti,omap3-uart";
 			reg = <0x4806c000 0x400>;
 			interrupts-extended = <&intc 73>;
 			dmas = <&sdma 51 &sdma 52>;
