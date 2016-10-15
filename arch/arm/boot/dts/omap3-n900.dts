@@ -987,6 +987,8 @@
 		  host-wakeup-gpios = <&gpio4 5 GPIO_ACTIVE_HIGH>; /* 101 */
 		  bluetooth-wakeup-gpios = <&gpio2 5 GPIO_ACTIVE_HIGH>; /* 37 */
 		  bt-sysclk = <2>;
+		  clocks = <&vctcxo>;
+               	  clock-names = "sysclk";
 	};
 };
 

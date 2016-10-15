@@ -270,7 +270,7 @@ static int h4p_send_negotiation(struct hci_uart *hu)
 	struct hci_h4p_neg_hdr *neg_hdr;
 	struct sk_buff *skb;
 	int len, err;
-	u16 baud = DIV_ROUND_CLOSEST(BT_BAUDRATE_DIVIDER, MAX_BAUD_RATE);
+	u16 baud = BT_BAUDRATE_DIVIDER/MAX_BAUD_RATE;
 	int sysclk = h4p->btdata->sysclk_speed / 1000;
 
 	dev_dbg(hu->tty->dev, "Sending negotiation...\n");
