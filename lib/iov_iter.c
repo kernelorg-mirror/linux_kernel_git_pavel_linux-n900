@@ -396,8 +396,7 @@ int iov_iter_fault_in_readable(struct iov_iter *i, size_t bytes)
 
 	if (!(i->type & (ITER_BVEC|ITER_KVEC))) {
 		iterate_iovec(i, bytes, v, iov, skip, ({
-			err = fault_in_multipages_readable(v.iov_base,
-					v.iov_len);
+			err = fault_in_pages_readable(v.iov_base, v.iov_len);
 			if (unlikely(err))
 			return err;
 		0;}))
@@ -834,13 +833,13 @@ static inline size_t __pipe_get_pages(struct iov_iter *i,
 				size_t *start)
 {
 	struct pipe_inode_info *pipe = i->pipe;
-	size_t n = push_pipe(i, maxsize, &idx, start);
+	ssize_t n = push_pipe(i, maxsize, &idx, start);
 	if (!n)
 		return -EFAULT;
 
 	maxsize = n;
 	n += *start;
-	while (n >= PAGE_SIZE) {
+	while (n > 0) {
 		get_page(*pages++ = pipe->bufs[idx].page);
 		idx = next_idx(idx, pipe);
 		n -= PAGE_SIZE;
@@ -1140,6 +1139,28 @@ const void *dup_iter(struct iov_iter *new, struct iov_iter *old, gfp_t flags)
 }
 EXPORT_SYMBOL(dup_iter);
 
+/**
+ * import_iovec() - Copy an array of &struct iovec from userspace
+ *     into the kernel, check that it is valid, and initialize a new
+ *     &struct iov_iter iterator to access it.
+ *
+ * @type: One of %READ or %WRITE.
+ * @uvector: Pointer to the userspace array.
+ * @nr_segs: Number of elements in userspace array.
+ * @fast_segs: Number of elements in @iov.
+ * @iov: (input and output parameter) Pointer to pointer to (usually small
+ *     on-stack) kernel array.
+ * @i: Pointer to iterator that will be initialized on success.
+ *
+ * If the array pointed to by *@iov is large enough to hold all @nr_segs,
+ * then this function places %NULL in *@iov on return. Otherwise, a new
+ * array will be allocated and the result placed in *@iov. This means that
+ * the caller may call kfree() on *@iov regardless of whether the small
+ * on-stack array was used or not (and regardless of whether this function
+ * returns an error or not).
+ *
+ * Return: 0 on success or negative error code on error.
+ */
 int import_iovec(int type, const struct iovec __user * uvector,
 		 unsigned nr_segs, unsigned fast_segs,
 		 struct iovec **iov, struct iov_iter *i)
