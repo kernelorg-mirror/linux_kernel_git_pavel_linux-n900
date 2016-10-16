@@ -139,20 +139,28 @@ static int h4p_reset(struct hci_uart *hu)
 	struct h4p_struct *h4p = hu->priv;
 	int err;
 
+	printk("h4p_reset: reset\n");
+
 	/* reset routine */
 	gpiod_set_value_cansleep(h4p->btdata->reset, 0);
 	gpiod_set_value_cansleep(h4p->btdata->wakeup_bt, 1);
 	msleep(50);
 
+	printk("h4p_reset: flush\n");	
 	/* flush queues */
 	tty_ldisc_flush(hu->tty);
 	tty_driver_flush_buffer(hu->tty);
 
 	/* init uart */
+
+	printk("h4p_reset: speed\n");		
 	hci_uart_init_tty(hu);
 	h4p_set_speed(hu, INIT_SPEED);
 	hci_uart_set_flow_control(hu, true);
 
+	/* set_flow_control(_, v) == set_rts(_, !v) ? */
+
+	printk("h4p_reset: safety\n");
 	/* safety check */
 	err = gpiod_get_value_cansleep(h4p->btdata->wakeup_host);
 	if (err == 1) {
@@ -177,6 +185,8 @@ static int h4p_reset(struct hci_uart *hu)
 		dev_err(hu->tty->dev, "CTS not received: %d\n", err);
 		return err;
 	}
+
+	printk("h4p_reset: flow\n"); 
 
 	gpiod_set_value_cansleep(h4p->btdata->wakeup_bt, 1);
 	hci_uart_set_flow_control(hu, false);
@@ -274,6 +284,7 @@ static int h4p_send_negotiation(struct hci_uart *hu)
 	int sysclk = h4p->btdata->sysclk_speed / 1000;
 
 	dev_dbg(hu->tty->dev, "Sending negotiation...\n");
+	BUG_ON(sysclk != 38400);
 
 	/*
 	 * TODO: FIXME: This fails on N900 (bcm2048)
@@ -305,11 +316,14 @@ static int h4p_send_negotiation(struct hci_uart *hu)
 	neg_cmd->sys_clk = cpu_to_le16(sysclk);
 	neg_cmd->unused2 = 0x0000;
 
+	hci_uart_set_flow_control(hu, false);
+
 	h4p->init_error = 0;
 	init_completion(&h4p->init_completion);
 
 	dev_dbg(hu->tty->dev, "gpio state: reset=%x wakehost=%x wakebt=%x\n", gpiod_get_value(h4p->btdata->reset), gpiod_get_value(h4p->btdata->wakeup_host), gpiod_get_value(h4p->btdata->wakeup_bt));
 
+	/* set_rts: 1. FIXME? */
 	hu->hdev->send(hu->hdev, skb);
 
 	if (!wait_for_completion_interruptible_timeout(&h4p->init_completion,
@@ -500,12 +514,13 @@ static int h4p_open(struct hci_uart *hu)
 	skb_queue_head_init(&h4p->txq);
 
 	btdev = device_find_child(serialdev, NULL, btdev_match);
-	if(!btdev) {
+	if (!btdev) {
 		dev_err(serialdev, "bluetooth device node not found!\n");
 		return -ENODEV;
 	}
 
 	h4p->btdata = dev_get_drvdata(btdev);
+	/* FIXME put_device(btdev); */
 	if (!h4p->btdata)
 		return -EINVAL;
 
