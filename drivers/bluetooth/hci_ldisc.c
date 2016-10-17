@@ -258,25 +258,14 @@ static int hci_uart_send_frame(struct hci_dev *hdev, struct sk_buff *skb)
 	return 0;
 }
 
-/* Flow control or un-flow control the device */
-void hci_uart_set_flow_control(struct hci_uart *hu, bool enable)
+void hci_uart_set_rts(struct hci_uart *hu, bool enable)
 {
 	struct tty_struct *tty = hu->tty;
-	struct ktermios ktermios;
 	int status;
 	unsigned int set = 0;
 	unsigned int clear = 0;
 
-	if (enable) {
-		/* Disable hardware flow control */
-		ktermios = tty->termios;
-		ktermios.c_cflag &= ~CRTSCTS;
-		status = tty_set_termios(tty, &ktermios);
-		if (status)
-			printk("hci_uart_set_flow_control: failed to disable flow control\n");
-		BT_DBG("Disabling hardware flow control: %s",
-		       status ? "failed" : "success");
-
+	if (!enable) {
 		/* Clear RTS to prevent the device from sending */
 		/* Most UARTs need OUT2 to enable interrupts */
 		status = tty->driver->ops->tiocmget(tty);
@@ -307,6 +296,29 @@ void hci_uart_set_flow_control(struct hci_uart *hu, bool enable)
 		if (status)
 			printk("hci_uart_set_flow_control: failed to set RTS\n");
 		BT_DBG("Setting RTS: %s", status ? "failed" : "success");
+	}
+}
+
+/* Flow control or un-flow control the device */
+void hci_uart_set_flow_control(struct hci_uart *hu, bool enable)
+{
+	struct tty_struct *tty = hu->tty;
+	struct ktermios ktermios;
+	int status;
+
+	if (enable) {
+		/* Disable hardware flow control */
+		ktermios = tty->termios;
+		ktermios.c_cflag &= ~CRTSCTS;
+		status = tty_set_termios(tty, &ktermios);
+		if (status)
+			printk("hci_uart_set_flow_control: failed to disable flow control\n");
+		BT_DBG("Disabling hardware flow control: %s",
+		       status ? "failed" : "success");
+
+		hci_uart_set_rts(hu, !enable);
+	} else {
+		hci_uart_set_rts(hu, !enable);
 
 		/* Re-enable hardware flow control */
 		ktermios = tty->termios;

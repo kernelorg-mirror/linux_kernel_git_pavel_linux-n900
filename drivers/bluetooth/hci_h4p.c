@@ -140,6 +140,9 @@ static int h4p_reset(struct hci_uart *hu)
 	int err;
 
 	printk("h4p_reset: reset\n");
+	hci_uart_init_tty(hu);
+	hci_uart_set_flow_control(hu, true);
+	hci_uart_set_rts(hu, false);
 
 	/* reset routine */
 	gpiod_set_value_cansleep(h4p->btdata->reset, 0);
@@ -154,9 +157,7 @@ static int h4p_reset(struct hci_uart *hu)
 	/* init uart */
 
 	printk("h4p_reset: speed\n");		
-	hci_uart_init_tty(hu);
 	h4p_set_speed(hu, INIT_SPEED);
-	hci_uart_set_flow_control(hu, true);
 
 	/* set_flow_control(_, v) == set_rts(_, !v) ? */
 
@@ -169,6 +170,7 @@ static int h4p_reset(struct hci_uart *hu)
 	}
 
 	gpiod_set_value_cansleep(h4p->btdata->reset, 1);
+#if 0
 	gpiod_set_value_cansleep(h4p->btdata->wakeup_bt, 0);
 
 	msleep(100);
@@ -178,6 +180,7 @@ static int h4p_reset(struct hci_uart *hu)
 		dev_err(hu->tty->dev, "reset: host wakeup not high!\n");
 		return -EPROTO;
 	}
+#endif
 
 	/* wait for cts */
 	err = h4p_wait_for_cts(hu, true, 100);
@@ -187,9 +190,11 @@ static int h4p_reset(struct hci_uart *hu)
 	}
 
 	printk("h4p_reset: flow\n"); 
-
+#if 0
 	gpiod_set_value_cansleep(h4p->btdata->wakeup_bt, 1);
 	hci_uart_set_flow_control(hu, false);
+#endif
+	hci_uart_set_rts(hu, true);
 
 	return 0;
 }
@@ -316,7 +321,7 @@ static int h4p_send_negotiation(struct hci_uart *hu)
 	neg_cmd->sys_clk = cpu_to_le16(sysclk);
 	neg_cmd->unused2 = 0x0000;
 
-	hci_uart_set_flow_control(hu, false);
+	hci_uart_set_rts(hu, true);
 
 	h4p->init_error = 0;
 	init_completion(&h4p->init_completion);
@@ -468,7 +473,6 @@ static int h4p_setup(struct hci_uart *hu)
 	err = h4p_send_negotiation(hu);
 	if (err < 0) {
 		dev_err(hu->tty->dev, "Negotiation failed: %d\n", err);
-		goto out;
 	}
 
 	/* 2. verify correct setup using alive packet */
