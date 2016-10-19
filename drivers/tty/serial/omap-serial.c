@@ -370,7 +370,6 @@ static void serial_omap_stop_rx(struct uart_port *port)
 
 static void transmit_char(struct uart_omap_port *up, u8 ch)
 {
-	printk("Transmiting: %x\n", ch);
 	serial_out(up, UART_TX, ch);
 	up->port.icount.tx++;
 }
@@ -508,7 +507,6 @@ static void serial_omap_rlsi(struct uart_omap_port *up, unsigned int lsr)
 		ch = serial_in(up, UART_RX);
 
 	up->port.icount.rx++;
-	printk("Receive rlsi: %x\n", ch);
 	flag = TTY_NORMAL;
 
 	if (lsr & UART_LSR_BI) {
@@ -558,7 +556,6 @@ static void serial_omap_rdi(struct uart_omap_port *up, unsigned int lsr)
 
 	ch = serial_in(up, UART_RX);
 	flag = TTY_NORMAL;
-	printk("Receive rdi: %x\n", ch);
 	
 	up->port.icount.rx++;
 	if (uart_handle_sysrq_char(&up->port, ch))
@@ -587,8 +584,6 @@ static irqreturn_t serial_omap_irq(int irq, void *dev_id)
 		iir = serial_in(up, UART_IIR);
 		if (iir & UART_IIR_NO_INT)
 			break;
-
-		printk("omap_irq: iir = %x\n", iir);
 
 		if ((iir & UART_IIR_ID) == UART_IIR_RX_TIMEOUT) {
 			printk("rx_timeout: fixup\n");
