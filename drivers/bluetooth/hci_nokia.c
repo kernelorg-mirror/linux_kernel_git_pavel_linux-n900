@@ -16,6 +16,8 @@
  *  GNU General Public License for more details.
  */
 
+#define DEBUG
+
 #include <linux/module.h>
 
 #include <linux/clk.h>
@@ -264,6 +266,10 @@ static int nokia_reset(struct hci_uart *hu)
 	struct nokia_bt_dev *btdev = hu->priv;
 	int err;
 
+	hci_uart_init_tty(hu);
+	hci_uart_set_flow_control(hu, true);
+	hci_uart_set_rts(hu, false);
+
 	/* reset routine */
 	gpiod_set_value_cansleep(btdev->btdata->reset, 0);
 	gpiod_set_value_cansleep(btdev->btdata->wakeup_bt, 1);
@@ -282,11 +288,11 @@ static int nokia_reset(struct hci_uart *hu)
 	tty_driver_flush_buffer(hu->tty);
 
 	/* init uart */
-	hci_uart_init_tty(hu);
-	hci_uart_set_flow_control(hu, true);
 	hci_uart_set_baudrate(hu, INIT_SPEED);
 
 	gpiod_set_value_cansleep(btdev->btdata->reset, 1);
+
+#if 0
 	gpiod_set_value_cansleep(btdev->btdata->wakeup_bt, 0);
 
 	msleep(100);
@@ -296,6 +302,7 @@ static int nokia_reset(struct hci_uart *hu)
 		dev_err(hu->tty->dev, "reset: host wakeup not high!\n");
 		return -EPROTO;
 	}
+#endif
 
 	/* wait for cts */
 	err = hci_uart_wait_for_cts(hu, true, 100);
@@ -304,8 +311,11 @@ static int nokia_reset(struct hci_uart *hu)
 		return err;
 	}
 
+#if 0
 	gpiod_set_value_cansleep(btdev->btdata->wakeup_bt, 1);
 	hci_uart_set_flow_control(hu, false);
+#endif
+	hci_uart_set_rts(hu, true);
 
 	return 0;
 }
@@ -377,6 +387,8 @@ static int nokia_send_negotiation(struct hci_uart *hu)
 	neg_cmd->proto = NOKIA_PROTO_BYTE;
 	neg_cmd->sys_clk = cpu_to_le16(sysclk);
 	neg_cmd->unused2 = 0x0000;
+
+	hci_uart_set_rts(hu, true);
 
 	btdev->init_error = 0;
 	init_completion(&btdev->init_completion);
