@@ -109,6 +109,7 @@ int hci_uart_tx_wakeup(struct hci_uart *hu);
 int hci_uart_init_ready(struct hci_uart *hu);
 void hci_uart_init_tty(struct hci_uart *hu);
 void hci_uart_set_baudrate(struct hci_uart *hu, unsigned int speed);
+void hci_uart_set_rts(struct hci_uart *hu, bool enable);
 void hci_uart_set_flow_control(struct hci_uart *hu, bool enable);
 void hci_uart_set_speeds(struct hci_uart *hu, unsigned int init_speed,
 			 unsigned int oper_speed);
@@ -123,6 +124,7 @@ struct h4_recv_pkt {
 	u8  loff;	/* Data length offset in header */
 	u8  lsize;	/* Data length field size */
 	u16 maxlen;	/* Max overall packet length */
+	bool wordaligned;	/* packets are word aligned */
 	int (*recv)(struct hci_dev *hdev, struct sk_buff *skb);
 };
 
@@ -195,4 +197,8 @@ int ag6xx_deinit(void);
 #ifdef CONFIG_BT_HCIUART_MRVL
 int mrvl_init(void);
 int mrvl_deinit(void);
+#endif
+#ifdef CONFIG_BT_HCIUART_NOKIA
+int nokia_init(void);
+int nokia_deinit(void);
 #endif

@@ -45,6 +45,10 @@ Optional properties:
 - tx-threshold: Specify the TX FIFO low water indication for parts with
   programmable TX FIFO thresholds.
 
+Optional child node:
+- a device connected to the uart can be specified as child node with
+  compatible value.
+
 Note:
 * fsl,ns16550:
   ------------
