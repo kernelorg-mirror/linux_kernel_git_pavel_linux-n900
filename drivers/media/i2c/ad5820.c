@@ -60,7 +60,7 @@ struct ad5820_device {
 	struct mutex power_lock;
 	int power_count;
 
-	int standby : 1;
+	bool standby;
 };
 
 static int ad5820_write(struct ad5820_device *coil, u16 data)
@@ -110,7 +110,7 @@ static int ad5820_update_hw(struct ad5820_device *coil)
 /*
  * Power handling
  */
-static int ad5820_power_off(struct ad5820_device *coil, int standby)
+static int ad5820_power_off(struct ad5820_device *coil, bool standby)
 {
 	int ret = 0, ret2;
 
@@ -119,7 +119,7 @@ static int ad5820_power_off(struct ad5820_device *coil, int standby)
 	 * (single power line control for both coil and sensor).
 	 */
 	if (standby) {
-		coil->standby = 1;
+		coil->standby = true;
 		ret = ad5820_update_hw(coil);
 	}
 
@@ -129,7 +129,7 @@ static int ad5820_power_off(struct ad5820_device *coil, int standby)
 	return ret2;
 }
 
-static int ad5820_power_on(struct ad5820_device *coil, int restore)
+static int ad5820_power_on(struct ad5820_device *coil, bool restore)
 {
 	int ret;
 
@@ -139,7 +139,7 @@ static int ad5820_power_on(struct ad5820_device *coil, int restore)
 
 	if (restore) {
 		/* Restore the hardware settings. */
-		coil->standby = 0;
+		coil->standby = false;
 		ret = ad5820_update_hw(coil);
 		if (ret)
 			goto fail;
@@ -147,7 +147,7 @@ static int ad5820_power_on(struct ad5820_device *coil, int restore)
 	return 0;
 
 fail:
-	coil->standby = 1;
+	coil->standby = true;
 	regulator_disable(coil->vana);
 
 	return ret;
@@ -166,7 +166,6 @@ static int ad5820_set_ctrl(struct v4l2_ctrl *ctrl)
 	case V4L2_CID_FOCUS_ABSOLUTE:
 		coil->focus_absolute = ctrl->val;
 		return ad5820_update_hw(coil);
-
 	case V4L2_CID_AD5820_RAMP_TIME:
 		code = RAMP_US_TO_CODE(ctrl->val);
 		ctrl->val = CODE_TO_RAMP_US(code);
@@ -277,7 +276,8 @@ ad5820_set_power(struct v4l2_subdev *subdev, int on)
 	 * update the power state.
 	 */
 	if (coil->power_count == !on) {
-		ret = on ? ad5820_power_on(coil, 1) : ad5820_power_off(coil, 1);
+		ret = on ? ad5820_power_on(coil, true) :
+			ad5820_power_off(coil, true);
 		if (ret < 0)
 			goto done;
 	}
@@ -318,9 +318,7 @@ static const struct v4l2_subdev_internal_ops ad5820_internal_ops = {
 /*
  * I2C driver
  */
-#ifdef CONFIG_PM
-
-static int ad5820_suspend(struct device *dev)
+static int __maybe_unused ad5820_suspend(struct device *dev)
 {
 	struct i2c_client *client = container_of(dev, struct i2c_client, dev);
 	struct v4l2_subdev *subdev = i2c_get_clientdata(client);
@@ -329,10 +327,10 @@ static int ad5820_suspend(struct device *dev)
 	if (!coil->power_count)
 		return 0;
 
-	return ad5820_power_off(coil, 0);
+	return ad5820_power_off(coil, false);
 }
 
-static int ad5820_resume(struct device *dev)
+static int __maybe_unused ad5820_resume(struct device *dev)
 {
 	struct i2c_client *client = container_of(dev, struct i2c_client, dev);
 	struct v4l2_subdev *subdev = i2c_get_clientdata(client);
@@ -341,15 +339,8 @@ static int ad5820_resume(struct device *dev)
 	if (!coil->power_count)
 		return 0;
 
-	return ad5820_power_on(coil, 1);
+	return ad5820_power_on(coil, true);
 }
-
-#else
-
-#define ad5820_suspend	NULL
-#define ad5820_resume	NULL
-
-#endif /* CONFIG_PM */
 
 static int ad5820_probe(struct i2c_client *client,
 			const struct i2c_device_id *devid)
@@ -368,7 +359,7 @@ static int ad5820_probe(struct i2c_client *client,
 			dev_err(&client->dev, "could not get regulator for vana\n");
 		return ret;
 	}
-	
+
 	mutex_init(&coil->power_lock);
 
 	v4l2_i2c_subdev_init(&coil->subdev, client, &ad5820_ops);

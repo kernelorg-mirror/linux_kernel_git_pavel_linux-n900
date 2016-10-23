@@ -10,7 +10,7 @@ Required Properties:
 
 Example:
 
-       ad5820: coil@0c {
+       ad5820: coil@c {
                compatible = "adi,ad5820";
                reg = <0x0c>;
 
