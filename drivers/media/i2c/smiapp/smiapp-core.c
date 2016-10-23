@@ -24,8 +24,8 @@
 #include <linux/delay.h>
 #include <linux/device.h>
 #include <linux/gpio.h>
+#include <linux/gpio/consumer.h>
 #include <linux/module.h>
-#include <linux/of_gpio.h>
 #include <linux/regulator/consumer.h>
 #include <linux/slab.h>
 #include <linux/smiapp.h>
@@ -1207,19 +1207,14 @@ static int smiapp_power_on(struct smiapp_sensor *sensor)
 	}
 	usleep_range(1000, 1000);
 
-	if (sensor->hwcfg->set_xclk)
-		rval = sensor->hwcfg->set_xclk(
-			&sensor->src->sd, sensor->hwcfg->ext_clk);
-	else
-		rval = clk_prepare_enable(sensor->ext_clk);
+	rval = clk_prepare_enable(sensor->ext_clk);
 	if (rval < 0) {
 		dev_dbg(&client->dev, "failed to enable xclk\n");
 		goto out_xclk_fail;
 	}
 	usleep_range(1000, 1000);
 
-	if (gpio_is_valid(sensor->hwcfg->xshutdown))
-		gpio_set_value(sensor->hwcfg->xshutdown, 1);
+	gpiod_set_value(sensor->xshutdown, 1);
 
 	sleep = SMIAPP_RESET_DELAY(sensor->hwcfg->ext_clk);
 	usleep_range(sleep, sleep);
@@ -1328,12 +1323,8 @@ static int smiapp_power_on(struct smiapp_sensor *sensor)
 	return 0;
 
 out_cci_addr_fail:
-	if (gpio_is_valid(sensor->hwcfg->xshutdown))
-		gpio_set_value(sensor->hwcfg->xshutdown, 0);
-	if (sensor->hwcfg->set_xclk)
-		sensor->hwcfg->set_xclk(&sensor->src->sd, 0);
-	else
-		clk_disable_unprepare(sensor->ext_clk);
+	gpiod_set_value(sensor->xshutdown, 0);
+	clk_disable_unprepare(sensor->ext_clk);
 
 out_xclk_fail:
 	regulator_disable(sensor->vana);
@@ -1354,12 +1345,8 @@ static void smiapp_power_off(struct smiapp_sensor *sensor)
 			     SMIAPP_REG_U8_SOFTWARE_RESET,
 			     SMIAPP_SOFTWARE_RESET);
 
-	if (gpio_is_valid(sensor->hwcfg->xshutdown))
-		gpio_set_value(sensor->hwcfg->xshutdown, 0);
-	if (sensor->hwcfg->set_xclk)
-		sensor->hwcfg->set_xclk(&sensor->src->sd, 0);
-	else
-		clk_disable_unprepare(sensor->ext_clk);
+	gpiod_set_value(sensor->xshutdown, 0);
+	clk_disable_unprepare(sensor->ext_clk);
 	usleep_range(5000, 5000);
 	regulator_disable(sensor->vana);
 	sensor->streaming = false;
@@ -2560,35 +2547,26 @@ static int smiapp_init(struct smiapp_sensor *sensor)
 		return PTR_ERR(sensor->vana);
 	}
 
-	if (!sensor->hwcfg->set_xclk) {
-		sensor->ext_clk = devm_clk_get(&client->dev, NULL);
-		if (IS_ERR(sensor->ext_clk)) {
-			dev_err(&client->dev, "could not get clock (%ld)\n",
-				PTR_ERR(sensor->ext_clk));
-			return -EPROBE_DEFER;
-		}
-
-		rval = clk_set_rate(sensor->ext_clk,
-				    sensor->hwcfg->ext_clk);
-		if (rval < 0) {
-			dev_err(&client->dev,
-				"unable to set clock freq to %u\n",
-				sensor->hwcfg->ext_clk);
-			return rval;
-		}
+	sensor->ext_clk = devm_clk_get(&client->dev, NULL);
+	if (IS_ERR(sensor->ext_clk)) {
+		dev_err(&client->dev, "could not get clock (%ld)\n",
+			PTR_ERR(sensor->ext_clk));
+		return -EPROBE_DEFER;
 	}
 
-	if (gpio_is_valid(sensor->hwcfg->xshutdown)) {
-		rval = devm_gpio_request_one(
-			&client->dev, sensor->hwcfg->xshutdown, 0,
-			"SMIA++ xshutdown");
-		if (rval < 0) {
-			dev_err(&client->dev,
-				"unable to acquire reset gpio %d\n",
-				sensor->hwcfg->xshutdown);
-			return rval;
-		}
+	rval = clk_set_rate(sensor->ext_clk,
+			    sensor->hwcfg->ext_clk);
+	if (rval < 0) {
+		dev_err(&client->dev,
+			"unable to set clock freq to %u\n",
+			sensor->hwcfg->ext_clk);
+		return rval;
 	}
+
+	sensor->xshutdown = devm_gpiod_get_optional(&client->dev, "xshutdown",
+						    GPIOD_OUT_LOW);
+	if (IS_ERR(sensor->xshutdown))
+		return PTR_ERR(sensor->xshutdown);
 
 	rval = smiapp_power_on(sensor);
 	if (rval)
@@ -3032,9 +3010,6 @@ static struct smiapp_hwconfig *smiapp_get_hwconfig(struct device *dev)
 
 	dev_dbg(dev, "lanes %u\n", hwcfg->lanes);
 
-	/* xshutdown GPIO is optional */
-	hwcfg->xshutdown = of_get_named_gpio(dev->of_node, "reset-gpios", 0);
-
 	/* NVM size is not mandatory */
 	of_property_read_u32(dev->of_node, "nokia,nvm-size",
 				    &hwcfg->nvm_size);
@@ -3046,7 +3021,7 @@ static struct smiapp_hwconfig *smiapp_get_hwconfig(struct device *dev)
 		goto out_err;
 	}
 
-	dev_dbg(dev, "reset %d, nvm %d, clk %d, mode %d\n", hwcfg->xshutdown,
+	dev_dbg(dev, "nvm %d, clk %d, mode %d\n", 
 		hwcfg->nvm_size, hwcfg->ext_clk, hwcfg->csi_signalling_mode);
 
 	if (!bus_cfg->nr_of_link_frequencies) {
@@ -3132,12 +3107,8 @@ static int smiapp_remove(struct i2c_client *client)
 	v4l2_async_unregister_subdev(subdev);
 
 	if (sensor->power_count) {
-		if (gpio_is_valid(sensor->hwcfg->xshutdown))
-			gpio_set_value(sensor->hwcfg->xshutdown, 0);
-		if (sensor->hwcfg->set_xclk)
-			sensor->hwcfg->set_xclk(&sensor->src->sd, 0);
-		else
-			clk_disable_unprepare(sensor->ext_clk);
+		gpiod_set_value(sensor->xshutdown, 0);
+		clk_disable_unprepare(sensor->ext_clk);
 		sensor->power_count = 0;
 	}
 
