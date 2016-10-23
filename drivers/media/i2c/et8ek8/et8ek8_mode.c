@@ -19,10 +19,7 @@
 #include "et8ek8_reg.h"
 
 /*
- *
  * Stingray sensor mode settings for Scooby
- *
- *
  */
 
 /* Mode1_poweron_Mode2_16VGA_2592x1968_12.07fps */
@@ -558,17 +555,17 @@ static struct et8ek8_reglist mode_4vga_1296x984_25fps_dpcm10_8 = {
 		.sensitivity = 65536
 	},
 	.regs = {
-		{ ET8EK8_REG_8BIT, 0x1239, 0x4F },	/*        */
-		{ ET8EK8_REG_8BIT, 0x1238, 0x02 },	/*        */
-		{ ET8EK8_REG_8BIT, 0x123B, 0x70 },	/*        */
-		{ ET8EK8_REG_8BIT, 0x123A, 0x05 },	/*        */
-		{ ET8EK8_REG_8BIT, 0x121B, 0x63 },	/*        */
-		{ ET8EK8_REG_8BIT, 0x1220, 0x85 },	/*        */
-		{ ET8EK8_REG_8BIT, 0x1221, 0x00 },	/*        */
-		{ ET8EK8_REG_8BIT, 0x1222, 0x58 },	/*        */
-		{ ET8EK8_REG_8BIT, 0x1223, 0x00 },	/*        */
-		{ ET8EK8_REG_8BIT, 0x121D, 0x63 },	/*        */
-		{ ET8EK8_REG_8BIT, 0x125D, 0x83 },	/*        */
+		{ ET8EK8_REG_8BIT, 0x1239, 0x4F },
+		{ ET8EK8_REG_8BIT, 0x1238, 0x02 },
+		{ ET8EK8_REG_8BIT, 0x123B, 0x70 },
+		{ ET8EK8_REG_8BIT, 0x123A, 0x05 },
+		{ ET8EK8_REG_8BIT, 0x121B, 0x63 },
+		{ ET8EK8_REG_8BIT, 0x1220, 0x85 },
+		{ ET8EK8_REG_8BIT, 0x1221, 0x00 },
+		{ ET8EK8_REG_8BIT, 0x1222, 0x58 },
+		{ ET8EK8_REG_8BIT, 0x1223, 0x00 },
+		{ ET8EK8_REG_8BIT, 0x121D, 0x63 },
+		{ ET8EK8_REG_8BIT, 0x125D, 0x83 },
 		{ ET8EK8_REG_TERM, 0, 0}
 	}
 };
@@ -585,6 +582,6 @@ struct et8ek8_meta_reglist meta_reglist = {
 		{ .ptr = &mode_648x492_5fps },
 		{ .ptr = &mode3_4vga_1296x984_5fps },
 		{ .ptr = &mode_4vga_1296x984_25fps_dpcm10_8 },
-		{ .ptr = 0 }
+		{ .ptr = NULL }
 	}
 };

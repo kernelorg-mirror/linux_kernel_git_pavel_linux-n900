@@ -14,7 +14,7 @@ Mandatory properties
 - vana-supply: Analogue voltage supply (VANA), 2.8 volts
 - clocks: External clock to the sensor
 - clock-frequency: Frequency of the external clock to the sensor. Camera
-  driver will set this frequency on the clocks.
+  driver will set this frequency on the external clock.
 - reset-gpios: XSHUTDOWN GPIO
 
 

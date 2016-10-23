@@ -140,12 +140,8 @@ static struct et8ek8_gain {
 #define USE_CRC			1
 
 /*
- *
  * Register access helpers
  *
- */
-
-/*
  * Read a 8/16/32-bit i2c register.  The value is returned in 'val'.
  * Returns zero if successful, or non-zero otherwise.
  */
@@ -153,7 +149,7 @@ static int et8ek8_i2c_read_reg(struct i2c_client *client, u16 data_length,
 			       u16 reg, u32 *val)
 {
 	int r;
-	struct i2c_msg msg[1];
+	struct i2c_msg msg;
 	unsigned char data[4];
 
 	if (!client->adapter)
@@ -161,21 +157,21 @@ static int et8ek8_i2c_read_reg(struct i2c_client *client, u16 data_length,
 	if (data_length != ET8EK8_REG_8BIT && data_length != ET8EK8_REG_16BIT)
 		return -EINVAL;
 
-	msg->addr = client->addr;
-	msg->flags = 0;
-	msg->len = 2;
-	msg->buf = data;
+	msg.addr = client->addr;
+	msg.flags = 0;
+	msg.len = 2;
+	msg.buf = data;
 
 	/* high byte goes out first */
 	data[0] = (u8) (reg >> 8);
 	data[1] = (u8) (reg & 0xff);
-	r = i2c_transfer(client->adapter, msg, 1);
+	r = i2c_transfer(client->adapter, &msg, 1);
 	if (r < 0)
 		goto err;
 
-	msg->len = data_length;
-	msg->flags = I2C_M_RD;
-	r = i2c_transfer(client->adapter, msg, 1);
+	msg.len = data_length;
+	msg.flags = I2C_M_RD;
+	r = i2c_transfer(client->adapter, &msg, 1);
 	if (r < 0)
 		goto err;
 
@@ -308,7 +304,7 @@ static int et8ek8_i2c_write_regs(struct i2c_client *client,
 
 		/* ... and then check that everything was OK */
 		if (r < 0) {
-			dev_err(&client->dev, "i2c transfer error !!!\n");
+			dev_err(&client->dev, "i2c transfer error!\n");
 			return r;
 		}
 
@@ -317,8 +313,7 @@ static int et8ek8_i2c_write_regs(struct i2c_client *client,
 		 * the list, this is where we snooze for the required time
 		 */
 		if (next->type == ET8EK8_REG_DELAY) {
-			set_current_state(TASK_UNINTERRUPTIBLE);
-			schedule_timeout(msecs_to_jiffies(next->val));
+			msleep(next->val);
 			/*
 			 * ZZZ ...
 			 * Update list pointers and cnt and start over ...
@@ -340,7 +335,7 @@ static int et8ek8_i2c_write_reg(struct i2c_client *client, u16 data_length,
 				u16 reg, u32 val)
 {
 	int r;
-	struct i2c_msg msg[1];
+	struct i2c_msg msg;
 	unsigned char data[6];
 
 	if (!client->adapter)
@@ -348,14 +343,14 @@ static int et8ek8_i2c_write_reg(struct i2c_client *client, u16 data_length,
 	if (data_length != ET8EK8_REG_8BIT && data_length != ET8EK8_REG_16BIT)
 		return -EINVAL;
 
-	et8ek8_i2c_create_msg(client, data_length, reg, val, msg, data);
+	et8ek8_i2c_create_msg(client, data_length, reg, val, &msg, data);
 
-	r = i2c_transfer(client->adapter, msg, 1);
+	r = i2c_transfer(client->adapter, &msg, 1);
 	if (r < 0)
 		dev_err(&client->dev,
 			"wrote 0x%x to offset 0x%x error %d\n", val, reg, r);
 	else
-		r = 0; /* on success i2c_transfer() return messages trasfered */
+		r = 0; /* on success i2c_transfer() returns messages trasfered */
 
 	return r;
 }
@@ -554,14 +549,16 @@ static int et8ek8_reglist_import(struct i2c_client *client,
 	return 0;
 }
 
+typedef unsigned int fixpoint8; /* .8 fixed point format. */
+
 /*
- * Return time of one row in microseconds, .8 fixed point format.
+ * Return time of one row in microseconds
  * If the sensor is not set to any mode, return zero.
  */
-static int et8ek8_get_row_time(struct et8ek8_sensor *sensor)
+fixpoint8 et8ek8_get_row_time(struct et8ek8_sensor *sensor)
 {
 	unsigned int clock;	/* Pixel clock in Hz>>10 fixed point */
-	unsigned int rt;	/* Row time in .8 fixed point */
+	fixpoint8 rt;	/* Row time in .8 fixed point */
 
 	if (!sensor->current_reglist)
 		return 0;
@@ -581,7 +578,7 @@ static int et8ek8_get_row_time(struct et8ek8_sensor *sensor)
 static int et8ek8_exposure_us_to_rows(struct et8ek8_sensor *sensor, u32 *us)
 {
 	unsigned int rows;	/* Exposure value as written to HW (ie. rows) */
-	unsigned int rt;	/* Row time in .8 fixed point */
+	fixpoint8 rt;	/* Row time in .8 fixed point */
 
 	/* Assume that the maximum exposure time is at most ~8 s,
 	 * and the maximum width (with blanking) ~8000 pixels.
@@ -675,25 +672,23 @@ static int et8ek8_set_test_pattern(struct et8ek8_sensor *sensor, s32 mode)
 	rval = et8ek8_i2c_write_reg(client, ET8EK8_REG_8BIT, 0x111B,
 				    tp_mode << 4);
 	if (rval)
-		goto out;
+		return rval;
 
 	rval = et8ek8_i2c_write_reg(client, ET8EK8_REG_8BIT, 0x1121,
 				    cbh_mode << 7);
 	if (rval)
-		goto out;
+		return rval;
 
 	rval = et8ek8_i2c_write_reg(client, ET8EK8_REG_8BIT, 0x1124,
 				    cbv_mode << 7);
 	if (rval)
-		goto out;
+		return rval;		
 
 	rval = et8ek8_i2c_write_reg(client, ET8EK8_REG_8BIT, 0x112C, din_sw);
 	if (rval)
-		goto out;
+		return rval;
 
 	rval = et8ek8_i2c_write_reg(client, ET8EK8_REG_8BIT, 0x1420, r1420);
-
-out:
 	return rval;
 }
 

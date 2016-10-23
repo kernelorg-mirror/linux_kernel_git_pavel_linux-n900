@@ -29,27 +29,27 @@ struct v4l2_subdev_pad_mbus_code_enum;
 
 struct et8ek8_mode {
 	/* Physical sensor resolution and current image window */
-	__u16 sensor_width;
-	__u16 sensor_height;
-	__u16 sensor_window_origin_x;
-	__u16 sensor_window_origin_y;
-	__u16 sensor_window_width;
-	__u16 sensor_window_height;
+	u16 sensor_width;
+	u16 sensor_height;
+	u16 sensor_window_origin_x;
+	u16 sensor_window_origin_y;
+	u16 sensor_window_width;
+	u16 sensor_window_height;
 
 	/* Image data coming from sensor (after scaling) */
-	__u16 width;
-	__u16 height;
-	__u16 window_origin_x;
-	__u16 window_origin_y;
-	__u16 window_width;
-	__u16 window_height;
+	u16 width;
+	u16 height;
+	u16 window_origin_x;
+	u16 window_origin_y;
+	u16 window_width;
+	u16 window_height;
 
-	__u32 pixel_clock;		/* in Hz */
-	__u32 ext_clock;		/* in Hz */
+	u32 pixel_clock;		/* in Hz */
+	u32 ext_clock;			/* in Hz */
 	struct v4l2_fract timeperframe;
-	__u32 max_exp;			/* Maximum exposure value */
-	__u32 pixel_format;		/* V4L2_PIX_FMT_xxx */
-	__u32 sensitivity;		/* 16.16 fixed point */
+	u32 max_exp;			/* Maximum exposure value */
+	u32 pixel_format;		/* V4L2_PIX_FMT_xxx */
+	u32 sensitivity;		/* 16.16 fixed point */
 };
 
 #define ET8EK8_REG_8BIT			1
