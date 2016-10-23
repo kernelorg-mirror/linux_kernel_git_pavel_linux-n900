@@ -3019,7 +3019,6 @@ static struct smiapp_hwconfig *smiapp_get_hwconfig(struct device *dev)
 	dev_dbg(dev, "lanes %u\n", hwcfg->lanes);
 
 	/* xshutdown GPIO is optional */
-	hwcfg->xshutdown = of_get_named_gpio(dev->of_node, "reset-gpios", 0);
 	hwcfg->lanes = bus_cfg->bus.mipi_csi2.num_data_lanes;
 	dev_dbg(dev, "lanes %u\n", hwcfg->lanes);
 
@@ -3034,7 +3033,7 @@ static struct smiapp_hwconfig *smiapp_get_hwconfig(struct device *dev)
 		goto out_err;
 	}
 
-	dev_dbg(dev, "reset %d, nvm %d, clk %d, mode %d\n", hwcfg->xshutdown,
+	dev_dbg(dev, "reset %d, nvm %d, clk %d, mode %d\n", 0,
 		hwcfg->nvm_size, hwcfg->ext_clk, hwcfg->csi_signalling_mode);
 
 	if (!bus_cfg->nr_of_link_frequencies) {

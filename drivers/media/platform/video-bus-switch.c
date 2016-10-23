@@ -278,8 +278,10 @@ static int video_bus_switch_probe(struct platform_device *pdev)
 
 	/* platform data */
 	pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
-	if (!pdata)
+	if (!pdata) {
+		printk("video-bus-switch: not enough memory\n");
 		return -ENOMEM;
+	}
 	platform_set_drvdata(pdev, pdata);
 
 	/* switch gpio */
@@ -311,6 +313,7 @@ static int video_bus_switch_probe(struct platform_device *pdev)
 	pdata->subdev.owner = pdev->dev.driver->owner;
 	strncpy(pdata->subdev.name, dev_name(&pdev->dev), V4L2_SUBDEV_NAME_SIZE);
 	v4l2_set_subdevdata(&pdata->subdev, pdata);
+	pdata->subdev.entity.function = MEDIA_ENT_F_SWITCH;
 	pdata->subdev.entity.flags |= MEDIA_ENT_F_SWITCH;
 	pdata->subdev.entity.ops = &vbs_media_ops;
 	pdata->subdev.internal_ops = &vbs_internal_ops;
@@ -328,6 +331,8 @@ static int video_bus_switch_probe(struct platform_device *pdev)
 		media_entity_cleanup(&pdata->subdev.entity);
 		return err;
 	}
+
+	dev_info(&pdev->dev, "video-bus-switch registered\n");
 
 	return 0;
 }

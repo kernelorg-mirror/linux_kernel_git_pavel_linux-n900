@@ -1694,13 +1694,17 @@ static int et8ek8_probe(struct i2c_client *client,
 	struct et8ek8_sensor *sensor;
 	int ret;
 
+	printk("et8ek8: probe\n");
+
 	sensor = devm_kzalloc(&client->dev, sizeof(*sensor), GFP_KERNEL);
-	if (!sensor)
+	if (!sensor) {
+		dev_err(&client->dev, "not enough memory\n");
 		return -ENOMEM;
+	}
 
 	sensor->reset = devm_gpiod_get(&client->dev, "reset", GPIOD_OUT_LOW);
 	if (IS_ERR(sensor->reset)) {
-		dev_dbg(&client->dev, "could not request reset gpio\n");
+		dev_err(&client->dev, "could not request reset gpio\n");
 		return PTR_ERR(sensor->reset);;
 	}
 
@@ -1731,6 +1735,7 @@ static int et8ek8_probe(struct i2c_client *client,
 
 	ret = v4l2_async_register_subdev(&sensor->subdev);
 	if (ret < 0) {
+		dev_err(&client->dev, "can't register subdev!\n");
 		media_entity_cleanup(&sensor->subdev.entity);
 		return ret;
 	}

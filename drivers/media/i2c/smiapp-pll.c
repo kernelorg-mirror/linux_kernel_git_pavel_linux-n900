@@ -16,6 +16,8 @@
  * General Public License for more details.
  */
 
+#define DEBUG
+
 #include <linux/device.h>
 #include <linux/gcd.h>
 #include <linux/lcm.h>
@@ -457,6 +459,10 @@ int smiapp_pll_calculate(struct device *dev,
 	i = gcd(pll->pll_op_clk_freq_hz, pll->ext_clk_freq_hz);
 	mul = div_u64(pll->pll_op_clk_freq_hz, i);
 	div = pll->ext_clk_freq_hz / i;
+	if (!mul) {
+		dev_err(dev, "forcing mul to 1\n");
+		mul = 1;
+	}
 	dev_dbg(dev, "mul %u / div %u\n", mul, div);
 
 	min_pre_pll_clk_div =
