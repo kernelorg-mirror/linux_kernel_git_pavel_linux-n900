@@ -13,7 +13,8 @@ Mandatory properties
 - reg: I2C address (0x3e, or an alternative address)
 - vana-supply: Analogue voltage supply (VANA), 2.8 volts
 - clocks: External clock to the sensor
-- clock-frequency: Frequency of the external clock to the sensor
+- clock-frequency: Frequency of the external clock to the sensor. Camera
+  driver will set this frequency on the clocks.
 - reset-gpios: XSHUTDOWN GPIO
 
 
