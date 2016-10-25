@@ -680,10 +680,10 @@ static int bq27xxx_battery_read_health(struct bq27xxx_device_info *di)
 	/* Unlikely but important to return first */
 	if (unlikely(bq27xxx_battery_overtemp(di, flags)))
 		return POWER_SUPPLY_HEALTH_OVERHEAT;
-	if (unlikely(bq27xxx_battery_undertemp(di, flags)))
-		return POWER_SUPPLY_HEALTH_COLD;
 	if (unlikely(bq27xxx_battery_dead(di, flags)))
 		return POWER_SUPPLY_HEALTH_DEAD;
+	if (unlikely(bq27xxx_battery_undertemp(di, flags)))
+		return POWER_SUPPLY_HEALTH_COLD;
 
 	return POWER_SUPPLY_HEALTH_GOOD;
 }
@@ -963,11 +963,29 @@ static int bq27xxx_battery_get_property(struct power_supply *psy,
 	return ret;
 }
 
+static int generic_protect(struct power_supply *psy)
+{
+	union power_supply_propval val;
+	int res;
+	int mV, mA, mOhm = 430, mVadj = 0;
+
+	res = psy->desc->get_property(psy, POWER_SUPPLY_PROP_VOLTAGE_NOW, &val);
+	if (res)
+		return res;
+
+	mV = val.intval / 1000;
+
+	printk(KERN_INFO "Main battery %d mV, internal voltage %d mV\n",
+	       mV, mVadj);
+}
+
 static int bq27xxx_battery_protect(struct bq27xxx_device_info *di)
 {
 	union power_supply_propval val;
 	int mV, mA, mOhm = 430, mVadj;
 	int res;
+
+	generic_protect(di->bat);
 
 	printk(KERN_INFO "Main battery check\n");
 
