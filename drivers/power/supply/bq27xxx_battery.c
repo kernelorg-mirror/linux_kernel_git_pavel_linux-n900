@@ -963,20 +963,50 @@ static int bq27xxx_battery_get_property(struct power_supply *psy,
 	return ret;
 }
 
+static void shutdown(char *reason)
+{
+	pr_alert("%s Forcing shutdown\n", reason);
+	orderly_poweroff(true);
+}
+
 static int generic_protect(struct power_supply *psy)
 {
 	union power_supply_propval val;
 	int res;
 	int mV, mA, mOhm = 430, mVadj = 0;
 
-	res = psy->desc->get_property(psy, POWER_SUPPLY_PROP_VOLTAGE_NOW, &val);
+	res = psy->desc->get_property(psy, POWER_SUPPLY_PROP_HEALTH, &val);
 	if (res)
 		return res;
 
+	if (val.intval == POWER_SUPPLY_HEALTH_OVERHEAT)
+		shutdown("Battery overheat.");
+	if (val.intval == POWER_SUPPLY_HEALTH_DEAD)
+		shutdown("Battery dead.");
+
+	res = psy->desc->get_property(psy, POWER_SUPPLY_PROP_VOLTAGE_NOW, &val);
+	if (res)
+		return res;
 	mV = val.intval / 1000;
 
+	if (mV < 2950)
+		shutdown("Battery below 2.95V.");
+
+	res = psy->desc->get_property(psy, POWER_SUPPLY_PROP_CURRENT_NOW, &val);
+	if (res)
+		return res;
+	mA = val.intval / 1000;
+
+	mVadj = mV + (mA * mOhm) / 1000;
+
+	if (mVadj < 3150) {
+		printk(KERN_ALERT "Main battery internal voltage below 3.15, shutdown.\n");
+		orderly_poweroff(true);
+	}
 	printk(KERN_INFO "Main battery %d mV, internal voltage %d mV\n",
 	       mV, mVadj);
+
+	return 0;
 }
 
 static int bq27xxx_battery_protect(struct bq27xxx_device_info *di)
@@ -1011,7 +1041,7 @@ static int bq27xxx_battery_protect(struct bq27xxx_device_info *di)
 		printk(KERN_ALERT "Main battery internal voltage below 3.15, shutdown.\n");
 		orderly_poweroff(true);
 	}
-	printk(KERN_INFO "Main battery %d mV, internal voltage %d mV\n",
+	printk(KERN_INFO "(old) main battery %d mV, internal voltage %d mV\n",
 	       mV, mVadj);
 	return 0;
 }
