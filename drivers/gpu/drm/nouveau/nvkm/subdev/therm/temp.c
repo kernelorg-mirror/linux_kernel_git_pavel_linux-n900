@@ -120,6 +120,11 @@ nvkm_therm_sensor_event(struct nvkm_therm *therm, enum nvkm_therm_thrs thrs,
 			struct work_struct *work;
 
 			work = kmalloc(sizeof(*work), GFP_ATOMIC);
+			/* FIXME:
+			   1) this is total overkill, orderly_poweroff() already
+			   uses schedule_work internally
+			   2) it would  be good to at least printk what is going on
+			*/
 			if (work) {
 				INIT_WORK(work, nv_poweroff_work);
 				schedule_work(work);

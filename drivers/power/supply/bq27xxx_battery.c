@@ -46,6 +46,7 @@
 #include <linux/delay.h>
 #include <linux/platform_device.h>
 #include <linux/power_supply.h>
+#include <linux/reboot.h>
 #include <linux/slab.h>
 #include <linux/of.h>
 
@@ -740,6 +741,9 @@ void bq27xxx_battery_update(struct bq27xxx_device_info *di)
 }
 EXPORT_SYMBOL_GPL(bq27xxx_battery_update);
 
+static int bq27xxx_battery_protect(struct bq27xxx_device_info *di);
+
+
 static void bq27xxx_battery_poll(struct work_struct *work)
 {
 	struct bq27xxx_device_info *di =
@@ -747,6 +751,7 @@ static void bq27xxx_battery_poll(struct work_struct *work)
 				     work.work);
 
 	bq27xxx_battery_update(di);
+	bq27xxx_battery_protect(di);
 
 	if (poll_interval > 0)
 		schedule_delayed_work(&di->work, poll_interval * HZ);
@@ -956,6 +961,41 @@ static int bq27xxx_battery_get_property(struct power_supply *psy,
 	}
 
 	return ret;
+}
+
+static int bq27xxx_battery_protect(struct bq27xxx_device_info *di)
+{
+	union power_supply_propval val;
+	int mV, mA, mOhm = 430, mVadj;
+	int res;
+
+	printk(KERN_INFO "Main battery check\n");
+
+	res = bq27xxx_battery_voltage(di, &val);
+	if (res)
+		return res;
+
+	mV = val.intval / 1000;
+	
+	if (mV < 2950) {
+		printk(KERN_ALERT "Main battery below 2.95V, forcing shutdown.\n");
+		orderly_poweroff(true);
+	}
+
+	res = bq27xxx_battery_current(di, &val);
+	if (res)
+		return res;
+	
+	mA = val.intval / 1000;
+	mVadj = mV + (mA * mOhm) / 1000;
+
+	if (mVadj < 3150) {
+		printk(KERN_ALERT "Main battery internal voltage below 3.15, shutdown.\n");
+		orderly_poweroff(true);
+	}
+	printk(KERN_INFO "Main battery %d mV, internal voltage %d mV\n",
+	       mV, mVadj);
+	return 0;
 }
 
 static void bq27xxx_external_power_changed(struct power_supply *psy)
