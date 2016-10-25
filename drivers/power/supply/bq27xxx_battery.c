@@ -741,8 +741,48 @@ void bq27xxx_battery_update(struct bq27xxx_device_info *di)
 }
 EXPORT_SYMBOL_GPL(bq27xxx_battery_update);
 
-static int bq27xxx_battery_protect(struct bq27xxx_device_info *di);
+static void shutdown(char *reason)
+{
+	pr_alert("%s Forcing shutdown\n", reason);
+	orderly_poweroff(true);
+}
 
+static int generic_protect(struct power_supply *psy)
+{
+	union power_supply_propval val;
+	int res;
+	int mV, mA, mOhm = 430, mVadj = 0;
+
+	res = psy->desc->get_property(psy, POWER_SUPPLY_PROP_HEALTH, &val);
+	if (res)
+		return res;
+
+	if (val.intval == POWER_SUPPLY_HEALTH_OVERHEAT)
+		shutdown("Battery overheat.");
+	if (val.intval == POWER_SUPPLY_HEALTH_DEAD)
+		shutdown("Battery dead.");
+
+	res = psy->desc->get_property(psy, POWER_SUPPLY_PROP_VOLTAGE_NOW, &val);
+	if (res)
+		return res;
+	mV = val.intval / 1000;
+
+	if (mV < 2950)
+		shutdown("Battery below 2.95V.");
+
+	res = psy->desc->get_property(psy, POWER_SUPPLY_PROP_CURRENT_NOW, &val);
+	if (res)
+		return res;
+	mA = val.intval / 1000;
+	mVadj = mV + (mA * mOhm) / 1000;
+
+	if (mVadj < 3150)
+		shutdown("Battery internal voltage below 3.15.");
+	
+	printk(KERN_INFO "Main battery %d mV, internal voltage %d mV\n",
+	       mV, mVadj);
+	return 0;
+}
 
 static void bq27xxx_battery_poll(struct work_struct *work)
 {
@@ -751,7 +791,7 @@ static void bq27xxx_battery_poll(struct work_struct *work)
 				     work.work);
 
 	bq27xxx_battery_update(di);
-	bq27xxx_battery_protect(di);
+	generic_protect(di->bat);
 
 	if (poll_interval > 0)
 		schedule_delayed_work(&di->work, poll_interval * HZ);
@@ -961,89 +1001,6 @@ static int bq27xxx_battery_get_property(struct power_supply *psy,
 	}
 
 	return ret;
-}
-
-static void shutdown(char *reason)
-{
-	pr_alert("%s Forcing shutdown\n", reason);
-	orderly_poweroff(true);
-}
-
-static int generic_protect(struct power_supply *psy)
-{
-	union power_supply_propval val;
-	int res;
-	int mV, mA, mOhm = 430, mVadj = 0;
-
-	res = psy->desc->get_property(psy, POWER_SUPPLY_PROP_HEALTH, &val);
-	if (res)
-		return res;
-
-	if (val.intval == POWER_SUPPLY_HEALTH_OVERHEAT)
-		shutdown("Battery overheat.");
-	if (val.intval == POWER_SUPPLY_HEALTH_DEAD)
-		shutdown("Battery dead.");
-
-	res = psy->desc->get_property(psy, POWER_SUPPLY_PROP_VOLTAGE_NOW, &val);
-	if (res)
-		return res;
-	mV = val.intval / 1000;
-
-	if (mV < 2950)
-		shutdown("Battery below 2.95V.");
-
-	res = psy->desc->get_property(psy, POWER_SUPPLY_PROP_CURRENT_NOW, &val);
-	if (res)
-		return res;
-	mA = val.intval / 1000;
-
-	mVadj = mV + (mA * mOhm) / 1000;
-
-	if (mVadj < 3150) {
-		printk(KERN_ALERT "Main battery internal voltage below 3.15, shutdown.\n");
-		orderly_poweroff(true);
-	}
-	printk(KERN_INFO "Main battery %d mV, internal voltage %d mV\n",
-	       mV, mVadj);
-
-	return 0;
-}
-
-static int bq27xxx_battery_protect(struct bq27xxx_device_info *di)
-{
-	union power_supply_propval val;
-	int mV, mA, mOhm = 430, mVadj;
-	int res;
-
-	generic_protect(di->bat);
-
-	printk(KERN_INFO "Main battery check\n");
-
-	res = bq27xxx_battery_voltage(di, &val);
-	if (res)
-		return res;
-
-	mV = val.intval / 1000;
-	
-	if (mV < 2950) {
-		printk(KERN_ALERT "Main battery below 2.95V, forcing shutdown.\n");
-		orderly_poweroff(true);
-	}
-
-	res = bq27xxx_battery_current(di, &val);
-	if (res)
-		return res;
-	
-	mA = val.intval / 1000;
-	mVadj = mV + (mA * mOhm) / 1000;
-
-	if (mVadj < 3150) {
-		printk(KERN_ALERT "Main battery internal voltage below 3.15, shutdown.\n");
-		orderly_poweroff(true);
-	}
-	printk(KERN_INFO "(old) main battery %d mV, internal voltage %d mV\n",
-	       mV, mVadj);
-	return 0;
 }
 
 static void bq27xxx_external_power_changed(struct power_supply *psy)
