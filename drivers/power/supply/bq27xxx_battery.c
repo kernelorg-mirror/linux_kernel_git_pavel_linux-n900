@@ -777,7 +777,7 @@ static int generic_protect(struct power_supply *psy)
 	mVadj = mV + (mA * mOhm) / 1000;
 
 	if (mVadj < 3150)
-		shutdown("Battery internal voltage below 3.15.");
+		shutdown("Battery internal voltage below 3.15V.");
 	
 	printk(KERN_INFO "Main battery %d mV, internal voltage %d mV\n",
 	       mV, mVadj);
