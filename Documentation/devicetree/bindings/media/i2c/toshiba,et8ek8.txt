@@ -16,8 +16,8 @@ Mandatory properties
 - clock-frequency: Frequency of the external clock to the sensor. Camera
   driver will set this frequency on the external clock. The clock frequency is
   a pre-determined frequency known to be suitable to the board.
-- reset-gpios: XSHUTDOWN GPIO. The XSHUTDOWN signal is active high. The sensor
-  is in hardware standby mode when the signal is in low state.
+- reset-gpios: XSHUTDOWN GPIO. The XSHUTDOWN signal is active lo. The sensor
+  is in hardware standby mode when the signal is in the low state.
 
 
 Endpoint node mandatory properties
