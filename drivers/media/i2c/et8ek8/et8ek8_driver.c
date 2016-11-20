@@ -5,6 +5,7 @@
  *
  * Contact: Sakari Ailus <sakari.ailus@iki.fi>
  *          Tuukka Toivonen <tuukkat76@gmail.com>
+ *          Pavel Machek <pavel@ucw.cz>
  *
  * Based on code from Toni Leinonen <toni.leinonen@offcode.fi>.
  *
@@ -1435,9 +1436,7 @@ static const struct v4l2_subdev_internal_ops et8ek8_internal_ops = {
 /* --------------------------------------------------------------------------
  * I2C driver
  */
-#ifdef CONFIG_PM
-
-static int et8ek8_suspend(struct device *dev)
+static int __maybe_unused et8ek8_suspend(struct device *dev)
 {
 	struct i2c_client *client = to_i2c_client(dev);
 	struct v4l2_subdev *subdev = i2c_get_clientdata(client);
@@ -1449,7 +1448,7 @@ static int et8ek8_suspend(struct device *dev)
 	return __et8ek8_set_power(sensor, false);
 }
 
-static int et8ek8_resume(struct device *dev)
+static int __maybe_unused et8ek8_resume(struct device *dev)
 {
 	struct i2c_client *client = to_i2c_client(dev);
 	struct v4l2_subdev *subdev = i2c_get_clientdata(client);
@@ -1460,13 +1459,6 @@ static int et8ek8_resume(struct device *dev)
 
 	return __et8ek8_set_power(sensor, true);
 }
-
-#else
-
-#define et8ek8_suspend NULL
-#define et8ek8_resume NULL
-
-#endif /* CONFIG_PM */
 
 static int et8ek8_probe(struct i2c_client *client,
 			const struct i2c_device_id *devid)
@@ -1542,6 +1534,7 @@ static int __exit et8ek8_remove(struct i2c_client *client)
 	v4l2_device_unregister_subdev(&sensor->subdev);
 	device_remove_file(&client->dev, &dev_attr_priv_mem);
 	v4l2_ctrl_handler_free(&sensor->ctrl_handler);
+	v4l2_async_unregister_subdev(&sensor->subdev);
 	media_entity_cleanup(&sensor->subdev.entity);
 
 	return 0;
@@ -1559,8 +1552,7 @@ static const struct i2c_device_id et8ek8_id_table[] = {
 MODULE_DEVICE_TABLE(i2c, et8ek8_id_table);
 
 static const struct dev_pm_ops et8ek8_pm_ops = {
-	.suspend	= et8ek8_suspend,
-	.resume		= et8ek8_resume,
+	SET_SYSTEM_SLEEP_PM_OPS(et8ek8_suspend, et8ek8_resume)
 };
 
 static struct i2c_driver et8ek8_i2c_driver = {
@@ -1576,6 +1568,6 @@ static struct i2c_driver et8ek8_i2c_driver = {
 
 module_i2c_driver(et8ek8_i2c_driver);
 
-MODULE_AUTHOR("Sakari Ailus <sakari.ailus@iki.fi>");
+MODULE_AUTHOR("Sakari Ailus <sakari.ailus@iki.fi>, Pavel Machek <pavel@ucw.cz");
 MODULE_DESCRIPTION("Toshiba ET8EK8 camera sensor driver");
 MODULE_LICENSE("GPL");
