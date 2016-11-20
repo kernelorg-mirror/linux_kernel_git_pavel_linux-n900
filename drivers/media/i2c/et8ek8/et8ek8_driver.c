@@ -395,11 +395,7 @@ static void et8ek8_reglist_to_mbus(const struct et8ek8_reglist *reglist,
 {
 	fmt->width = reglist->mode.window_width;
 	fmt->height = reglist->mode.window_height;
-
-	if (reglist->mode.pixel_format == V4L2_PIX_FMT_SGRBG10DPCM8)
-		fmt->code = MEDIA_BUS_FMT_SGRBG10_DPCM8_1X8;
-	else
-		fmt->code = MEDIA_BUS_FMT_SGRBG10_1X10;
+	fmt->code = reglist->mode.bus_format;
 }
 
 static struct et8ek8_reglist *et8ek8_reglist_find_mode_fmt(
@@ -538,7 +534,7 @@ static int et8ek8_reglist_import(struct i2c_client *client,
 		       __func__,
 		       list->type,
 		       list->mode.window_width, list->mode.window_height,
-		       list->mode.pixel_format,
+		       list->mode.bus_format,
 		       list->mode.timeperframe.numerator,
 		       list->mode.timeperframe.denominator,
 		       (void *)meta->reglist[nlists].ptr);
@@ -967,21 +963,18 @@ static int et8ek8_enum_mbus_code(struct v4l2_subdev *subdev,
 			continue;
 
 		for (i = 0; i < npixelformat; i++) {
-			if (pixelformat[i] == mode->pixel_format)
+			if (pixelformat[i] == mode->bus_format)
 				break;
 		}
 		if (i != npixelformat)
 			continue;
 
 		if (code->index == npixelformat) {
-			if (mode->pixel_format == V4L2_PIX_FMT_SGRBG10DPCM8)
-				code->code = MEDIA_BUS_FMT_SGRBG10_DPCM8_1X8;
-			else
-				code->code = MEDIA_BUS_FMT_SGRBG10_1X10;
+			code->code = mode->bus_format;
 			return 0;
 		}
 
-		pixelformat[npixelformat] = mode->pixel_format;
+		pixelformat[npixelformat] = mode->bus_format;
 		npixelformat++;
 	}
 

@@ -48,7 +48,7 @@ struct et8ek8_mode {
 	u32 ext_clock;			/* in Hz */
 	struct v4l2_fract timeperframe;
 	u32 max_exp;			/* Maximum exposure value */
-	u32 pixel_format;		/* V4L2_PIX_FMT_xxx */
+	u32 bus_format;			/* MEDIA_BUS_FMT_ */
 	u32 sensitivity;		/* 16.16 fixed point */
 };
 

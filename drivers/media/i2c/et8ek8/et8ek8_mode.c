@@ -4,7 +4,7 @@
  * Copyright (C) 2008 Nokia Corporation
  *
  * Contact: Sakari Ailus <sakari.ailus@iki.fi>
- *          Tuukka Toivonen <tuukka.o.toivonen@nokia.com>
+ *          Tuukka Toivonen <tuukkat76@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -59,7 +59,7 @@ static struct et8ek8_reglist mode1_poweron_mode2_16vga_2592x1968_12_07fps = {
 		},
 		.max_exp = 2012,
 		/* .max_gain = 0, */
-		.pixel_format = V4L2_PIX_FMT_SGRBG10,
+		.bus_format = MEDIA_BUS_FMT_SGRBG10_1X10,
 		.sensitivity = 65536
 	},
 	.regs = {
@@ -160,7 +160,7 @@ static struct et8ek8_reglist mode1_16vga_2592x1968_13_12fps_dpcm10_8 = {
 		},
 		.max_exp = 2012,
 		/* .max_gain = 0, */
-		.pixel_format = V4L2_PIX_FMT_SGRBG10DPCM8,
+		.bus_format = MEDIA_BUS_FMT_SGRBG10_DPCM8_1X8,
 		.sensitivity = 65536
 	},
 	.regs = {
@@ -216,7 +216,7 @@ static struct et8ek8_reglist mode3_4vga_1296x984_29_99fps_dpcm10_8 = {
 		},
 		.max_exp = 1004,
 		/* .max_gain = 0, */
-		.pixel_format = V4L2_PIX_FMT_SGRBG10DPCM8,
+		.bus_format = MEDIA_BUS_FMT_SGRBG10_DPCM8_1X8,
 		.sensitivity = 65536
 	},
 	.regs = {
@@ -272,7 +272,7 @@ static struct et8ek8_reglist mode4_svga_864x656_29_88fps = {
 		},
 		.max_exp = 668,
 		/* .max_gain = 0, */
-		.pixel_format = V4L2_PIX_FMT_SGRBG10,
+		.bus_format = MEDIA_BUS_FMT_SGRBG10_1X10,
 		.sensitivity = 65536
 	},
 	.regs = {
@@ -328,7 +328,7 @@ static struct et8ek8_reglist mode5_vga_648x492_29_93fps = {
 		},
 		.max_exp = 500,
 		/* .max_gain = 0, */
-		.pixel_format = V4L2_PIX_FMT_SGRBG10,
+		.bus_format = MEDIA_BUS_FMT_SGRBG10_1X10,
 		.sensitivity = 65536
 	},
 	.regs = {
@@ -384,7 +384,7 @@ static struct et8ek8_reglist mode2_16vga_2592x1968_3_99fps = {
 		},
 		.max_exp = 6092,
 		/* .max_gain = 0, */
-		.pixel_format = V4L2_PIX_FMT_SGRBG10,
+		.bus_format = MEDIA_BUS_FMT_SGRBG10_1X10,
 		.sensitivity = 65536
 	},
 	.regs = {
@@ -439,7 +439,7 @@ static struct et8ek8_reglist mode_648x492_5fps = {
 		},
 		.max_exp = 500,
 		/* .max_gain = 0, */
-		.pixel_format = V4L2_PIX_FMT_SGRBG10,
+		.bus_format = MEDIA_BUS_FMT_SGRBG10_1X10,
 		.sensitivity = 65536
 	},
 	.regs = {
@@ -495,7 +495,7 @@ static struct et8ek8_reglist mode3_4vga_1296x984_5fps = {
 		},
 		.max_exp = 2996,
 		/* .max_gain = 0, */
-		.pixel_format = V4L2_PIX_FMT_SGRBG10,
+		.bus_format = MEDIA_BUS_FMT_SGRBG10_1X10,
 		.sensitivity = 65536
 	},
 	.regs = {
@@ -551,7 +551,7 @@ static struct et8ek8_reglist mode_4vga_1296x984_25fps_dpcm10_8 = {
 		},
 		.max_exp = 1052,
 		/* .max_gain = 0, */
-		.pixel_format = V4L2_PIX_FMT_SGRBG10DPCM8,
+		.bus_format = MEDIA_BUS_FMT_SGRBG10_DPCM8_1X8,
 		.sensitivity = 65536
 	},
 	.regs = {
