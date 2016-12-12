@@ -46,6 +46,7 @@
 #include <linux/delay.h>
 #include <linux/platform_device.h>
 #include <linux/power_supply.h>
+#include <linux/reboot.h>
 #include <linux/slab.h>
 #include <linux/of.h>
 
@@ -679,10 +680,10 @@ static int bq27xxx_battery_read_health(struct bq27xxx_device_info *di)
 	/* Unlikely but important to return first */
 	if (unlikely(bq27xxx_battery_overtemp(di, flags)))
 		return POWER_SUPPLY_HEALTH_OVERHEAT;
-	if (unlikely(bq27xxx_battery_undertemp(di, flags)))
-		return POWER_SUPPLY_HEALTH_COLD;
 	if (unlikely(bq27xxx_battery_dead(di, flags)))
 		return POWER_SUPPLY_HEALTH_DEAD;
+	if (unlikely(bq27xxx_battery_undertemp(di, flags)))
+		return POWER_SUPPLY_HEALTH_COLD;
 
 	return POWER_SUPPLY_HEALTH_GOOD;
 }
@@ -740,6 +741,49 @@ void bq27xxx_battery_update(struct bq27xxx_device_info *di)
 }
 EXPORT_SYMBOL_GPL(bq27xxx_battery_update);
 
+static void shutdown(char *reason)
+{
+	pr_alert("%s Forcing shutdown\n", reason);
+	orderly_poweroff(true);
+}
+
+static int generic_protect(struct power_supply *psy)
+{
+	union power_supply_propval val;
+	int res;
+	int mV, mA, mOhm = 430, mVadj = 0;
+
+	res = psy->desc->get_property(psy, POWER_SUPPLY_PROP_HEALTH, &val);
+	if (res)
+		return res;
+
+	if (val.intval == POWER_SUPPLY_HEALTH_OVERHEAT)
+		shutdown("Battery overheat.");
+	if (val.intval == POWER_SUPPLY_HEALTH_DEAD)
+		shutdown("Battery dead.");
+
+	res = psy->desc->get_property(psy, POWER_SUPPLY_PROP_VOLTAGE_NOW, &val);
+	if (res)
+		return res;
+	mV = val.intval / 1000;
+
+	if (mV < 2950)
+		shutdown("Battery below 2.95V.");
+
+	res = psy->desc->get_property(psy, POWER_SUPPLY_PROP_CURRENT_NOW, &val);
+	if (res)
+		return res;
+	mA = val.intval / 1000;
+	mVadj = mV + (mA * mOhm) / 1000;
+
+	if (mVadj < 3150)
+		shutdown("Battery internal voltage below 3.15V.");
+	
+	printk(KERN_INFO "Main battery %d mV, internal voltage %d mV\n",
+	       mV, mVadj);
+	return 0;
+}
+
 static void bq27xxx_battery_poll(struct work_struct *work)
 {
 	struct bq27xxx_device_info *di =
@@ -747,6 +791,7 @@ static void bq27xxx_battery_poll(struct work_struct *work)
 				     work.work);
 
 	bq27xxx_battery_update(di);
+	//generic_protect(di->bat);
 
 	if (poll_interval > 0)
 		schedule_delayed_work(&di->work, poll_interval * HZ);

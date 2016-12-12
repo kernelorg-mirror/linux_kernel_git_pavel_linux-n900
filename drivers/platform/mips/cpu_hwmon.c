@@ -144,6 +144,7 @@ static void do_thermal_timer(struct work_struct *work)
 	if (value <= CPU_THERMAL_THRESHOLD)
 		schedule_delayed_work(&thermal_work, msecs_to_jiffies(5000));
 	else
+		/* FIXME: printk message about what is going on */
 		orderly_poweroff(true);
 }
 
