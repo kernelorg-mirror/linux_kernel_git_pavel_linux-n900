@@ -546,6 +546,8 @@ static int et8ek8_reglist_import(struct i2c_client *client,
 	return 0;
 }
 
+#define COMPATIBLE
+#ifdef COMPATIBLE
 typedef unsigned int fixpoint8; /* .8 fixed point format. */
 
 /*
@@ -604,6 +606,7 @@ static int et8ek8_exposure_rows_to_us(struct et8ek8_sensor *sensor, int rows)
 {
 	return (et8ek8_get_row_time(sensor) * rows + (1 << 7)) >> 8;
 }
+#endif
 
 /* Called to change the V4L2 gain control value. This function
  * rounds and clamps the given value and updates the V4L2 control value.
@@ -1506,18 +1509,22 @@ static int et8ek8_probe(struct i2c_client *client,
 	ret = media_entity_pads_init(&sensor->subdev.entity, 1, &sensor->pad);
 	if (ret < 0) {
 		dev_err(&client->dev, "media entity init failed!\n");
-		return ret;
+		goto err_mutex;
 	}
 
 	ret = v4l2_async_register_subdev(&sensor->subdev);
-	if (ret < 0) {
-		media_entity_cleanup(&sensor->subdev.entity);
-		return ret;
-	}
+	if (ret < 0)
+		goto err_entity;
 
 	dev_dbg(dev, "initialized!\n");
 
 	return 0;
+
+err_entity:
+	media_entity_cleanup(&sensor->subdev.entity);
+err_mutex:
+	mutex_destroy(&sensor->power_lock);
+	return ret;
 }
 
 static int __exit et8ek8_remove(struct i2c_client *client)
@@ -1526,8 +1533,8 @@ static int __exit et8ek8_remove(struct i2c_client *client)
 	struct et8ek8_sensor *sensor = to_et8ek8_sensor(subdev);
 
 	if (sensor->power_count) {
-		gpiod_set_value(sensor->reset, 0);
-		clk_disable_unprepare(sensor->ext_clk);
+		WARN_ON(1);
+		et8ek8_power_off(sensor);
 		sensor->power_count = 0;
 	}
 
@@ -1536,6 +1543,7 @@ static int __exit et8ek8_remove(struct i2c_client *client)
 	v4l2_ctrl_handler_free(&sensor->ctrl_handler);
 	v4l2_async_unregister_subdev(&sensor->subdev);
 	media_entity_cleanup(&sensor->subdev.entity);
+	mutex_destroy(&sensor->power_lock);
 
 	return 0;
 }

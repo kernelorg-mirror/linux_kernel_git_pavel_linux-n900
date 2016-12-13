@@ -1,5 +1,5 @@
 /*
- * et8ek8.h
+ * et8ek8_reg.h
  *
  * Copyright (C) 2008 Nokia Corporation
  *
