@@ -45,6 +45,9 @@
 #define ET8EK8_PRIV_MEM_SIZE	128
 #define ET8EK8_MAX_MSG		48
 
+//#define V4L2_CID_ROW_RATE 0x009f1234
+#define V4L2_CID_ROW_RATE V4L2_CID_AUDIO_VOLUME
+
 struct et8ek8_sensor {
 	struct v4l2_subdev subdev;
 	struct media_pad pad;
@@ -59,6 +62,7 @@ struct et8ek8_sensor {
 	struct v4l2_ctrl_handler ctrl_handler;
 	struct v4l2_ctrl *exposure;
 	struct v4l2_ctrl *pixel_rate;
+	struct v4l2_ctrl *row_rate;
 	struct et8ek8_reglist *current_reglist;
 
 	u8 priv_mem[ET8EK8_PRIV_MEM_SIZE];
@@ -546,7 +550,7 @@ static int et8ek8_reglist_import(struct i2c_client *client,
 	return 0;
 }
 
-#undef COMPATIBLE
+#define COMPATIBLE
 #ifdef COMPATIBLE
 typedef unsigned int fixpoint8; /* .8 fixed point format. */
 
@@ -720,8 +724,15 @@ static int et8ek8_set_ctrl(struct v4l2_ctrl *ctrl)
 		return et8ek8_set_test_pattern(sensor, ctrl->val);
 
 	case V4L2_CID_PIXEL_RATE:
-		/* For v4l2_ctrl_s_ctrl_int64() used internally. */
 		return 0;
+
+	case V4L2_CID_ROW_RATE:
+	{
+		struct i2c_client *client = v4l2_get_subdevdata(&sensor->subdev);
+		printk("Setting pixel rate to %d\n", (int) ctrl->val);
+		return et8ek8_i2c_write_reg(client, ET8EK8_REG_16BIT, 0x1243,
+					    swab16(ctrl->val));
+	}
 
 	default:
 		return -EINVAL;
@@ -746,6 +757,8 @@ static const char * const et8ek8_test_pattern_menu[] = {
 
 static int et8ek8_init_controls(struct et8ek8_sensor *sensor)
 {
+	s32 max_rows;
+
 	v4l2_ctrl_handler_init(&sensor->ctrl_handler, 4);
 
 	/* V4L2_CID_GAIN */
@@ -753,15 +766,15 @@ static int et8ek8_init_controls(struct et8ek8_sensor *sensor)
 			  V4L2_CID_GAIN, 0, ARRAY_SIZE(et8ek8_gain_table) - 1,
 			  1, 0);
 
+	max_rows = sensor->current_reglist->mode.max_exp;
+	printk("init controls: max rows %d\n", max_rows);
 #ifdef COMPATIBLE
 	{
 		u32 min, max;
 
-	
 		/* V4L2_CID_EXPOSURE */
 		min = et8ek8_exposure_rows_to_us(sensor, 1);
-		max = et8ek8_exposure_rows_to_us(sensor,
-						 sensor->current_reglist->mode.max_exp);
+		max = et8ek8_exposure_rows_to_us(sensor, max_rows);
 		sensor->exposure =
 			v4l2_ctrl_new_std(&sensor->ctrl_handler, &et8ek8_ctrl_ops,
 					  V4L2_CID_EXPOSURE, min, max, min, max);
@@ -773,6 +786,11 @@ static int et8ek8_init_controls(struct et8ek8_sensor *sensor)
 		v4l2_ctrl_new_std(&sensor->ctrl_handler, &et8ek8_ctrl_ops,
 		V4L2_CID_PIXEL_RATE, 1, INT_MAX, 1, 1);
 
+	/* V4L2_CID_ROW_RATE */
+	sensor->row_rate =
+		v4l2_ctrl_new_std(&sensor->ctrl_handler, &et8ek8_ctrl_ops,
+		V4L2_CID_ROW_RATE, 1, max_rows, 1, max_rows);
+	
 	/* V4L2_CID_TEST_PATTERN */
 	v4l2_ctrl_new_std_menu_items(&sensor->ctrl_handler,
 				     &et8ek8_ctrl_ops, V4L2_CID_TEST_PATTERN,
@@ -789,11 +807,14 @@ static int et8ek8_init_controls(struct et8ek8_sensor *sensor)
 
 static void et8ek8_update_controls(struct et8ek8_sensor *sensor)
 {
-#ifdef COMPATIBLE
-	struct v4l2_ctrl *ctrl = sensor->exposure;
+	struct v4l2_ctrl *ctrl;
 	struct et8ek8_mode *mode = &sensor->current_reglist->mode;
+	
+#ifdef COMPATIBLE
 	u32 min, max, pixel_rate;
 	static const int S = 8;
+
+	ctrl = sensor->exposure;
 
 	min = et8ek8_exposure_rows_to_us(sensor, 1);
 	max = et8ek8_exposure_rows_to_us(sensor, mode->max_exp);
@@ -816,6 +837,10 @@ static void et8ek8_update_controls(struct et8ek8_sensor *sensor)
 	__v4l2_ctrl_s_ctrl_int64(sensor->pixel_rate, pixel_rate << S);
 	v4l2_ctrl_unlock(ctrl);
 #endif
+
+	printk("Update controls: max %d\n", mode->max_exp);
+	ctrl = sensor->row_rate;
+	__v4l2_ctrl_modify_range(ctrl, 1, mode->max_exp, 1, mode->max_exp);
 }
 
 static int et8ek8_configure(struct et8ek8_sensor *sensor)
