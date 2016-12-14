@@ -550,7 +550,7 @@ static int et8ek8_reglist_import(struct i2c_client *client,
 	return 0;
 }
 
-#define COMPATIBLE
+#undef COMPATIBLE
 #ifdef COMPATIBLE
 typedef unsigned int fixpoint8; /* .8 fixed point format. */
 
@@ -709,16 +709,19 @@ static int et8ek8_set_ctrl(struct v4l2_ctrl *ctrl)
 	case V4L2_CID_GAIN:
 		return et8ek8_set_gain(sensor, ctrl->val);
 
-#ifdef COMPATIBLE
 	case V4L2_CID_EXPOSURE:
 	{
 		int rows;
 		struct i2c_client *client = v4l2_get_subdevdata(&sensor->subdev);
-		rows = et8ek8_exposure_us_to_rows(sensor, (u32 *)&ctrl->val);
+#ifdef COMPATIBLE
+		u32 us = ctrl->val;
+		rows = et8ek8_exposure_us_to_rows(sensor, &us);
+#else
+		rows = ctrl->val;
+#endif
 		return et8ek8_i2c_write_reg(client, ET8EK8_REG_16BIT, 0x1243,
 					    swab16(rows));
 	}
-#endif
 
 	case V4L2_CID_TEST_PATTERN:
 		return et8ek8_set_test_pattern(sensor, ctrl->val);
@@ -768,18 +771,18 @@ static int et8ek8_init_controls(struct et8ek8_sensor *sensor)
 
 	max_rows = sensor->current_reglist->mode.max_exp;
 	printk("init controls: max rows %d\n", max_rows);
-#ifdef COMPATIBLE
 	{
-		u32 min, max;
+		u32 min = 1, max = max_rows;
 
+#ifdef COMPATIBLE
 		/* V4L2_CID_EXPOSURE */
 		min = et8ek8_exposure_rows_to_us(sensor, 1);
 		max = et8ek8_exposure_rows_to_us(sensor, max_rows);
+#endif
 		sensor->exposure =
 			v4l2_ctrl_new_std(&sensor->ctrl_handler, &et8ek8_ctrl_ops,
 					  V4L2_CID_EXPOSURE, min, max, min, max);
 	}
-#endif
 
 	/* V4L2_CID_PIXEL_RATE */
 	sensor->pixel_rate =
@@ -810,14 +813,18 @@ static void et8ek8_update_controls(struct et8ek8_sensor *sensor)
 	struct v4l2_ctrl *ctrl;
 	struct et8ek8_mode *mode = &sensor->current_reglist->mode;
 	
-#ifdef COMPATIBLE
 	u32 min, max, pixel_rate;
 	static const int S = 8;
 
 	ctrl = sensor->exposure;
 
+#ifdef COMPATIBLE
 	min = et8ek8_exposure_rows_to_us(sensor, 1);
 	max = et8ek8_exposure_rows_to_us(sensor, mode->max_exp);
+#else
+	min = 1;
+	max = mode->max_exp;
+#endif
 
 	/*
 	 * Calculate average pixel clock per line. Assume buffers can spread
@@ -827,16 +834,8 @@ static void et8ek8_update_controls(struct et8ek8_sensor *sensor)
 	pixel_rate = ((mode->pixel_clock + (1 << S) - 1) >> S) + mode->width;
 	pixel_rate = mode->window_width * (pixel_rate - 1) / mode->width;
 
-	v4l2_ctrl_lock(ctrl);
-	ctrl->minimum = min;
-	ctrl->maximum = max;
-	ctrl->step = min;
-	ctrl->default_value = max;
-	ctrl->val = max;
-	ctrl->cur.val = max;
+	__v4l2_ctrl_modify_range(ctrl, min, max, min, max);
 	__v4l2_ctrl_s_ctrl_int64(sensor->pixel_rate, pixel_rate << S);
-	v4l2_ctrl_unlock(ctrl);
-#endif
 
 	printk("Update controls: max %d\n", mode->max_exp);
 	ctrl = sensor->row_rate;
