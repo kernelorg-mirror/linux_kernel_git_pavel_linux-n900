@@ -703,8 +703,8 @@ static int isp_pipeline_enable(struct isp_pipeline *pipe,
 	pipe->do_propagation = false;
 
 	entity = &pipe->output->video.entity;
-
 	while (1) {
+		struct v4l2_of_endpoint vep;
 		pad = &entity->pads[0];
 		if (!(pad->flags & MEDIA_PAD_FL_SINK))
 			break;
@@ -717,8 +717,31 @@ static int isp_pipeline_enable(struct isp_pipeline *pipe,
 		subdev = media_entity_to_v4l2_subdev(entity);
 
 	       	printk("Entity = %p\n", entity);
-		ret = v4l2_subdev_call(subdev, video, g_isp_config, NULL);
-		
+		ret = v4l2_subdev_call(subdev, video, g_endpoint_config, &vep);
+		/* Is there better method than walking a list?
+		   Can I easily get dev and isd pointers here? */
+#if 0
+		if (ret == 0) {
+			printk("success\n");
+			/* notifier->subdevs[notifier->num_subdevs] ... contains isd */
+			isp_endpoint_to_buscfg(dev, vep, isd->bus);
+		}
+#endif
+	}
+
+	entity = &pipe->output->video.entity;
+	while (1) {
+		pad = &entity->pads[0];
+		if (!(pad->flags & MEDIA_PAD_FL_SINK))
+			break;
+
+		pad = media_entity_remote_pad(pad);
+		if (!pad || !is_media_entity_v4l2_subdev(pad->entity))
+			break;
+
+		entity = pad->entity;
+		subdev = media_entity_to_v4l2_subdev(entity);
+
 		ret = v4l2_subdev_call(subdev, video, s_stream, mode);
 		if (ret < 0 && ret != -ENOIOCTLCMD)
 			return ret;
@@ -2105,27 +2128,8 @@ static void isp_of_parse_node_csi2(struct device *dev,
 	buscfg->bus.csi2.crc = 1;
 }
 
-static int isp_of_parse_node_endpoint(struct device *dev,
-				      struct device_node *node,
-				      struct isp_async_subdev *isd)
+static int isp_endpoint_to_buscfg(struct device *dev, struct v4l2_of_endpoint vep, struct isp_bus_cfg *buscfg)
 {
-	struct isp_bus_cfg *buscfg;
-	struct v4l2_of_endpoint vep;
-	int ret;
-
-	isd->bus = devm_kzalloc(dev, sizeof(*isd->bus), GFP_KERNEL);
-	if (!isd->bus)
-		return -ENOMEM;
-
-	buscfg = isd->bus;
-
-	ret = v4l2_of_parse_endpoint(node, &vep);
-	if (ret)
-		return ret;
-
-	dev_dbg(dev, "parsing endpoint %s, interface %u\n", node->full_name,
-		vep.base.port);
-
 	switch (vep.base.port) {
 	case ISP_OF_PHY_PARALLEL:
 		buscfg->interface = ISP_INTERFACE_PARALLEL;
@@ -2153,10 +2157,35 @@ static int isp_of_parse_node_endpoint(struct device *dev,
 		break;
 
 	default:
+		return -1;
+	}
+	return 0;
+}
+
+static int isp_of_parse_node_endpoint(struct device *dev,
+				      struct device_node *node,
+				      struct isp_async_subdev *isd)
+{
+	struct isp_bus_cfg *buscfg;
+	struct v4l2_of_endpoint vep;
+	int ret;
+
+	isd->bus = devm_kzalloc(dev, sizeof(*isd->bus), GFP_KERNEL);
+	if (!isd->bus)
+		return -ENOMEM;
+
+	buscfg = isd->bus;
+
+	ret = v4l2_of_parse_endpoint(node, &vep);
+	if (ret)
+		return ret;
+
+	dev_dbg(dev, "parsing endpoint %s, interface %u\n", node->full_name,
+		vep.base.port);
+
+	if (isp_endpoint_to_buscfg(dev, vep, buscfg))
 		dev_warn(dev, "%s: invalid interface %u\n", node->full_name,
 			 vep.base.port);
-		break;
-	}
 
 	return 0;
 }

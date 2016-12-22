@@ -255,9 +255,9 @@ static int vbs_s_stream(struct v4l2_subdev *sd, int enable)
 	return v4l2_subdev_call(subdev, video, s_stream, enable);
 }
 
-static int vbs_g_isp_config(struct v4l2_subdev *sd, struct isp_bus_cfg *cfg)
+static int vbs_g_endpoint_config(struct v4l2_subdev *sd, struct isp_bus_cfg *cfg)
 {
-	printk("vbs_g_isp_config...\n");
+	printk("vbs_g_endpoint_config...\n");
 	return 0;
 }
 
@@ -274,7 +274,7 @@ static const struct media_entity_operations vbs_media_ops = {
 /* subdev video operations */
 static const struct v4l2_subdev_video_ops vbs_video_ops = {
 	.s_stream = vbs_s_stream,
-	.g_isp_config = vbs_g_isp_config,
+	.g_endpoint_config = vbs_g_endpoint_config,
 };
 
 static const struct v4l2_subdev_ops vbs_ops = {
