@@ -480,8 +480,8 @@ void omap3isp_hist_dma_done(struct isp_device *isp)
 	    omap3isp_stat_pcr_busy(&isp->isp_hist)) {
 		/* Histogram cannot be enabled in this frame anymore */
 		atomic_set(&isp->isp_hist.buf_err, 1);
-		dev_dbg(isp->dev, "hist: Out of synchronization with "
-				  "CCDC. Ignoring next buffer.\n");
+		dev_dbg(isp->dev,
+			"hist: Out of synchronization with CCDC. Ignoring next buffer.\n");
 	}
 }
 
@@ -686,6 +686,8 @@ static int isp_pipeline_enable(struct isp_pipeline *pipe,
 	unsigned long flags;
 	int ret;
 
+	printk("Pipeline enable..\n");
+
 	/* Refuse to start streaming if an entity included in the pipeline has
 	 * crashed. This check must be performed before the loop below to avoid
 	 * starting entities if the pipeline won't start anyway (those entities
@@ -701,6 +703,7 @@ static int isp_pipeline_enable(struct isp_pipeline *pipe,
 	pipe->do_propagation = false;
 
 	entity = &pipe->output->video.entity;
+
 	while (1) {
 		pad = &entity->pads[0];
 		if (!(pad->flags & MEDIA_PAD_FL_SINK))
@@ -713,6 +716,9 @@ static int isp_pipeline_enable(struct isp_pipeline *pipe,
 		entity = pad->entity;
 		subdev = media_entity_to_v4l2_subdev(entity);
 
+	       	printk("Entity = %p\n", entity);
+		ret = v4l2_subdev_call(subdev, video, g_isp_config, NULL);
+		
 		ret = v4l2_subdev_call(subdev, video, s_stream, mode);
 		if (ret < 0 && ret != -ENOIOCTLCMD)
 			return ret;
@@ -2262,6 +2268,10 @@ static int isp_of_parse_nodes(struct device *dev,
 	}
 
 	return notifier->num_subdevs;
+
+error:
+	of_node_put(node);
+	return -EINVAL;
 }
 
 static int isp_subdev_notifier_bound(struct v4l2_async_notifier *async,

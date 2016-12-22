@@ -247,11 +247,20 @@ static int vbs_s_stream(struct v4l2_subdev *sd, int enable)
 {
 	struct v4l2_subdev *subdev = vbs_get_remote_subdev(sd);
 
+	/* FIXME: we need to set the GPIO here */
+
 	if (IS_ERR(subdev))
 		return PTR_ERR(subdev);
 
 	return v4l2_subdev_call(subdev, video, s_stream, enable);
 }
+
+static int vbs_g_isp_config(struct v4l2_subdev *sd, struct isp_bus_cfg *cfg)
+{
+	printk("vbs_g_isp_config...\n");
+	return 0;
+}
+
 
 static const struct v4l2_subdev_internal_ops vbs_internal_ops = {
 	.registered = &vbs_registered,
@@ -265,6 +274,7 @@ static const struct media_entity_operations vbs_media_ops = {
 /* subdev video operations */
 static const struct v4l2_subdev_video_ops vbs_video_ops = {
 	.s_stream = vbs_s_stream,
+	.g_isp_config = vbs_g_isp_config,
 };
 
 static const struct v4l2_subdev_ops vbs_ops = {
