@@ -181,7 +181,7 @@ static int et8ek8_i2c_read_reg(struct i2c_client *client, u16 data_length,
 	if (data_length == ET8EK8_REG_8BIT)
 		*val = data[0];
 	else
-		*val = (data[0] << 8) + data[1];
+		*val = (data[1] << 8) + data[0];
 
 	return 0;
 
@@ -209,8 +209,8 @@ static void et8ek8_i2c_create_msg(struct i2c_client *client, u16 len, u16 reg,
 		buf[2] = (u8) (val) & 0xff;
 		break;
 	case ET8EK8_REG_16BIT:
-		buf[2] = (u8) (val >> 8) & 0xff;
-		buf[3] = (u8) (val & 0xff);
+		buf[2] = (u8) (val) & 0xff;
+		buf[3] = (u8) (val >> 8) & 0xff;
 		break;
 	default:
 		WARN_ONCE(1, ET8EK8_NAME ": %s: invalid message length.\n",
@@ -649,7 +649,7 @@ static int et8ek8_set_ctrl(struct v4l2_ctrl *ctrl)
 		struct i2c_client *client = v4l2_get_subdevdata(&sensor->subdev);
 		rows = ctrl->val;
 		return et8ek8_i2c_write_reg(client, ET8EK8_REG_16BIT, 0x1243,
-					    swab16(rows));
+					    rows);
 	}
 
 	case V4L2_CID_TEST_PATTERN:
