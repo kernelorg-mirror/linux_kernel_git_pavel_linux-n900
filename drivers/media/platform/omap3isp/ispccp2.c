@@ -23,6 +23,8 @@
 #include <linux/regulator/consumer.h>
 #include <linux/regmap.h>
 
+#include <media/v4l2-of.h>
+
 #include "isp.h"
 #include "ispreg.h"
 #include "ispccp2.h"
@@ -169,6 +171,7 @@ static int ccp2_if_enable(struct isp_ccp2_device *ccp2, u8 enable)
 
 		pad = media_entity_remote_pad(&ccp2->pads[CCP2_PAD_SINK]);
 		sensor = media_entity_to_v4l2_subdev(pad->entity);
+		/* Struct isp_bus_cfg has union inside */ 
 		buscfg = &((struct isp_bus_cfg *)sensor->host_priv)->bus.ccp2;
 
 
@@ -369,6 +372,9 @@ static void ccp2_lcx_config(struct isp_ccp2_device *ccp2,
 	isp_reg_set(isp, OMAP3_ISP_IOMEM_CCP2, ISPCCP2_LC01_IRQENABLE, val);
 }
 
+void __isp_of_parse_node_csi1(struct device *dev,
+			      struct isp_ccp2_cfg *buscfg,
+			      struct v4l2_of_endpoint *vep);
 /*
  * ccp2_if_configure - Configure ccp2 with data from sensor
  * @ccp2: Pointer to ISP CCP2 device
@@ -389,6 +395,21 @@ static int ccp2_if_configure(struct isp_ccp2_device *ccp2)
 	pad = media_entity_remote_pad(&ccp2->pads[CCP2_PAD_SINK]);
 	sensor = media_entity_to_v4l2_subdev(pad->entity);
 	buscfg = sensor->host_priv;
+
+	{
+		struct v4l2_subdev *subdev2;
+		subdev2 = media_entity_to_v4l2_subdev(pad->entity);
+		struct v4l2_of_endpoint vep;
+
+		printk("if_configure...\n");
+		printk("2: %p\n", subdev2);
+		ret = v4l2_subdev_call(subdev2, video, g_endpoint_config, &vep);
+		if (ret == 0) {
+			printk("Success: have configuration\n");
+			__isp_of_parse_node_csi1(NULL, &buscfg->bus.ccp2, &vep);
+			printk("Configured ok?\n");
+		}
+	}
 
 	ret = ccp2_phyif_config(ccp2, &buscfg->bus.ccp2);
 	if (ret < 0)
@@ -865,6 +886,31 @@ static int ccp2_s_stream(struct v4l2_subdev *sd, int enable)
 		atomic_set(&ccp2->stopping, 0);
 	}
 
+#if 0
+	printk("ccp2_s_stream\n");
+	printk("1: %p\n", sd);
+	ret = v4l2_subdev_call(sd, video, g_endpoint_config, NULL);
+	{
+		struct v4l2_of_endpoint vep;
+		
+		struct media_entity *entity = &sd->entity;
+		struct media_pad *pad = &entity->pads[0];
+		struct v4l2_subdev *subdev2;
+		pad = media_entity_remote_pad(pad);
+		entity = pad->entity;
+		subdev2 = media_entity_to_v4l2_subdev(entity);
+			
+		printk("2: %p\n", subdev2);
+		ret = v4l2_subdev_call(subdev2, video, g_endpoint_config, NULL);
+		if (ret == 0) {
+			printk("Success: have configuration\n");
+		}
+#if 0
+		__ispof_parse_node_csi1(dev, , vep);
+#endif
+	}
+	printk("3\n");
+#endif
 	switch (enable) {
 	case ISP_PIPELINE_STREAM_CONTINUOUS:
 		if (ccp2->phy) {

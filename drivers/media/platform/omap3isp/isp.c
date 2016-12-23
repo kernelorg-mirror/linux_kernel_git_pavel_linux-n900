@@ -701,7 +701,7 @@ static int isp_pipeline_enable(struct isp_pipeline *pipe,
 	spin_unlock_irqrestore(&pipe->lock, flags);
 
 	pipe->do_propagation = false;
-
+#if 0
 	entity = &pipe->output->video.entity;
 	while (1) {
 		struct v4l2_of_endpoint vep;
@@ -728,7 +728,8 @@ static int isp_pipeline_enable(struct isp_pipeline *pipe,
 		}
 #endif
 	}
-
+#endif
+	
 	entity = &pipe->output->video.entity;
 	while (1) {
 		pad = &entity->pads[0];
@@ -2053,6 +2054,42 @@ enum isp_of_phy {
 	ISP_OF_PHY_CSIPHY2,
 };
 
+void __isp_of_parse_node_csi1(struct device *dev,
+				   struct isp_ccp2_cfg *buscfg,
+				   struct v4l2_of_endpoint *vep)
+{
+	buscfg->lanecfg.clk.pos = vep->bus.mipi_csi1.clock_lane;
+	buscfg->lanecfg.clk.pol =
+		vep->bus.mipi_csi1.lane_polarity[0];
+	dev_dbg(dev, "clock lane polarity %u, pos %u\n",
+		buscfg->lanecfg.clk.pol,
+		buscfg->lanecfg.clk.pos);
+
+	buscfg->lanecfg.data[0].pos = vep->bus.mipi_csi2.data_lanes[0];
+	buscfg->lanecfg.data[0].pol =
+		vep->bus.mipi_csi2.lane_polarities[1];
+	dev_dbg(dev, "data lane polarity %u, pos %u\n",
+		buscfg->lanecfg.data[0].pol,
+		buscfg->lanecfg.data[0].pos);
+
+	buscfg->strobe_clk_pol = vep->bus.mipi_csi1.clock_inv;
+	buscfg->phy_layer = vep->bus.mipi_csi1.strobe;
+	buscfg->ccp2_mode = vep->bus_type == V4L2_MBUS_CCP2;
+
+	dev_dbg(dev, "clock_inv %u strobe %u ccp2 %u\n",
+		buscfg->strobe_clk_pol,
+		buscfg->phy_layer,
+		buscfg->ccp2_mode);
+	/*
+	 * FIXME: now we assume the CRC is always there.
+	 * Implement a way to obtain this information from the
+	 * sensor. Frame descriptors, perhaps?
+	 */
+	buscfg->crc = 1;
+
+	buscfg->vp_clk_pol = 1;
+}
+	
 static void isp_of_parse_node_csi1(struct device *dev,
 				   struct isp_bus_cfg *buscfg,
 				   struct v4l2_of_endpoint *vep)
@@ -2061,36 +2098,7 @@ static void isp_of_parse_node_csi1(struct device *dev,
 		buscfg->interface = ISP_INTERFACE_CCP2B_PHY1;
 	else
 		buscfg->interface = ISP_INTERFACE_CCP2B_PHY2;
-	buscfg->bus.ccp2.lanecfg.clk.pos = vep->bus.mipi_csi1.clock_lane;
-	buscfg->bus.ccp2.lanecfg.clk.pol =
-		vep->bus.mipi_csi1.lane_polarity[0];
-	dev_dbg(dev, "clock lane polarity %u, pos %u\n",
-		buscfg->bus.ccp2.lanecfg.clk.pol,
-		buscfg->bus.ccp2.lanecfg.clk.pos);
-
-	buscfg->bus.ccp2.lanecfg.data[0].pos = vep->bus.mipi_csi2.data_lanes[0];
-	buscfg->bus.ccp2.lanecfg.data[0].pol =
-		vep->bus.mipi_csi2.lane_polarities[1];
-	dev_dbg(dev, "data lane polarity %u, pos %u\n",
-		buscfg->bus.ccp2.lanecfg.data[0].pol,
-		buscfg->bus.ccp2.lanecfg.data[0].pos);
-
-	buscfg->bus.ccp2.strobe_clk_pol = vep->bus.mipi_csi1.clock_inv;
-	buscfg->bus.ccp2.phy_layer = vep->bus.mipi_csi1.strobe;
-	buscfg->bus.ccp2.ccp2_mode = vep->bus_type == V4L2_MBUS_CCP2;
-
-	dev_dbg(dev, "clock_inv %u strobe %u ccp2 %u\n",
-		buscfg->bus.ccp2.strobe_clk_pol,
-		buscfg->bus.ccp2.phy_layer,
-		buscfg->bus.ccp2.ccp2_mode);
-	/*
-	 * FIXME: now we assume the CRC is always there.
-	 * Implement a way to obtain this information from the
-	 * sensor. Frame descriptors, perhaps?
-	 */
-	buscfg->bus.ccp2.crc = 1;
-
-	buscfg->bus.ccp2.vp_clk_pol = 1;
+	__isp_of_parse_node_csi1(dev, &buscfg->bus.ccp2, vep);
 }
 
 static void isp_of_parse_node_csi2(struct device *dev,
