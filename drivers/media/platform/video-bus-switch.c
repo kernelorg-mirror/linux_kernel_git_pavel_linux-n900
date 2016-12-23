@@ -2,6 +2,7 @@
  * Generic driver for video bus switches
  *
  * Copyright (C) 2015 Sebastian Reichel <sre@kernel.org>
+ * Copyright (C) 2016 Pavel Machek <pavel@ucw.cz>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -33,9 +34,9 @@
 #define CSI_SWITCH_PORTS 3
 
 enum vbs_state {
-	CSI_SWITCH_DISABLED,
-	CSI_SWITCH_PORT_1,
-	CSI_SWITCH_PORT_2,
+	CSI_SWITCH_DISABLED = 0,
+	CSI_SWITCH_PORT_1 = 1,
+	CSI_SWITCH_PORT_2 = 2,
 };
 
 struct vbs_src_pads {
@@ -49,6 +50,7 @@ struct vbs_data {
 	struct v4l2_async_notifier notifier;
 	struct media_pad pads[CSI_SWITCH_PORTS];
 	struct vbs_src_pads src_pads[CSI_SWITCH_PORTS];
+	struct v4l2_of_endpoint vep[CSI_SWITCH_PORTS];
 	enum vbs_state state;
 };
 
@@ -107,6 +109,7 @@ static int vbs_of_parse_nodes(struct device *dev, struct vbs_data *pdata)
 		}
 
 		ssd->asd.match_type = V4L2_ASYNC_MATCH_OF;
+		pdata->vep[notifier->num_subdevs] = vep;
 		notifier->num_subdevs++;
 	}
 
@@ -247,17 +250,18 @@ static int vbs_s_stream(struct v4l2_subdev *sd, int enable)
 {
 	struct v4l2_subdev *subdev = vbs_get_remote_subdev(sd);
 
-	/* FIXME: we need to set the GPIO here */
-
 	if (IS_ERR(subdev))
 		return PTR_ERR(subdev);
 
 	return v4l2_subdev_call(subdev, video, s_stream, enable);
 }
 
-static int vbs_g_endpoint_config(struct v4l2_subdev *sd, struct isp_bus_cfg *cfg)
+static int vbs_g_endpoint_config(struct v4l2_subdev *sd, struct v4l2_of_endpoint *cfg)
 {
+	struct vbs_data *pdata = v4l2_get_subdevdata(sd);
 	printk("vbs_g_endpoint_config...\n");
+	printk("active port is %d\n", pdata->state);
+	*cfg = pdata->vep[pdata->state];
 	return 0;
 }
 
