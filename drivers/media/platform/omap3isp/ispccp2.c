@@ -383,7 +383,7 @@ void __isp_of_parse_node_csi1(struct device *dev,
  */
 static int ccp2_if_configure(struct isp_ccp2_device *ccp2)
 {
-	const struct isp_bus_cfg *buscfg;
+	struct isp_bus_cfg *buscfg;
 	struct v4l2_mbus_framefmt *format;
 	struct media_pad *pad;
 	struct v4l2_subdev *sensor;
@@ -398,13 +398,14 @@ static int ccp2_if_configure(struct isp_ccp2_device *ccp2)
 
 	{
 		struct v4l2_subdev *subdev2;
-		subdev2 = media_entity_to_v4l2_subdev(pad->entity);
 		struct v4l2_of_endpoint vep;
+		
+		subdev2 = media_entity_to_v4l2_subdev(pad->entity);
 
-		printk("if_configure...\n");
-		printk("2: %p\n", subdev2);
+		printk("if_configure... subdev %p\n", subdev2);
 		ret = v4l2_subdev_call(subdev2, video, g_endpoint_config, &vep);
-		if (ret == 0) {
+		printk("if_configure ret %d\n", ret);
+		if (ret == 1234) {
 			printk("Success: have configuration\n");
 			__isp_of_parse_node_csi1(NULL, &buscfg->bus.ccp2, &vep);
 			printk("Configured ok?\n");
