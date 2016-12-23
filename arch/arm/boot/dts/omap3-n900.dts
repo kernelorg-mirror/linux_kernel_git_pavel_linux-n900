@@ -230,6 +230,15 @@
 
 				csi_switch_out1: endpoint {
 					remote-endpoint = <&csi_cam1>;
+				bus-type = <3>; /* CCP2 */
+				clock-lanes = <0>;
+				data-lanes = <1>;
+				lane-polarity = <0 0>;
+				clock-inv = <0>;
+				/* Select strobe = <1> for back camera, <0> for front camera */
+				strobe = <1>;
+				crc = <0>;
+					
 				};
 			};
 
@@ -238,6 +247,15 @@
 
 				csi_switch_out2: endpoint {
 					remote-endpoint = <&csi_cam2>;
+				bus-type = <3>; /* CCP2 */
+				clock-lanes = <0>;
+				data-lanes = <1>;
+				lane-polarity = <0 0>;
+				clock-inv = <0>;
+				/* Select strobe = <1> for back camera, <0> for front camera */
+				strobe = <0>;
+				crc = <0>;
+					
 				};
 			};
 		};

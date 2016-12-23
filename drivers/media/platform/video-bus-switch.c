@@ -262,6 +262,9 @@ static int vbs_g_endpoint_config(struct v4l2_subdev *sd, struct v4l2_of_endpoint
 	printk("vbs_g_endpoint_config...\n");
 	printk("active port is %d\n", pdata->state);
 	*cfg = pdata->vep[pdata->state];
+
+	return -EINVAL;
+
 	return 0;
 }
 
@@ -359,7 +362,6 @@ static int video_bus_switch_remove(struct platform_device *pdev)
 	v4l2_async_unregister_subdev(&pdata->subdev);
 	media_entity_cleanup(&pdata->subdev.entity);
 
-	return -EINVAL;
 	return 0;
 }
 

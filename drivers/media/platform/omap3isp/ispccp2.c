@@ -405,7 +405,7 @@ static int ccp2_if_configure(struct isp_ccp2_device *ccp2)
 		printk("if_configure... subdev %p\n", subdev2);
 		ret = v4l2_subdev_call(subdev2, video, g_endpoint_config, &vep);
 		printk("if_configure ret %d\n", ret);
-		if (ret == 1234) {
+		if (ret == 0) {
 			printk("Success: have configuration\n");
 			__isp_of_parse_node_csi1(NULL, &buscfg->bus.ccp2, &vep);
 			printk("Configured ok?\n");
