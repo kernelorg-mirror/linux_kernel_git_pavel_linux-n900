@@ -177,7 +177,7 @@ static int vbs_link_setup(struct media_entity *entity,
 	if (pdata->state != CSI_SWITCH_DISABLED)
 		return -EBUSY;
 
-	printk("Link setup: going to config %d\n", local->index);
+	dev_dbg(sd->dev, "Link setup: going to config %d\n", local->index);
 
 	gpiod_set_value(pdata->swgpio, local->index == CSI_SWITCH_PORT_2);
 	pdata->state = local->index;
@@ -261,8 +261,7 @@ static int vbs_s_stream(struct v4l2_subdev *sd, int enable)
 static int vbs_g_endpoint_config(struct v4l2_subdev *sd, struct v4l2_of_endpoint *cfg)
 {
 	struct vbs_data *pdata = v4l2_get_subdevdata(sd);
-	printk("vbs_g_endpoint_config...\n");
-	printk("active port is %d\n", pdata->state);
+	dev_dbg(sd->dev, "vbs_g_endpoint_config... active port is %d\n", pdata->state);
 	*cfg = pdata->vep[pdata->state - 1];
 
 	return 0;
@@ -296,7 +295,7 @@ static int video_bus_switch_probe(struct platform_device *pdev)
 	/* platform data */
 	pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
 	if (!pdata) {
-		printk("video-bus-switch: not enough memory\n");
+		dev_dbg(&pdev->dev, "video-bus-switch: not enough memory\n");
 		return -ENOMEM;
 	}
 	platform_set_drvdata(pdev, pdata);
