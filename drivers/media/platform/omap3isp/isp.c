@@ -688,8 +688,6 @@ static int isp_pipeline_enable(struct isp_pipeline *pipe,
 	unsigned long flags;
 	int ret;
 
-	printk("Pipeline enable..\n");
-
 	/* Refuse to start streaming if an entity included in the pipeline has
 	 * crashed. This check must be performed before the loop below to avoid
 	 * starting entities if the pipeline won't start anyway (those entities
@@ -703,34 +701,6 @@ static int isp_pipeline_enable(struct isp_pipeline *pipe,
 	spin_unlock_irqrestore(&pipe->lock, flags);
 
 	pipe->do_propagation = false;
-#if 0
-	entity = &pipe->output->video.entity;
-	while (1) {
-		struct v4l2_of_endpoint vep;
-		pad = &entity->pads[0];
-		if (!(pad->flags & MEDIA_PAD_FL_SINK))
-			break;
-
-		pad = media_entity_remote_pad(pad);
-		if (!pad || !is_media_entity_v4l2_subdev(pad->entity))
-			break;
-
-		entity = pad->entity;
-		subdev = media_entity_to_v4l2_subdev(entity);
-
-	       	printk("Entity = %p\n", entity);
-		ret = v4l2_subdev_call(subdev, video, g_endpoint_config, &vep);
-		/* Is there better method than walking a list?
-		   Can I easily get dev and isd pointers here? */
-#if 0
-		if (ret == 0) {
-			printk("success\n");
-			/* notifier->subdevs[notifier->num_subdevs] ... contains isd */
-			isp_endpoint_to_buscfg(dev, vep, isd->bus);
-		}
-#endif
-	}
-#endif
 	
 	entity = &pipe->output->video.entity;
 	while (1) {

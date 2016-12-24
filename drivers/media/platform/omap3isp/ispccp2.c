@@ -890,31 +890,6 @@ static int ccp2_s_stream(struct v4l2_subdev *sd, int enable)
 		atomic_set(&ccp2->stopping, 0);
 	}
 
-#if 0
-	printk("ccp2_s_stream\n");
-	printk("1: %p\n", sd);
-	ret = v4l2_subdev_call(sd, video, g_endpoint_config, NULL);
-	{
-		struct v4l2_of_endpoint vep;
-		
-		struct media_entity *entity = &sd->entity;
-		struct media_pad *pad = &entity->pads[0];
-		struct v4l2_subdev *subdev2;
-		pad = media_entity_remote_pad(pad);
-		entity = pad->entity;
-		subdev2 = media_entity_to_v4l2_subdev(entity);
-			
-		printk("2: %p\n", subdev2);
-		ret = v4l2_subdev_call(subdev2, video, g_endpoint_config, NULL);
-		if (ret == 0) {
-			printk("Success: have configuration\n");
-		}
-#if 0
-		__ispof_parse_node_csi1(dev, , vep);
-#endif
-	}
-	printk("3\n");
-#endif
 	switch (enable) {
 	case ISP_PIPELINE_STREAM_CONTINUOUS:
 		if (ccp2->phy) {
