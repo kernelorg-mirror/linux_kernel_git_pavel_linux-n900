@@ -42,6 +42,8 @@
  * published by the Free Software Foundation.
  */
 
+#define DEBUG
+
 #include <asm/cacheflush.h>
 
 #include <linux/clk.h>

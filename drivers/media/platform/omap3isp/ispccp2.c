@@ -403,10 +403,13 @@ static int ccp2_if_configure(struct isp_ccp2_device *ccp2)
 		subdev2 = media_entity_to_v4l2_subdev(pad->entity);
 
 		printk("if_configure... subdev %p\n", subdev2);
+		/* fixme: vep.base.port is wrong? */
 		ret = v4l2_subdev_call(subdev2, video, g_endpoint_config, &vep);
 		printk("if_configure ret %d\n", ret);
 		if (ret == 0) {
+			struct isp_ccp2_cfg prev_cfg = buscfg->bus.ccp2;
 			printk("Success: have configuration\n");
+			printk("Compare: %d\n", memcmp(&prev_cfg, &buscfg->bus.ccp2, sizeof(prev_cfg)));			
 			__isp_of_parse_node_csi1(NULL, &buscfg->bus.ccp2, &vep);
 			printk("Configured ok?\n");
 		}
