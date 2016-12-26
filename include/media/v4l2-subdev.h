@@ -352,7 +352,7 @@ struct v4l2_mbus_frame_desc {
  *	OUTPUT device. This is ignored by video capture devices.
  *
  * @g_input_status: get input status. Same as the status field in the
- *	&struct &v4l2_input
+ *	&struct &v4l2_input.
  *
  * @s_stream: used to notify the driver that a video stream will start or has
  *	stopped.
@@ -375,7 +375,7 @@ struct v4l2_mbus_frame_desc {
  *
  * @query_dv_timings: callback for %VIDIOC_QUERY_DV_TIMINGS ioctl handler code.
  *
- * @g_mbus_config: get supported mediabus configurations
+ * @g_mbus_config: get supported mediabus configurations.
  *
  * @s_mbus_config: set a certain mediabus configuration. This operation is added
  *	for compatibility with soc-camera drivers and should not be used by new
@@ -384,6 +384,8 @@ struct v4l2_mbus_frame_desc {
  * @s_rx_buffer: set a host allocated memory buffer for the subdev. The subdev
  *	can adjust @size to a lower value and must not write more data to the
  *	buffer starting at @data than the original value of @size.
+ *
+ * @g_endpoint_config: get link configuration required by this device.
  */
 struct v4l2_subdev_video_ops {
 	int (*s_routing)(struct v4l2_subdev *sd, u32 input, u32 output, u32 config);
