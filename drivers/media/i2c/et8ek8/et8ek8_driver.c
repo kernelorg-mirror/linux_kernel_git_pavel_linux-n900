@@ -546,6 +546,68 @@ static int et8ek8_reglist_import(struct i2c_client *client,
 	return 0;
 }
 
+#undef COMPATIBLE
+#ifdef COMPATIBLE
+typedef unsigned int fixpoint8; /* .8 fixed point format. */
+
+/*
+ * Return time of one row in microseconds
+ * If the sensor is not set to any mode, return zero.
+ */
+fixpoint8 et8ek8_get_row_time(struct et8ek8_sensor *sensor)
+{
+	unsigned int clock;	/* Pixel clock in Hz>>10 fixed point */
+	fixpoint8 rt;	/* Row time in .8 fixed point */
+
+	if (!sensor->current_reglist)
+		return 0;
+
+	clock = sensor->current_reglist->mode.pixel_clock;
+	clock = (clock + (1 << 9)) >> 10;
+	rt = sensor->current_reglist->mode.width * (1000000 >> 2);
+	rt = (rt + (clock >> 1)) / clock;
+
+	return rt;
+}
+
+/*
+ * Convert exposure time `us' to rows. Modify `us' to make it to
+ * correspond to the actual exposure time.
+ */
+static int et8ek8_exposure_us_to_rows(struct et8ek8_sensor *sensor, u32 *us)
+{
+	unsigned int rows;	/* Exposure value as written to HW (ie. rows) */
+	fixpoint8 rt;	/* Row time in .8 fixed point */
+
+	/* Assume that the maximum exposure time is at most ~8 s,
+	 * and the maximum width (with blanking) ~8000 pixels.
+	 * The formula here is in principle as simple as
+	 *    rows = exptime / 1e6 / width * pixel_clock
+	 * but to get accurate results while coping with value ranges,
+	 * have to do some fixed point math.
+	 */
+
+	rt = et8ek8_get_row_time(sensor);
+	rows = ((*us << 8) + (rt >> 1)) / rt;
+
+	if (rows > sensor->current_reglist->mode.max_exp)
+		rows = sensor->current_reglist->mode.max_exp;
+
+	/* Set the exposure time to the rounded value */
+	*us = (rt * rows + (1 << 7)) >> 8;
+
+	return rows;
+}
+
+/*
+ * Convert exposure time in rows to microseconds
+ */
+static int et8ek8_exposure_rows_to_us(struct et8ek8_sensor *sensor, int rows)
+{
+	return (et8ek8_get_row_time(sensor) * rows + (1 << 7)) >> 8;
+}
+#endif
+
 /* Called to change the V4L2 gain control value. This function
  * rounds and clamps the given value and updates the V4L2 control value.
  * If power is on, also updates the sensor analog and digital gains.
@@ -647,7 +709,12 @@ static int et8ek8_set_ctrl(struct v4l2_ctrl *ctrl)
 	{
 		int rows;
 		struct i2c_client *client = v4l2_get_subdevdata(&sensor->subdev);
+#ifdef COMPATIBLE
+		u32 us = ctrl->val;
+		rows = et8ek8_exposure_us_to_rows(sensor, &us);
+#else
 		rows = ctrl->val;
+#endif
 		return et8ek8_i2c_write_reg(client, ET8EK8_REG_16BIT, 0x1243,
 					    rows);
 	}
@@ -694,6 +761,11 @@ static int et8ek8_init_controls(struct et8ek8_sensor *sensor)
 	{
 		u32 min = 1, max = max_rows;
 
+#ifdef COMPATIBLE
+		/* V4L2_CID_EXPOSURE */
+		min = et8ek8_exposure_rows_to_us(sensor, 1);
+		max = et8ek8_exposure_rows_to_us(sensor, max_rows);
+#endif
 		sensor->exposure =
 			v4l2_ctrl_new_std(&sensor->ctrl_handler, &et8ek8_ctrl_ops,
 					  V4L2_CID_EXPOSURE, min, max, min, max);
@@ -728,8 +800,13 @@ static void et8ek8_update_controls(struct et8ek8_sensor *sensor)
 
 	ctrl = sensor->exposure;
 
+#ifdef COMPATIBLE
+	min = et8ek8_exposure_rows_to_us(sensor, 1);
+	max = et8ek8_exposure_rows_to_us(sensor, mode->max_exp);
+#else
 	min = 1;
 	max = mode->max_exp;
+#endif
 
 	/*
 	 * Calculate average pixel clock per line. Assume buffers can spread
