@@ -8,6 +8,5 @@ ARCH=arm long make -j 3 zImage && \
     ARCH=arm make omap3-n900.dtb && \
     cat arch/arm/boot/zImage arch/arm/boot/dts/omap3-n900.dtb > arch/arm/boot/zImage-dtb && \
     ARCH=arm nice make -j 3 modules && \
-    echo ok
-
+    ../maemo/run_hw
 #    cp drivers/bluetooth/nokia_h4p.ko drivers/tty/serial/*.ko drivers/media/i2c/adp1653.ko /srv/nfs/n900/my/modules/
