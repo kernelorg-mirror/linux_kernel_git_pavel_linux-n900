@@ -77,9 +77,10 @@ Optional endpoint properties
   slave device (data source) by the master device (data sink). In the master
   mode the data source device is also the source of the synchronization signals.
 - bus-type: data bus type. Possible values are:
-  0 - CSI2
+  0 - MIPI CSI2
   1 - parallel / Bt656
-  2 - CCP2
+  2 - MIPI CSI1
+  3 - CCP2
 - bus-width: number of data lines actively used, valid for the parallel busses.
 - data-shift: on the parallel data busses, if bus-width is used to specify the
   number of data lines, data-shift can be used to specify which data lines are
@@ -114,8 +115,8 @@ Optional endpoint properties
   lane and followed by the data lanes in the same order as in data-lanes.
   Valid values are 0 (normal) and 1 (inverted). The length of the array
   should be the combined length of data-lanes and clock-lanes properties.
-- clock-inv: Clock or strobe signal inversion.
-  Possible values: 0 -- not inverted; 1 -- inverted
+  If the lane-polarities property is omitted, the value must be interpreted
+  as 0 (normal). This property is valid for serial busses only.
 - strobe: Whether the clock signal is used as clock or strobe. Used
   with CCP2, for instance.
 
