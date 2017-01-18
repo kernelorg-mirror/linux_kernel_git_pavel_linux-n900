@@ -1757,7 +1757,7 @@ err_defer:
 
 static int soc_probe_aux_devices(struct snd_soc_card *card)
 {
-	struct snd_soc_component *comp;
+	struct snd_soc_component *comp, *tmp;
 	int order;
 	int ret;
 
@@ -1772,6 +1772,7 @@ static int soc_probe_aux_devices(struct snd_soc_card *card)
 						comp->name, ret);
 					return ret;
 				}
+				list_del(&comp->card_aux_list);
 			}
 		}
 	}
