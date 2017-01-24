@@ -545,8 +545,10 @@ __hwmon_device_register(struct device *dev, const char *name, void *drvdata,
 	int i, j, err, id;
 
 	/* Do not accept invalid characters in hwmon name attribute */
-	if (name && (!strlen(name) || strpbrk(name, "-* \t\n")))
-		return ERR_PTR(-EINVAL);
+	if (name && (!strlen(name) || strpbrk(name, "-* \t\n"))) {
+		printk("hwmon: Invalid character detected: %s\n", name);
+		//return ERR_PTR(-EINVAL);
+	}
 
 	id = ida_simple_get(&hwmon_ida, 0, 0, GFP_KERNEL);
 	if (id < 0)
