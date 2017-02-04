@@ -209,7 +209,7 @@
 	};
 
 	video-bus-switch {
-		compatible = "video-bus-switch";
+		compatible = "video-bus-switch-gpio";
 
 		switch-gpios = <&gpio4 1 GPIO_ACTIVE_HIGH>; /* 97 */
 

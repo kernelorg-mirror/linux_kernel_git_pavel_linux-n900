@@ -14,13 +14,13 @@
  * General Public License for more details.
  */
 
-#define DEBUG
+#define DEBUG // FIXME: remove
 
+#include <linux/gpio/consumer.h>
 #include <linux/module.h>
-#include <linux/platform_device.h>
 #include <linux/of.h>
 #include <linux/of_graph.h>
-#include <linux/gpio/consumer.h>
+#include <linux/platform_device.h>
 #include <media/v4l2-async.h>
 #include <media/v4l2-device.h>
 #include <media/v4l2-of.h>
@@ -30,14 +30,15 @@
  * isp_subdev_notifier_complete() calls v4l2_device_register_subdev_nodes()
  */
 
-#define CSI_SWITCH_SUBDEVS 2
-#define CSI_SWITCH_PORTS 3
 
 enum vbs_state {
 	CSI_SWITCH_DISABLED = 0,
 	CSI_SWITCH_PORT_1 = 1,
 	CSI_SWITCH_PORT_2 = 2,
+	CSI_SWITCH_PORTS = 3,
 };
+
+#define CSI_SWITCH_SUBDEVS (CSI_SWITCH_PORTS - 1)
 
 struct vbs_src_pads {
 	struct media_entity *src;
@@ -120,17 +121,10 @@ static int vbs_registered(struct v4l2_subdev *sd)
 {
 	struct v4l2_device *v4l2_dev = sd->v4l2_dev;
 	struct vbs_data *pdata;
-	int err;
-
-	dev_dbg(sd->dev, "registered, init notifier...\n");
 
 	pdata = v4l2_get_subdevdata(sd);
 
-	err = v4l2_async_notifier_register(v4l2_dev, &pdata->notifier);
-	if (err)
-		return err;
-
-	return 0;
+	return v4l2_async_notifier_register(v4l2_dev, &pdata->notifier);
 }
 
 static struct v4l2_subdev *vbs_get_remote_subdev(struct v4l2_subdev *sd)
@@ -267,7 +261,6 @@ static int vbs_g_endpoint_config(struct v4l2_subdev *sd, struct v4l2_of_endpoint
 	return 0;
 }
 
-
 static const struct v4l2_subdev_internal_ops vbs_internal_ops = {
 	.registered = &vbs_registered,
 };
@@ -327,7 +320,7 @@ static int video_bus_switch_probe(struct platform_device *pdev)
 	v4l2_subdev_init(&pdata->subdev, &vbs_ops);
 	pdata->subdev.dev = &pdev->dev;
 	pdata->subdev.owner = pdev->dev.driver->owner;
-	strncpy(pdata->subdev.name, dev_name(&pdev->dev), V4L2_SUBDEV_NAME_SIZE);
+	strncpy(pdata->subdev.name, dev_name(&pdev->dev), sizeof(pdata->subdev.name));
 	v4l2_set_subdevdata(&pdata->subdev, pdata);
 	pdata->subdev.entity.function = MEDIA_ENT_F_SWITCH;
 	pdata->subdev.entity.flags |= MEDIA_ENT_F_SWITCH;
@@ -348,7 +341,7 @@ static int video_bus_switch_probe(struct platform_device *pdev)
 		return err;
 	}
 
-	dev_info(&pdev->dev, "video-bus-switch registered\n");
+	dev_dbg(&pdev->dev, "video-bus-switch registered\n");
 
 	return 0;
 }
@@ -365,7 +358,7 @@ static int video_bus_switch_remove(struct platform_device *pdev)
 }
 
 static const struct of_device_id video_bus_switch_of_match[] = {
-	{ .compatible = "video-bus-switch" },
+	{ .compatible = "video-bus-switch-gpio" },
 	{ },
 };
 MODULE_DEVICE_TABLE(of, video_bus_switch_of_match);
