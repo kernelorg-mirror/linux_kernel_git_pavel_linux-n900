@@ -322,8 +322,7 @@ static int video_bus_switch_probe(struct platform_device *pdev)
 	pdata->subdev.owner = pdev->dev.driver->owner;
 	strncpy(pdata->subdev.name, dev_name(&pdev->dev), sizeof(pdata->subdev.name));
 	v4l2_set_subdevdata(&pdata->subdev, pdata);
-	pdata->subdev.entity.function = MEDIA_ENT_F_SWITCH;
-	pdata->subdev.entity.flags |= MEDIA_ENT_F_SWITCH;
+	pdata->subdev.entity.function = MEDIA_ENT_F_PROC_VIDEO_SWITCH;
 	pdata->subdev.entity.ops = &vbs_media_ops;
 	pdata->subdev.internal_ops = &vbs_internal_ops;
 	err = media_entity_pads_init(&pdata->subdev.entity, CSI_SWITCH_PORTS,
