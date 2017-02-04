@@ -30,15 +30,14 @@
  * isp_subdev_notifier_complete() calls v4l2_device_register_subdev_nodes()
  */
 
-
 enum vbs_state {
-	CSI_SWITCH_DISABLED = 0,
-	CSI_SWITCH_PORT_1 = 1,
-	CSI_SWITCH_PORT_2 = 2,
-	CSI_SWITCH_PORTS = 3,
+	VBS_DISABLED = 0,
+	VBS_PORT_1 = 1,
+	VBS_PORT_2 = 2,
+	VBS_PORTS = 3,
 };
 
-#define CSI_SWITCH_SUBDEVS (CSI_SWITCH_PORTS - 1)
+#define VBS_SUBDEVS (VBS_PORTS - 1)
 
 struct vbs_src_pads {
 	struct media_entity *src;
@@ -49,9 +48,9 @@ struct vbs_data {
 	struct gpio_desc *swgpio;
 	struct v4l2_subdev subdev;
 	struct v4l2_async_notifier notifier;
-	struct media_pad pads[CSI_SWITCH_PORTS];
-	struct vbs_src_pads src_pads[CSI_SWITCH_PORTS];
-	struct v4l2_of_endpoint vep[CSI_SWITCH_PORTS];
+	struct media_pad pads[VBS_PORTS];
+	struct vbs_src_pads src_pads[VBS_PORTS];
+	struct v4l2_of_endpoint vep[VBS_PORTS];
 	enum vbs_state state;
 };
 
@@ -66,13 +65,13 @@ static int vbs_of_parse_nodes(struct device *dev, struct vbs_data *pdata)
 	struct v4l2_async_notifier *notifier = &pdata->notifier;
 	struct device_node *node = NULL;
 
-	notifier->subdevs = devm_kcalloc(dev, CSI_SWITCH_SUBDEVS,
+	notifier->subdevs = devm_kcalloc(dev, VBS_SUBDEVS,
 		sizeof(*notifier->subdevs), GFP_KERNEL);
 	if (!notifier->subdevs)
 		return -ENOMEM;
 
 	notifier->num_subdevs = 0;
-	while (notifier->num_subdevs < CSI_SWITCH_SUBDEVS &&
+	while (notifier->num_subdevs < VBS_SUBDEVS &&
 	       (node = of_graph_get_next_endpoint(dev->of_node, node))) {
 		struct v4l2_of_endpoint vep;
 		struct vbs_async_subdev *ssd;
@@ -132,7 +131,7 @@ static struct v4l2_subdev *vbs_get_remote_subdev(struct v4l2_subdev *sd)
 	struct vbs_data *pdata = v4l2_get_subdevdata(sd);
 	struct media_entity *src;
 
-	if (pdata->state == CSI_SWITCH_DISABLED)
+	if (pdata->state == VBS_DISABLED)
 		return ERR_PTR(-ENXIO);
 
 	src = pdata->src_pads[pdata->state].src;
@@ -148,7 +147,7 @@ static int vbs_link_setup(struct media_entity *entity,
 	struct vbs_data *pdata = v4l2_get_subdevdata(sd);
 	bool enable = flags & MEDIA_LNK_FL_ENABLED;
 
-	if (local->index > CSI_SWITCH_PORTS - 1)
+	if (local->index > VBS_PORTS - 1)
 		return -ENXIO;
 
 	/* no configuration needed on source port */
@@ -157,7 +156,7 @@ static int vbs_link_setup(struct media_entity *entity,
 
 	if (!enable) {
 		if (local->index == pdata->state) {
-			pdata->state = CSI_SWITCH_DISABLED;
+			pdata->state = VBS_DISABLED;
 
 			/* Make sure we have both cameras enabled */
 			gpiod_set_value(pdata->swgpio, 1);
@@ -168,12 +167,12 @@ static int vbs_link_setup(struct media_entity *entity,
 	}
 
 	/* there can only be one active sink at the same time */
-	if (pdata->state != CSI_SWITCH_DISABLED)
+	if (pdata->state != VBS_DISABLED)
 		return -EBUSY;
 
 	dev_dbg(sd->dev, "Link setup: going to config %d\n", local->index);
 
-	gpiod_set_value(pdata->swgpio, local->index == CSI_SWITCH_PORT_2);
+	gpiod_set_value(pdata->swgpio, local->index == VBS_PORT_2);
 	pdata->state = local->index;
 
 	sd = vbs_get_remote_subdev(sd);
@@ -226,7 +225,7 @@ static int vbs_subdev_notifier_complete(struct v4l2_async_notifier *async)
 	struct media_entity *sink = &pdata->subdev.entity;
 	int sink_pad;
 
-	for (sink_pad = 1; sink_pad < CSI_SWITCH_PORTS; sink_pad++) {
+	for (sink_pad = 1; sink_pad < VBS_PORTS; sink_pad++) {
 		struct media_entity *src = pdata->src_pads[sink_pad].src;
 		int src_pad = pdata->src_pads[sink_pad].src_pad;
 		int err;
@@ -308,7 +307,7 @@ static int video_bus_switch_probe(struct platform_device *pdev)
 		return err;
 	}
 
-	pdata->state = CSI_SWITCH_DISABLED;
+	pdata->state = VBS_DISABLED;
 	pdata->notifier.bound = vbs_subdev_notifier_bound;
 	pdata->notifier.complete = vbs_subdev_notifier_complete;
 
@@ -325,7 +324,7 @@ static int video_bus_switch_probe(struct platform_device *pdev)
 	pdata->subdev.entity.function = MEDIA_ENT_F_PROC_VIDEO_SWITCH;
 	pdata->subdev.entity.ops = &vbs_media_ops;
 	pdata->subdev.internal_ops = &vbs_internal_ops;
-	err = media_entity_pads_init(&pdata->subdev.entity, CSI_SWITCH_PORTS,
+	err = media_entity_pads_init(&pdata->subdev.entity, VBS_PORTS,
 				pdata->pads);
 	if (err < 0) {
 		dev_err(&pdev->dev, "Failed to init media entity: %d\n", err);
