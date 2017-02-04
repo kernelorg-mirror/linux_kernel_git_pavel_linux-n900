@@ -8,10 +8,10 @@ interface of a image signal processor.
 Required properties
 ===================
 
-compatible	: must contain "video-bus-switch"
+compatible	: must contain "video-bus-switch-gpio"
 switch-gpios	: GPIO specifier for the gpio, which can toggle the
-		  selected camera. The GPIO should be configured, so
-		  that a disabled GPIO means, that the first port is
+		  selected camera. The GPIO should be configured, such
+		  that a disabled GPIO means that the first port is
 		  selected.
 
 Required Port nodes
