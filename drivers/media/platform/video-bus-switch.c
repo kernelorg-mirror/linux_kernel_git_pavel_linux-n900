@@ -126,6 +126,16 @@ static int vbs_registered(struct v4l2_subdev *sd)
 	return v4l2_async_notifier_register(v4l2_dev, &pdata->notifier);
 }
 
+static void vbs_unregistered(struct v4l2_subdev *sd)
+{
+	struct v4l2_device *v4l2_dev = sd->v4l2_dev;
+	struct vbs_data *pdata;
+
+	pdata = v4l2_get_subdevdata(sd);
+
+	v4l2_async_notifier_unregister(&pdata->notifier);
+}
+
 static struct v4l2_subdev *vbs_get_remote_subdev(struct v4l2_subdev *sd)
 {
 	struct vbs_data *pdata = v4l2_get_subdevdata(sd);
@@ -262,6 +272,7 @@ static int vbs_g_endpoint_config(struct v4l2_subdev *sd, struct v4l2_of_endpoint
 
 static const struct v4l2_subdev_internal_ops vbs_internal_ops = {
 	.registered = &vbs_registered,
+	.unregistered = &vbs_unregistered,
 };
 
 static const struct media_entity_operations vbs_media_ops = {
@@ -348,7 +359,6 @@ static int video_bus_switch_remove(struct platform_device *pdev)
 {
 	struct vbs_data *pdata = platform_get_drvdata(pdev);
 
-	v4l2_async_notifier_unregister(&pdata->notifier);
 	v4l2_async_unregister_subdev(&pdata->subdev);
 	media_entity_cleanup(&pdata->subdev.entity);
 
