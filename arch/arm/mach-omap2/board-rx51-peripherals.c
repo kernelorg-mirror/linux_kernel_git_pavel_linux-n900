@@ -94,24 +94,6 @@
 
 #define RX51_GPIO_DEBOUNCE_TIMEOUT	10
 
-#if defined(CONFIG_OMAP_GPIO_SWITCH) || defined(CONFIG_OMAP_GPIO_SWITCH_MODULE)
-
-static struct omap_gpio_switch rx51_gpio_switches[] __initdata = {
-};
-
-static void __init rx51_add_gpio_switches(void)
-{
-#if 0
-	omap_register_gpio_switches(rx51_gpio_switches,
-			ARRAY_SIZE(rx51_gpio_switches));
-#endif
-}
-#else
-static void __init rx51_add_gpio_switches(void)
-{
-}
-#endif /* CONFIG_OMAP_GPIO_SWITCH || CONFIG_OMAP_GPIO_SWITCH_MODULE */
-
 static struct gpiod_lookup_table rx51_fmtx_gpios_table = {
 	.dev_id = "2-0063",
 	.table = {
@@ -128,6 +110,5 @@ static __init void rx51_gpio_init(void)
 void __init rx51_peripherals_init(void)
 {
 	rx51_gpio_init();
-	rx51_add_gpio_switches();
 }
 
