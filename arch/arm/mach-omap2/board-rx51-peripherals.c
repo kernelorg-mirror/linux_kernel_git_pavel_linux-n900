@@ -101,8 +101,10 @@ static struct omap_gpio_switch rx51_gpio_switches[] __initdata = {
 
 static void __init rx51_add_gpio_switches(void)
 {
+#if 0
 	omap_register_gpio_switches(rx51_gpio_switches,
 			ARRAY_SIZE(rx51_gpio_switches));
+#endif
 }
 #else
 static void __init rx51_add_gpio_switches(void)
