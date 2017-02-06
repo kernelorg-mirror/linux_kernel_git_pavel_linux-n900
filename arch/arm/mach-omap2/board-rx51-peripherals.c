@@ -18,24 +18,6 @@
 #include <linux/platform_device.h>
 #include <linux/timer.h>
 
-static struct gpiod_lookup_table rx51_fmtx_gpios_table = {
-	.dev_id = "2-0063",
-	.table = {
-		GPIO_LOOKUP("gpio.6", 3, "reset", GPIO_ACTIVE_HIGH), /* 163 */
-		{ },
-	},
-};
-
-static __init void rx51_gpio_init(void)
-{
-	gpiod_add_lookup_table(&rx51_fmtx_gpios_table);
-}
-
-void __init rx51_peripherals_init(void)
-{
-	rx51_gpio_init();
-}
-
 static struct platform_driver gpio_sw_driver = {
 	.driver		= {
 		.name	= "gpio-switch",
