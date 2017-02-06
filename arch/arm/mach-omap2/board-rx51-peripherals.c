@@ -61,9 +61,6 @@
 #include "soc.h"
 #include "omap-secure.h"
 
-#define SYSTEM_REV_B_USES_VAUX3	0x1699
-#define SYSTEM_REV_S_USES_VAUX3 0x8
-
 #define RX51_WL1251_POWER_GPIO		87
 #define RX51_WL1251_IRQ_GPIO		42
 #define RX51_FMTX_RESET_GPIO		163
@@ -78,95 +75,7 @@
 #define LIS302_IRQ1_GPIO 181
 #define LIS302_IRQ2_GPIO 180  /* Not yet in use */
 
-/* List all SPI devices here. Note that the list/probe order seems to matter! */
-enum {
-	RX51_SPI_WL1251,
-	RX51_SPI_TSC2005,	/* Touch Controller */
-	RX51_SPI_MIPID,		/* LCD panel */
-};
-
-static struct wl1251_platform_data wl1251_pdata;
-static struct tsc2005_platform_data tsc2005_pdata;
-
-
 #define RX51_LCD_RESET_GPIO	90
-
-static struct panel_acx565akm_platform_data acx_pdata = {
-	.name		= "lcd",
-	.source		= "sdi.0",
-	.reset_gpio	= RX51_LCD_RESET_GPIO,
-	.datapairs	= 2,
-};
-
-static struct omap2_mcspi_device_config wl1251_mcspi_config = {
-	.turbo_mode	= 0,
-};
-
-static struct omap2_mcspi_device_config mipid_mcspi_config = {
-	.turbo_mode	= 0,
-};
-
-static struct omap2_mcspi_device_config tsc2005_mcspi_config = {
-	.turbo_mode	= 0,
-};
-
-static struct spi_board_info rx51_peripherals_spi_board_info[] __initdata = {
-	[RX51_SPI_WL1251] = {
-		.modalias		= "wl1251",
-		.bus_num		= 4,
-		.chip_select		= 0,
-		.max_speed_hz   	= 48000000,
-		.mode                   = SPI_MODE_3,
-		.controller_data	= &wl1251_mcspi_config,
-		.platform_data		= &wl1251_pdata,
-	},
-	[RX51_SPI_MIPID] = {
-		.modalias		= "acx565akm",
-		.bus_num		= 1,
-		.chip_select		= 2,
-		.max_speed_hz		= 6000000,
-		.controller_data	= &mipid_mcspi_config,
-		.platform_data		= &acx_pdata,
-	},
-	[RX51_SPI_TSC2005] = {
-		.modalias		= "tsc2005",
-		.bus_num		= 1,
-		.chip_select		= 0,
-		.max_speed_hz		= 6000000,
-		.controller_data	= &tsc2005_mcspi_config,
-		.platform_data		= &tsc2005_pdata,
-	},
-};
-
-static struct platform_device rx51_battery_device = {
-	.name	= "rx51-battery",
-	.id	= -1,
-};
-
-static void rx51_charger_set_power(bool on)
-{
-	gpio_set_value(RX51_USB_TRANSCEIVER_RST_GPIO, on);
-}
-
-static struct isp1704_charger_data rx51_charger_data = {
-	.set_power	= rx51_charger_set_power,
-};
-
-static struct platform_device rx51_charger_device = {
-	.name	= "isp1704_charger",
-	.dev	= {
-		.platform_data = &rx51_charger_data,
-	},
-};
-
-static void __init rx51_charger_init(void)
-{
-	WARN_ON(gpio_request_one(RX51_USB_TRANSCEIVER_RST_GPIO,
-		GPIOF_OUT_INIT_HIGH, "isp1704_reset"));
-
-	platform_device_register(&rx51_battery_device);
-	platform_device_register(&rx51_charger_device);
-}
 
 #define RX51_GPIO_CAMERA_FOCUS		68
 #define RX51_GPIO_CAMERA_CAPTURE	69
@@ -367,7 +276,7 @@ static int rx51_twlgpio_setup(struct device *dev, unsigned gpio, unsigned n)
 void __init rx51_peripherals_init(void)
 {
 	rx51_gpio_init();
-	rx51_add_gpio_keys();
+//	rx51_add_gpio_keys();
 	rx51_add_gpio_switches();
 }
 
