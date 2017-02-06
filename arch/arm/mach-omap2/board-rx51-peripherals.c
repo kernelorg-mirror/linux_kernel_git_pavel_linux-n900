@@ -1184,23 +1184,8 @@ static void __init rx51_init_omap3_rom_rng(void)
 void __init rx51_peripherals_init(void)
 {
 	rx51_gpio_init();
-	rx51_i2c_init();
 	regulator_has_full_constraints();
-	gpmc_onenand_init(board_onenand_data);
 	rx51_add_gpio_keys();
 	rx51_add_gpio_switches();
-	rx51_init_wl1251();
-	rx51_init_tsc2005();
-	rx51_init_lirc();
-	spi_register_board_info(rx51_peripherals_spi_board_info,
-				ARRAY_SIZE(rx51_peripherals_spi_board_info));
-
-	partition = omap_mux_get("core");
-	if (partition)
-		omap_hsmmc_init(mmc);
-
-	rx51_charger_init();
-	rx51_init_twl4030_hwmon();
-	rx51_init_omap3_rom_rng();
 }
 
