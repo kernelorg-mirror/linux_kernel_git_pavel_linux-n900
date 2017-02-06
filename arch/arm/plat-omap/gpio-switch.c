@@ -312,9 +312,11 @@ static void __init report_initial_state(void)
 {
 	struct gpio_switch *sw;
 
+	printk("Report initial state...\n");
 	list_for_each_entry(sw, &gpio_switches, node) {
 		int state = 0;
 
+		printk("Switch... notify\n");
 		if (!sw->failed)
 			state = gpio_get_value(sw->gpio);
 		if (sw->flags & OMAP_GPIO_SWITCH_FLAG_INVERTED)
@@ -336,15 +338,6 @@ static struct platform_driver gpio_sw_driver = {
 	},
 };
 
-void __init omap_register_gpio_switches(const struct omap_gpio_switch *tbl,
-					int count)
-{
-	BUG_ON(board_gpio_sw_table != NULL);
-
-	board_gpio_sw_table = tbl;
-	board_gpio_sw_count = count;
-}
-
 static int __init gpio_sw_init(void)
 {
 	int r;
@@ -362,11 +355,11 @@ static int __init gpio_sw_init(void)
 		goto err1;
 	}
 
-	r = add_board_switches();
+	//r = add_board_switches();
 	if (r < 0)
 		goto err2;
 
-	report_initial_state();
+	//report_initial_state();
 
 	return 0;
 err2:
