@@ -248,6 +248,7 @@ static int vbs_subdev_notifier_complete(struct v4l2_async_notifier *async)
 			src->name, src_pad, sink->name, sink_pad);
 	}
 
+	/* FIXME: current ISP code may have problem with that */
 	return v4l2_device_register_subdev_nodes(pdata->subdev.v4l2_dev);
 }
 
