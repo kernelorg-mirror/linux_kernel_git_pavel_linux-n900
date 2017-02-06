@@ -44,15 +44,7 @@
 #include <linux/platform_data/media/si4713.h>
 #include <linux/platform_data/leds-lp55xx.h>
 
-#include <linux/platform_data/tsl2563.h>
-#include <linux/lis3lv02d.h>
-
 #include <video/omap-panel-data.h>
-
-#include <linux/platform_data/pwm_omap_dmtimer.h>
-#include <linux/platform_data/media/ir-rx51.h>
-
-#include <plat/gpio-switch.h>
 
 #include "mux.h"
 #include "omap-pm.h"
@@ -60,39 +52,6 @@
 #include "common-board-devices.h"
 #include "soc.h"
 #include "omap-secure.h"
-
-#define RX51_WL1251_POWER_GPIO		87
-#define RX51_WL1251_IRQ_GPIO		42
-#define RX51_FMTX_RESET_GPIO		163
-#define RX51_FMTX_IRQ			53
-#define RX51_LP5523_CHIP_EN_GPIO	41
-
-#define RX51_USB_TRANSCEIVER_RST_GPIO	67
-
-#define RX51_TSC2005_RESET_GPIO         104
-#define RX51_TSC2005_IRQ_GPIO           100
-
-#define LIS302_IRQ1_GPIO 181
-#define LIS302_IRQ2_GPIO 180  /* Not yet in use */
-
-#define RX51_LCD_RESET_GPIO	90
-
-#define RX51_GPIO_CAMERA_FOCUS		68
-#define RX51_GPIO_CAMERA_CAPTURE	69
-#define RX51_GPIO_CAMERA_LENS_COVER	110
-#define RX51_GPIO_CMT_APESLPX		70
-#define RX51_GPIO_CMT_BSI		157
-#define RX51_GPIO_CMT_EN		74
-#define RX51_GPIO_CMT_RST		75
-#define RX51_GPIO_CMT_RST_RQ		73
-#define RX51_GPIO_CMT_WDDIS		13
-#define RX51_GPIO_HEADPHONE		177
-#define RX51_GPIO_LOCK_BUTTON		113
-#define RX51_GPIO_PROXIMITY		89
-#define RX51_GPIO_SLEEP_IND		162
-#define RX51_GPIO_KEYPAD_SLIDE		71
-
-#define RX51_GPIO_DEBOUNCE_TIMEOUT	10
 
 static struct gpiod_lookup_table rx51_fmtx_gpios_table = {
 	.dev_id = "2-0063",
