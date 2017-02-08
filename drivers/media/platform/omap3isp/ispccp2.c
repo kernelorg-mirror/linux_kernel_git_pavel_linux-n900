@@ -171,7 +171,7 @@ static int ccp2_if_enable(struct isp_ccp2_device *ccp2, u8 enable)
 
 		pad = media_entity_remote_pad(&ccp2->pads[CCP2_PAD_SINK]);
 		sensor = media_entity_to_v4l2_subdev(pad->entity);
-		/* Struct isp_bus_cfg has union inside */ 
+		/* Struct isp_bus_cfg has union inside */
 		buscfg = &((struct isp_bus_cfg *)sensor->host_priv)->bus.ccp2;
 
 
