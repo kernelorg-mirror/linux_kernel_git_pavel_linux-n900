@@ -2106,7 +2106,8 @@ static void isp_of_parse_node_csi2(struct device *dev,
 	buscfg->bus.csi2.crc = 1;
 }
 
-static int isp_endpoint_to_buscfg(struct device *dev, struct v4l2_of_endpoint vep,
+static int isp_endpoint_to_buscfg(struct device *dev,
+				  struct v4l2_of_endpoint vep,
 				  struct isp_bus_cfg *buscfg)
 {
 	switch (vep.base.port) {
