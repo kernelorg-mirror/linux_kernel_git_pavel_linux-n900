@@ -32,8 +32,6 @@ struct smiapp_sensor;
  * @pll_flags: Return flags for the PLL calculator.
  * @init: Quirk initialisation, called the last in probe(). This is
  *	  also appropriate for adding sensor specific controls, for instance.
- * @s_ctrl: Set control quirk. Returns 0 if the control isn't
- *	    implemented by the quirk, > 0 if it is.
  * @reg_access: Register access quirk. The quirk may divert the access
  *		to another register, or no register at all.
  *
@@ -53,7 +51,6 @@ struct smiapp_quirk {
 	int (*post_streamoff)(struct smiapp_sensor *sensor);
 	unsigned long (*pll_flags)(struct smiapp_sensor *sensor);
 	int (*init)(struct smiapp_sensor *sensor);
-	int (*s_ctrl)(struct smiapp_sensor *sensor, struct v4l2_ctrl *ctrl);
 	int (*reg_access)(struct smiapp_sensor *sensor, bool write, u32 *reg,
 			  u32 *val);
 	unsigned long flags;
@@ -75,12 +72,9 @@ void smiapp_replace_limit(struct smiapp_sensor *sensor,
 		.val = _val,		\
 	}
 
-#define smiapp_has_quirk(sensor, _quirk)	\
-	((sensor)->minfo.quirk &&		\
-	 (sensor)->minfo.quirk->_quirk)
-
 #define smiapp_call_quirk(sensor, _quirk, ...)				\
-	(smiapp_has_quirk(sensor, _quirk) ?				\
+	((sensor)->minfo.quirk &&					\
+	 (sensor)->minfo.quirk->_quirk ?				\
 	 (sensor)->minfo.quirk->_quirk(sensor, ##__VA_ARGS__) : 0)
 
 #define smiapp_needs_quirk(sensor, _quirk)		\
