@@ -42,6 +42,8 @@
  * published by the Free Software Foundation.
  */
 
+#define DEBUG
+
 #include <asm/cacheflush.h>
 
 #include <linux/clk.h>
@@ -699,7 +701,7 @@ static int isp_pipeline_enable(struct isp_pipeline *pipe,
 	spin_unlock_irqrestore(&pipe->lock, flags);
 
 	pipe->do_propagation = false;
-
+	
 	entity = &pipe->output->video.entity;
 	while (1) {
 		pad = &entity->pads[0];
@@ -2055,7 +2057,7 @@ void __isp_of_parse_node_csi1(struct device *dev,
 
 	buscfg->vp_clk_pol = 1;
 }
-
+	
 static void isp_of_parse_node_csi1(struct device *dev,
 				   struct isp_bus_cfg *buscfg,
 				   struct v4l2_of_endpoint *vep)
@@ -2102,9 +2104,7 @@ static void isp_of_parse_node_csi2(struct device *dev,
 	buscfg->bus.csi2.crc = 1;
 }
 
-static int isp_endpoint_to_buscfg(struct device *dev,
-				  struct v4l2_of_endpoint vep,
-				  struct isp_bus_cfg *buscfg)
+static int isp_endpoint_to_buscfg(struct device *dev, struct v4l2_of_endpoint vep, struct isp_bus_cfg *buscfg)
 {
 	switch (vep.base.port) {
 	case ISP_OF_PHY_PARALLEL:
@@ -2166,10 +2166,51 @@ static int isp_of_parse_node_endpoint(struct device *dev,
 	return 0;
 }
 
+static int isp_of_parse_node(struct device *dev, struct device_node *node,
+			     struct v4l2_async_notifier *notifier,
+			     u32 group_id, bool link)
+{
+	struct isp_async_subdev *isd;
+
+	isd = devm_kzalloc(dev, sizeof(*isd), GFP_KERNEL);
+	if (!isd) {
+		of_node_put(node);
+		return -ENOMEM;
+	}
+
+	notifier->subdevs[notifier->num_subdevs] = &isd->asd;
+
+	if (link) {
+		if (isp_of_parse_node_endpoint(dev, node, isd)) {
+			of_node_put(node);
+			return -EINVAL;
+		}
+
+		isd->asd.match.of.node = of_graph_get_remote_port_parent(node);
+		of_node_put(node);
+	} else {
+		isd->asd.match.of.node = node;
+	}
+
+	if (!isd->asd.match.of.node) {
+		dev_warn(dev, "bad remote port parent\n");
+		return -EINVAL;
+	}
+
+	isd->asd.match_type = V4L2_ASYNC_MATCH_OF;
+	isd->group_id = group_id;
+	notifier->num_subdevs++;
+
+	return 0;
+}
+
 static int isp_of_parse_nodes(struct device *dev,
 			      struct v4l2_async_notifier *notifier)
 {
 	struct device_node *node = NULL;
+	int ret;
+	unsigned int flash = 0;
+	u32 group_id = 0;
 
 	notifier->subdevs = devm_kcalloc(
 		dev, ISP_MAX_SUBDEVS, sizeof(*notifier->subdevs), GFP_KERNEL);
@@ -2178,32 +2219,60 @@ static int isp_of_parse_nodes(struct device *dev,
 
 	while (notifier->num_subdevs < ISP_MAX_SUBDEVS &&
 	       (node = of_graph_get_next_endpoint(dev->of_node, node))) {
-		struct isp_async_subdev *isd;
+		ret = isp_of_parse_node(dev, node, notifier, group_id++, true);
+		if (ret)
+			return ret;
+	}
 
-		isd = devm_kzalloc(dev, sizeof(*isd), GFP_KERNEL);
-		if (!isd)
-			goto error;
+	while (notifier->num_subdevs < ISP_MAX_SUBDEVS &&
+	       (node = of_parse_phandle(dev->of_node, "ti,camera-flashes",
+					flash++))) {
+		struct device_node *sensor_node =
+			of_parse_phandle(dev->of_node, "ti,camera-flashes",
+					 flash++);
+		unsigned int i;
+		u32 flash_group_id;
 
-		notifier->subdevs[notifier->num_subdevs] = &isd->asd;
+		if (!sensor_node)
+			return -EINVAL;
 
-		if (isp_of_parse_node_endpoint(dev, node, isd))
-			goto error;
+		for (i = 0; i < notifier->num_subdevs; i++) {
+			struct isp_async_subdev *isd = container_of(
+				notifier->subdevs[i], struct isp_async_subdev,
+				asd);
 
-		isd->asd.match.of.node = of_graph_get_remote_port_parent(node);
-		if (!isd->asd.match.of.node) {
-			dev_warn(dev, "bad remote port parent\n");
-			goto error;
+			if (!isd->bus)
+				continue;
+
+			dev_dbg(dev, "match \"%s\", \"%s\"\n",sensor_node->name,
+				isd->asd.match.of.node->name);
+
+			if (sensor_node != isd->asd.match.of.node)
+				continue;
+
+			dev_dbg(dev, "found\n");
+
+			flash_group_id = isd->group_id;
+			break;
 		}
 
-		isd->asd.match_type = V4L2_ASYNC_MATCH_OF;
-		notifier->num_subdevs++;
+		/*
+		 * No sensor was found --- complain and allocate a new
+		 * group ID.
+		 */
+		if (i == notifier->num_subdevs) {
+			dev_warn(dev, "no device node \"%s\" was found",
+				 sensor_node->name);
+			flash_group_id = group_id++;
+		}
+
+		ret = isp_of_parse_node(dev, node, notifier, flash_group_id,
+					false);
+		if (ret)
+			return ret;
 	}
 
 	return notifier->num_subdevs;
-
-error:
-	of_node_put(node);
-	return -EINVAL;
 }
 
 static int isp_subdev_notifier_bound(struct v4l2_async_notifier *async,
@@ -2214,7 +2283,7 @@ static int isp_subdev_notifier_bound(struct v4l2_async_notifier *async,
 		container_of(asd, struct isp_async_subdev, asd);
 
 	isd->sd = subdev;
-	isd->sd->host_priv = &isd->bus;
+	isd->sd->host_priv = isd->bus;
 
 	return 0;
 }
@@ -2417,12 +2486,15 @@ static int isp_probe(struct platform_device *pdev)
 	if (ret < 0)
 		goto error_register_entities;
 
-	isp->notifier.bound = isp_subdev_notifier_bound;
-	isp->notifier.complete = isp_subdev_notifier_complete;
+	if (IS_ENABLED(CONFIG_OF) && pdev->dev.of_node) {
+		isp->notifier.bound = isp_subdev_notifier_bound;
+		isp->notifier.complete = isp_subdev_notifier_complete;
 
-	ret = v4l2_async_notifier_register(&isp->v4l2_dev, &isp->notifier);
-	if (ret)
-		goto error_register_entities;
+		ret = v4l2_async_notifier_register(&isp->v4l2_dev,
+						   &isp->notifier);
+		if (ret)
+			goto error_register_entities;
+	}
 
 	isp_core_init(isp, 1);
 	omap3isp_put(isp);

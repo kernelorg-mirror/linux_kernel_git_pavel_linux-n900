@@ -230,6 +230,7 @@ struct isp_async_subdev {
 	struct v4l2_subdev *sd;
 	struct isp_bus_cfg *bus;
 	struct v4l2_async_subdev asd;
+	u32 group_id;
 };
 
 #define v4l2_dev_to_isp_device(dev) \
