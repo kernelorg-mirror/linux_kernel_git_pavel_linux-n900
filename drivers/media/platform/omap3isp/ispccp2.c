@@ -170,7 +170,7 @@ static int ccp2_if_enable(struct isp_ccp2_device *ccp2, u8 enable)
 
 		pad = media_entity_remote_pad(&ccp2->pads[CCP2_PAD_SINK]);
 		sensor = media_entity_to_v4l2_subdev(pad->entity);
-		/* Struct isp_bus_cfg has union inside */
+		/* Struct isp_bus_cfg has union inside */ 
 		buscfg = &((struct isp_bus_cfg *)sensor->host_priv)->bus.ccp2;
 
 		if (buscfg->strobe_clk_pol) {
@@ -373,7 +373,7 @@ static void ccp2_lcx_config(struct isp_ccp2_device *ccp2,
  */
 static int ccp2_if_configure(struct isp_ccp2_device *ccp2)
 {
-	const struct isp_bus_cfg *buscfg;
+	struct isp_bus_cfg *buscfg;
 	struct v4l2_mbus_framefmt *format;
 	struct media_pad *pad;
 	struct v4l2_subdev *sensor;
@@ -385,6 +385,25 @@ static int ccp2_if_configure(struct isp_ccp2_device *ccp2)
 	pad = media_entity_remote_pad(&ccp2->pads[CCP2_PAD_SINK]);
 	sensor = media_entity_to_v4l2_subdev(pad->entity);
 	buscfg = sensor->host_priv;
+
+	{
+		struct v4l2_subdev *subdev2;
+		struct v4l2_of_endpoint vep;
+		
+		subdev2 = media_entity_to_v4l2_subdev(pad->entity);
+
+		printk("if_configure... subdev %p\n", subdev2);
+		/* fixme: vep.base.port is wrong? */
+		ret = v4l2_subdev_call(subdev2, video, g_endpoint_config, &vep);
+		printk("if_configure ret %d\n", ret);
+		if (ret == 0) {
+			struct isp_ccp2_cfg prev_cfg = buscfg->bus.ccp2;
+			printk("Success: have configuration\n");
+			printk("Compare: %d\n", memcmp(&prev_cfg, &buscfg->bus.ccp2, sizeof(prev_cfg)));			
+			__isp_of_parse_node_csi1(NULL, &buscfg->bus.ccp2, &vep);
+			printk("Configured ok?\n");
+		}
+	}
 
 	ret = ccp2_phyif_config(ccp2, &buscfg->bus.ccp2);
 	if (ret < 0)
