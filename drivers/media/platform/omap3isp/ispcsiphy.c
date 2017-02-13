@@ -30,6 +30,8 @@ static void csiphy_routing_cfg_3630(struct isp_csiphy *phy,
 	u32 reg;
 	u32 shift, mode;
 
+	printk("routing cfg 3630: iface %d, %d\n", iface, ISP_INTERFACE_CCP2B_PHY1);
+	
 	regmap_read(phy->isp->syscon, phy->isp->syscon_offset, &reg);
 
 	switch (iface) {
@@ -74,6 +76,9 @@ static void csiphy_routing_cfg_3430(struct isp_csiphy *phy, u32 iface, bool on,
 	u32 csirxfe = OMAP343X_CONTROL_CSIRXFE_PWRDNZ
 		| OMAP343X_CONTROL_CSIRXFE_RESET;
 
+	/* FIXME: can this be used instead of if (isp->revision) in ispccp2.c? */
+	
+	printk("routing cfg: iface %d, %d\n", iface, ISP_INTERFACE_CCP2B_PHY1);
 	/* Only the CCP2B on PHY1 is configurable. */
 	if (iface != ISP_INTERFACE_CCP2B_PHY1)
 		return;
@@ -105,6 +110,7 @@ static void csiphy_routing_cfg(struct isp_csiphy *phy,
 			       enum isp_interface_type iface, bool on,
 			       bool ccp2_strobe)
 {
+	printk("csiphy_routing_cfg\n");
 	if (phy->isp->phy_type == ISP_PHY_TYPE_3630 && on)
 		return csiphy_routing_cfg_3630(phy, iface, ccp2_strobe);
 	if (phy->isp->phy_type == ISP_PHY_TYPE_3430)
