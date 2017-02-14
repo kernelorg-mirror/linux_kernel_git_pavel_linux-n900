@@ -58,6 +58,8 @@ struct et8ek8_sensor {
 
 	struct v4l2_ctrl_handler ctrl_handler;
 	struct v4l2_ctrl *exposure;
+	struct v4l2_ctrl *exposure_abs;
+	u32 cur_exposure;
 	struct v4l2_ctrl *pixel_rate;
 	struct et8ek8_reglist *current_reglist;
 
@@ -347,13 +349,14 @@ static int et8ek8_i2c_write_reg(struct i2c_client *client, u16 data_length,
 	et8ek8_i2c_create_msg(client, data_length, reg, val, &msg, data);
 
 	r = i2c_transfer(client->adapter, &msg, 1);
-	if (r < 0) {
+
+	if (r < 0)
 		dev_err(&client->dev,
 			"wrote 0x%x to offset 0x%x error %d\n", val, reg, r);
-		return r;
-	}
+	else
+		r = 0; /* on success i2c_transfer() returns messages trasfered */
 
-	return 0;
+	return r;
 }
 
 static struct et8ek8_reglist *et8ek8_reglist_find_type(
@@ -546,6 +549,65 @@ static int et8ek8_reglist_import(struct i2c_client *client,
 	return 0;
 }
 
+typedef unsigned int fixpoint8; /* .8 fixed point format. */
+
+/*
+ * Return time of one row in microseconds
+ * If the sensor is not set to any mode, return zero.
+ */
+fixpoint8 et8ek8_get_row_time(struct et8ek8_sensor *sensor)
+{
+	unsigned int clock;	/* Pixel clock in Hz>>10 fixed point */
+	fixpoint8 rt;	/* Row time in .8 fixed point */
+
+	if (!sensor->current_reglist)
+		return 0;
+
+	clock = sensor->current_reglist->mode.pixel_clock;
+	clock = (clock + (1 << 9)) >> 10;
+	rt = sensor->current_reglist->mode.width * (1000000 >> 2);
+	rt = (rt + (clock >> 1)) / clock;
+
+	return rt;
+}
+
+/*
+ * Convert exposure time `us' to rows. Modify `us' to make it to
+ * correspond to the actual exposure time.
+ */
+static int et8ek8_exposure_us_to_rows(struct et8ek8_sensor *sensor, u32 *us)
+{
+	unsigned int rows;	/* Exposure value as written to HW (ie. rows) */
+	fixpoint8 rt;	/* Row time in .8 fixed point */
+
+	/* Assume that the maximum exposure time is at most ~8 s,
+	 * and the maximum width (with blanking) ~8000 pixels.
+	 * The formula here is in principle as simple as
+	 *    rows = exptime / 1e6 / width * pixel_clock
+	 * but to get accurate results while coping with value ranges,
+	 * have to do some fixed point math.
+	 */
+
+	rt = et8ek8_get_row_time(sensor);
+	rows = ((*us << 8) + (rt >> 1)) / rt;
+
+	if (rows > sensor->current_reglist->mode.max_exp)
+		rows = sensor->current_reglist->mode.max_exp;
+
+	/* Set the exposure time to the rounded value */
+	*us = (rt * rows + (1 << 7)) >> 8;
+
+	return rows;
+}
+
+/*
+ * Convert exposure time in rows to microseconds
+ */
+static int et8ek8_exposure_rows_to_us(struct et8ek8_sensor *sensor, int rows)
+{
+	return (et8ek8_get_row_time(sensor) * rows + (1 << 7)) >> 8;
+}
+
 /* Called to change the V4L2 gain control value. This function
  * rounds and clamps the given value and updates the V4L2 control value.
  * If power is on, also updates the sensor analog and digital gains.
@@ -637,18 +699,24 @@ static int et8ek8_set_ctrl(struct v4l2_ctrl *ctrl)
 {
 	struct et8ek8_sensor *sensor =
 		container_of(ctrl->handler, struct et8ek8_sensor, ctrl_handler);
+	u32 val = ctrl->val;
 
 	switch (ctrl->id) {
 	case V4L2_CID_GAIN:
 		return et8ek8_set_gain(sensor, ctrl->val);
 
+	case V4L2_CID_EXPOSURE_ABSOLUTE:
+		printk("Set Absolute exposure %d\n", val);
+		val = et8ek8_exposure_us_to_rows(sensor, &val);
+		/* Fall through */
+		
 	case V4L2_CID_EXPOSURE:
 	{
-		struct i2c_client *client =
-			v4l2_get_subdevdata(&sensor->subdev);
-
+		struct i2c_client *client = v4l2_get_subdevdata(&sensor->subdev);
+		sensor->cur_exposure = val;
+		printk("Set exposure %d\n", val);		
 		return et8ek8_i2c_write_reg(client, ET8EK8_REG_16BIT, 0x1243,
-					    ctrl->val);
+					    val);
 	}
 
 	case V4L2_CID_TEST_PATTERN:
@@ -662,8 +730,32 @@ static int et8ek8_set_ctrl(struct v4l2_ctrl *ctrl)
 	}
 }
 
+static int et8ek8_get_ctrl(struct v4l2_ctrl *ctrl)
+{
+	struct et8ek8_sensor *sensor =
+		container_of(ctrl->handler, struct et8ek8_sensor, ctrl_handler);
+
+	switch (ctrl->id) {
+	case V4L2_CID_EXPOSURE_ABSOLUTE:
+		ctrl->val = et8ek8_exposure_rows_to_us(sensor, sensor->cur_exposure);
+		printk("Get absolute exposure %d\n", ctrl->val);
+		return 0;
+		
+	case V4L2_CID_EXPOSURE:
+		ctrl->val = sensor->cur_exposure;
+		printk("Get exposure %d\n", ctrl->val);
+		return 0;
+
+	default:
+		return -EINVAL;
+	}
+}
+
+
 static const struct v4l2_ctrl_ops et8ek8_ctrl_ops = {
 	.s_ctrl = et8ek8_set_ctrl,
+	.g_volatile_ctrl = et8ek8_get_ctrl,
+
 };
 
 static const char * const et8ek8_test_pattern_menu[] = {
@@ -694,9 +786,17 @@ static int et8ek8_init_controls(struct et8ek8_sensor *sensor)
 		u32 min = 1, max = max_rows;
 
 		sensor->exposure =
-			v4l2_ctrl_new_std(&sensor->ctrl_handler,
-					  &et8ek8_ctrl_ops, V4L2_CID_EXPOSURE,
-					  min, max, min, max);
+			v4l2_ctrl_new_std(&sensor->ctrl_handler, &et8ek8_ctrl_ops,
+					  V4L2_CID_EXPOSURE, min, max, min, max);
+		//sensor->exposure->flags |= V4L2_CTRL_FLAG_VOLATILE;
+
+		min = et8ek8_exposure_rows_to_us(sensor, 1);
+		max = et8ek8_exposure_rows_to_us(sensor, max);
+
+		sensor->exposure_abs =
+			v4l2_ctrl_new_std(&sensor->ctrl_handler, &et8ek8_ctrl_ops,
+					  V4L2_CID_EXPOSURE_ABSOLUTE, min, max, min, max);
+		//sensor->exposure_abs->flags |= V4L2_CTRL_FLAG_VOLATILE;
 	}
 
 	/* V4L2_CID_PIXEL_RATE */
@@ -727,6 +827,7 @@ static void et8ek8_update_controls(struct et8ek8_sensor *sensor)
 	static const int S = 8;
 
 	ctrl = sensor->exposure;
+	printk("Updating controls for %d x %d @ %d mode -- %s\n", mode->width, mode->height, mode->pixel_clock, mode->name);
 
 	min = 1;
 	max = mode->max_exp;
@@ -738,8 +839,12 @@ static void et8ek8_update_controls(struct et8ek8_sensor *sensor)
 	 */
 	pixel_rate = ((mode->pixel_clock + (1 << S) - 1) >> S) + mode->width;
 	pixel_rate = mode->window_width * (pixel_rate - 1) / mode->width;
+	__v4l2_ctrl_modify_range(sensor->exposure, min, max, min, max);
 
-	__v4l2_ctrl_modify_range(ctrl, min, max, min, max);
+	min = et8ek8_exposure_rows_to_us(sensor, 1);
+	max = et8ek8_exposure_rows_to_us(sensor, max);
+	__v4l2_ctrl_modify_range(sensor->exposure_abs, min, max, min, max);
+	
 	__v4l2_ctrl_s_ctrl_int64(sensor->pixel_rate, pixel_rate << S);
 }
 
