@@ -497,11 +497,13 @@ static int adp1653_probe(struct i2c_client *client,
 		flash->platform_data = client->dev.platform_data;
 	}
 
+	dev_info(&client->dev, "adp1653 probe: subdev\n");	
 	mutex_init(&flash->power_lock);
 
 	v4l2_i2c_subdev_init(&flash->subdev, client, &adp1653_ops);
 	flash->subdev.internal_ops = &adp1653_internal_ops;
 	flash->subdev.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
+	strcpy(flash->subdev.name, "adp1653 flash");
 
 	ret = adp1653_init_controls(flash);
 	if (ret)
@@ -509,12 +511,21 @@ static int adp1653_probe(struct i2c_client *client,
 
 	ret = media_entity_pads_init(&flash->subdev.entity, 0, NULL);
 	if (ret < 0)
-		goto free_and_quit;
+		goto free_pads;
+
+	dev_info(&client->dev, "adp1653 probe: should be ok\n");
+
+	ret = v4l2_async_register_subdev(&flash->subdev);
+	if (ret < 0)
+		goto free_pads;
+
+	dev_info(&client->dev, "adp1653 probe: async register subdev ok\n");	
 
 	flash->subdev.entity.function = MEDIA_ENT_F_FLASH;
 
 	return 0;
-
+free_pads:
+	media_entity_cleanup(&flash->subdev.entity);
 free_and_quit:
 	dev_err(&client->dev, "adp1653: failed to register device\n");
 	v4l2_ctrl_handler_free(&flash->ctrls);
