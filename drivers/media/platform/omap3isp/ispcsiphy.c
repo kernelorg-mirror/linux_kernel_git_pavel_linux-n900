@@ -70,7 +70,7 @@ static void csiphy_routing_cfg_3630(struct isp_csiphy *phy,
 	regmap_write(phy->isp->syscon, phy->isp->syscon_offset, reg);
 }
 
-static void csiphy_routing_cfg_3430(struct isp_csiphy *phy, u32 iface, bool on,
+void csiphy_routing_cfg_3430(struct isp_csiphy *phy, u32 iface, bool on,
 				    bool ccp2_strobe)
 {
 	u32 csirxfe = OMAP343X_CONTROL_CSIRXFE_PWRDNZ
@@ -90,6 +90,14 @@ static void csiphy_routing_cfg_3430(struct isp_csiphy *phy, u32 iface, bool on,
 
 	if (ccp2_strobe)
 		csirxfe |= OMAP343X_CONTROL_CSIRXFE_SELFORM;
+
+	/* FIXME: this needs to be integrated here.
+	if (buscfg->strobe_clk_pol) {
+		printk("FIXME: need to reverse the polarity\n");
+		csirxfe |= OMAP343X_CONTROL_CSIRXFE_CSIB_INV;
+	}
+	*/
+
 
 	regmap_write(phy->isp->syscon, phy->isp->syscon_offset, csirxfe);
 }
@@ -179,6 +187,8 @@ static int omap3isp_csiphy_config(struct isp_csiphy *phy)
 	unsigned int i;
 	u32 reg;
 
+	printk("csiphy_config\n");
+
 	if (!buscfg) {
 		struct isp_async_subdev *isd =
 			container_of(pipe->external->asd,
@@ -192,6 +202,8 @@ static int omap3isp_csiphy_config(struct isp_csiphy *phy)
 	else
 		lanes = &buscfg->bus.csi2.lanecfg;
 
+	printk("lane verification...\n");
+
 	/* Clock and data lanes verification */
 	for (i = 0; i < phy->num_data_lanes; i++) {
 		if (lanes->data[i].pol > 1 || lanes->data[i].pos > 3)
@@ -203,12 +215,16 @@ static int omap3isp_csiphy_config(struct isp_csiphy *phy)
 		used_lanes |= 1 << lanes->data[i].pos;
 	}
 
+	printk("used lanes... %d\n", used_lanes);	
+
 	if (lanes->clk.pol > 1 || lanes->clk.pos > 3)
 		return -EINVAL;
 
 	if (lanes->clk.pos == 0 || used_lanes & (1 << lanes->clk.pos))
 		return -EINVAL;
 
+	printk("routing_cfg... \n");	
+	
 	/*
 	 * The PHY configuration is lost in off mode, that's not an
 	 * issue since the MPU power domain is forced on whilst the
@@ -272,6 +288,8 @@ int omap3isp_csiphy_acquire(struct isp_csiphy *phy)
 {
 	int rval;
 
+	printk("csiphy_acquire 1\n");
+
 	if (phy->vdd == NULL) {
 		dev_err(phy->isp->dev,
 			"Power regulator for CSI PHY not available\n");
@@ -280,14 +298,18 @@ int omap3isp_csiphy_acquire(struct isp_csiphy *phy)
 
 	mutex_lock(&phy->mutex);
 
+	printk("csiphy_acquire 2\n");	
 	rval = regulator_enable(phy->vdd);
 	if (rval < 0)
 		goto done;
 
+	printk("csiphy_acquire 3\n");		
 	rval = omap3isp_csi2_reset(phy->csi2);
 	if (rval < 0)
 		goto done;
 
+	printk("csiphy_acquire 4\n");
+	
 	rval = omap3isp_csiphy_config(phy);
 	if (rval < 0)
 		goto done;

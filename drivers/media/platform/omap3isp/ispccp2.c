@@ -164,6 +164,8 @@ static int ccp2_if_enable(struct isp_ccp2_device *ccp2, u8 enable)
 	}
 
 	if (isp->revision == ISP_REVISION_2_0) {
+		extern void csiphy_routing_cfg_3430(struct isp_csiphy *phy, u32 iface, bool on,
+						    bool ccp2_strobe);
 		struct media_pad *pad;
 		struct v4l2_subdev *sensor;
 		const struct isp_ccp2_cfg *buscfg;
@@ -175,19 +177,14 @@ static int ccp2_if_enable(struct isp_ccp2_device *ccp2, u8 enable)
 		buscfg = &((struct isp_bus_cfg *)sensor->host_priv)->bus.ccp2;
 
 		if (enable) {
-			csirxfe = OMAP343X_CONTROL_CSIRXFE_PWRDNZ |
-				  OMAP343X_CONTROL_CSIRXFE_RESET;
-
-			if (buscfg->phy_layer)
-				csirxfe |= OMAP343X_CONTROL_CSIRXFE_SELFORM;
-
-			if (buscfg->strobe_clk_pol)
-				csirxfe |= OMAP343X_CONTROL_CSIRXFE_CSIB_INV;
+			printk("isp = %p\n", isp->isp_csiphy1.isp);
+			isp->isp_csiphy1.isp = isp;
+			csiphy_routing_cfg_3430(&isp->isp_csiphy1, ISP_INTERFACE_CCP2B_PHY1, true, !!buscfg->phy_layer);
 		} else {
 			csirxfe = 0;
+			regmap_write(isp->syscon, isp->syscon_offset, csirxfe);
 		}
 
-		regmap_write(isp->syscon, isp->syscon_offset, csirxfe);
 	}
 
 	/* Enable/Disable all the LCx channels */
@@ -890,9 +887,12 @@ static int ccp2_s_stream(struct v4l2_subdev *sd, int enable)
 		atomic_set(&ccp2->stopping, 0);
 	}
 
+	printk("ccp2_s_stream: enable %d\n", enable);
 	switch (enable) {
 	case ISP_PIPELINE_STREAM_CONTINUOUS:
+		printk("ccp2_s_stream: continuous\n");
 		if (ccp2->phy) {
+			printk("ccp2_s_stream: acquire\n");			
 			ret = omap3isp_csiphy_acquire(ccp2->phy);
 			if (ret < 0)
 				return ret;
@@ -1198,6 +1198,7 @@ int omap3isp_ccp2_init(struct isp_device *isp)
 				"Could not get regulator vdds_csib\n");
 			ccp2->vdds_csib = NULL;
 		}
+		// ccp2->phy = &isp->isp_csiphy1; /* Crashes the box */
 	} else if (isp->revision == ISP_REVISION_15_0) {
 		ccp2->phy = &isp->isp_csiphy1;
 	}
