@@ -176,6 +176,12 @@ static int ccp2_if_enable(struct isp_ccp2_device *ccp2, u8 enable)
 		/* Struct isp_bus_cfg has union inside */ 
 		buscfg = &((struct isp_bus_cfg *)sensor->host_priv)->bus.ccp2;
 
+		if (buscfg->strobe_clk_pol) {
+			printk("FIXME: need to reverse the polarity\n");
+			csirxfe |= OMAP343X_CONTROL_CSIRXFE_CSIB_INV;
+			/* csiphy_routing_cfg_3430 needs to learn about polarity reversal */
+		}
+
 		printk("isp = %p\n", isp->isp_csiphy1.isp);
 		isp->isp_csiphy1.isp = isp;
 		csiphy_routing_cfg_3430(&isp->isp_csiphy1, ISP_INTERFACE_CCP2B_PHY1, enable, !!buscfg->phy_layer);
@@ -1192,7 +1198,16 @@ int omap3isp_ccp2_init(struct isp_device *isp)
 				"Could not get regulator vdds_csib\n");
 			ccp2->vdds_csib = NULL;
 		}
-		// ccp2->phy = &isp->isp_csiphy1; /* Crashes the box */
+//		ccp2->phy = &isp->isp_csiphy2;
+#if 0
+		printk("Examining subdev.entity\n");
+		{
+			struct isp_pipeline *pipe = to_isp_pipeline(&ccp2->phy->csi2->subdev.entity);
+			printk("pipe %p\n", pipe);
+			printk("external %p\n", pipe->external);
+			printk("priv %p\n", pipe->external->host_priv); 
+		}
+#endif
 	} else if (isp->revision == ISP_REVISION_15_0) {
 		ccp2->phy = &isp->isp_csiphy1;
 	}

@@ -179,13 +179,19 @@ static int csiphy_set_power(struct isp_csiphy *phy, u32 power)
 static int omap3isp_csiphy_config(struct isp_csiphy *phy)
 {
 	struct isp_csi2_device *csi2 = phy->csi2;
-	struct isp_pipeline *pipe = to_isp_pipeline(&csi2->subdev.entity);
-	struct isp_bus_cfg *buscfg = pipe->external->host_priv;
+	struct isp_pipeline *pipe;
+	struct isp_bus_cfg *buscfg;
 	struct isp_csiphy_lanes_cfg *lanes;
 	int csi2_ddrclk_khz;
 	unsigned int used_lanes = 0;
 	unsigned int i;
 	u32 reg;
+
+	pipe = to_isp_pipeline(&csi2->subdev.entity);
+	printk("pipe %p\n", pipe);
+	printk("external %p\n", pipe->external);
+	printk("buscfg %p\n", pipe->external->host_priv);
+	buscfg = pipe->external->host_priv;
 
 	printk("csiphy_config\n");
 
@@ -302,11 +308,12 @@ int omap3isp_csiphy_acquire(struct isp_csiphy *phy)
 	rval = regulator_enable(phy->vdd);
 	if (rval < 0)
 		goto done;
-
+#if 0
 	printk("csiphy_acquire 3\n");		
 	rval = omap3isp_csi2_reset(phy->csi2);
 	if (rval < 0)
 		goto done;
+#endif
 
 	printk("csiphy_acquire 4\n");
 	
@@ -314,6 +321,9 @@ int omap3isp_csiphy_acquire(struct isp_csiphy *phy)
 	if (rval < 0)
 		goto done;
 
+	printk("csiphy_acquire 5: ignoring\n");
+
+#if 0
 	rval = csiphy_set_power(phy, ISPCSI2_PHY_CFG_PWR_CMD_ON);
 	if (rval) {
 		regulator_disable(phy->vdd);
@@ -321,7 +331,9 @@ int omap3isp_csiphy_acquire(struct isp_csiphy *phy)
 	}
 
 	csiphy_power_autoswitch_enable(phy, true);
+#endif
 	phy->phy_in_use = 1;
+	printk("csiphy_acquire 6: unlock and exit\n");
 
 done:
 	mutex_unlock(&phy->mutex);
@@ -362,14 +374,16 @@ int omap3isp_csiphy_init(struct isp_device *isp)
 	phy2->phy_regs = OMAP3_ISP_IOMEM_CSIPHY2;
 	mutex_init(&phy2->mutex);
 
-	if (isp->revision == ISP_REVISION_15_0) {
-		phy1->isp = isp;
-		phy1->csi2 = &isp->isp_csi2c;
-		phy1->num_data_lanes = ISP_CSIPHY1_NUM_DATA_LANES;
-		phy1->cfg_regs = OMAP3_ISP_IOMEM_CSI2C_REGS1;
-		phy1->phy_regs = OMAP3_ISP_IOMEM_CSIPHY1;
-		mutex_init(&phy1->mutex);
+	if (isp->revision != ISP_REVISION_15_0) {
+		memset(phy1, sizeof(*phy1), 0);
+		return 0;
 	}
 
+	phy1->isp = isp;
+	phy1->csi2 = &isp->isp_csi2c;
+	phy1->num_data_lanes = ISP_CSIPHY1_NUM_DATA_LANES;
+	phy1->cfg_regs = OMAP3_ISP_IOMEM_CSI2C_REGS1;
+	phy1->phy_regs = OMAP3_ISP_IOMEM_CSIPHY1;
+	mutex_init(&phy1->mutex);
 	return 0;
 }
