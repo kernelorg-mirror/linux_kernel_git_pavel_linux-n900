@@ -21,6 +21,7 @@
 #include <linux/mutex.h>
 #include <linux/uaccess.h>
 #include <linux/regulator/consumer.h>
+#include <linux/regmap.h>
 
 #include "isp.h"
 #include "ispreg.h"
@@ -160,6 +161,28 @@ static int ccp2_if_enable(struct isp_ccp2_device *ccp2, u8 enable)
 			return ret;
 	}
 
+	if (isp->revision == ISP_REVISION_2_0) {
+		extern void csiphy_routing_cfg_3430(struct isp_csiphy *phy, u32 iface, bool on,
+						    bool ccp2_strobe, bool strobe_clk_pol);
+		struct media_pad *pad;
+		struct v4l2_subdev *sensor;
+		const struct isp_ccp2_cfg *buscfg;
+
+		pad = media_entity_remote_pad(&ccp2->pads[CCP2_PAD_SINK]);
+		sensor = media_entity_to_v4l2_subdev(pad->entity);
+		/* Struct isp_bus_cfg has union inside */
+		buscfg = &((struct isp_bus_cfg *)sensor->host_priv)->bus.ccp2;
+
+		if (buscfg->strobe_clk_pol) {
+                        printk("interesting: reverse polarity?\n");
+		}
+			
+		
+		printk("isp = %p\n", isp->isp_csiphy1.isp);
+		isp->isp_csiphy1.isp = isp;
+		csiphy_routing_cfg_3430(&isp->isp_csiphy1, ISP_INTERFACE_CCP2B_PHY1, enable, !!buscfg->phy_layer, buscfg->strobe_clk_pol);
+	}
+
 	/* Enable/Disable all the LCx channels */
 	for (i = 0; i < CCP2_LCx_CHANS_NUM; i++)
 		isp_reg_clr_set(isp, OMAP3_ISP_IOMEM_CCP2, ISPCCP2_LCx_CTRL(i),
@@ -213,14 +236,17 @@ static int ccp2_phyif_config(struct isp_ccp2_device *ccp2,
 	struct isp_device *isp = to_isp_device(ccp2);
 	u32 val;
 
-	/* CCP2B mode */
 	val = isp_reg_readl(isp, OMAP3_ISP_IOMEM_CCP2, ISPCCP2_CTRL) |
-			    ISPCCP2_CTRL_IO_OUT_SEL | ISPCCP2_CTRL_MODE;
+	      ISPCCP2_CTRL_MODE;
 	/* Data/strobe physical layer */
 	BIT_SET(val, ISPCCP2_CTRL_PHY_SEL_SHIFT, ISPCCP2_CTRL_PHY_SEL_MASK,
 		buscfg->phy_layer);
+	BIT_SET(val, ISPCCP2_CTRL_IO_OUT_SEL_SHIFT,
+		ISPCCP2_CTRL_IO_OUT_SEL_MASK, buscfg->ccp2_mode);
 	BIT_SET(val, ISPCCP2_CTRL_INV_SHIFT, ISPCCP2_CTRL_INV_MASK,
 		buscfg->strobe_clk_pol);
+	BIT_SET(val, ISPCCP2_CTRL_VP_CLK_POL_SHIFT,
+		ISPCCP2_CTRL_VP_CLK_POL_MASK, buscfg->vp_clk_pol);
 	isp_reg_writel(isp, val, OMAP3_ISP_IOMEM_CCP2, ISPCCP2_CTRL);
 
 	val = isp_reg_readl(isp, OMAP3_ISP_IOMEM_CCP2, ISPCCP2_CTRL);
@@ -835,9 +861,12 @@ static int ccp2_s_stream(struct v4l2_subdev *sd, int enable)
 		atomic_set(&ccp2->stopping, 0);
 	}
 
+	printk("ccp2_s_stream: enable %d\n", enable);
 	switch (enable) {
 	case ISP_PIPELINE_STREAM_CONTINUOUS:
+		printk("ccp2_s_stream: continuous\n");
 		if (ccp2->phy) {
+			printk("ccp2_s_stream: acquire\n");			
 			ret = omap3isp_csiphy_acquire(ccp2->phy);
 			if (ret < 0)
 				return ret;
@@ -1137,10 +1166,22 @@ int omap3isp_ccp2_init(struct isp_device *isp)
 	if (isp->revision == ISP_REVISION_2_0) {
 		ccp2->vdds_csib = devm_regulator_get(isp->dev, "vdds_csib");
 		if (IS_ERR(ccp2->vdds_csib)) {
+			if (PTR_ERR(ccp2->vdds_csib) == -EPROBE_DEFER)
+				return -EPROBE_DEFER;
 			dev_dbg(isp->dev,
 				"Could not get regulator vdds_csib\n");
 			ccp2->vdds_csib = NULL;
 		}
+//		ccp2->phy = &isp->isp_csiphy2;
+#if 0
+		printk("Examining subdev.entity\n");
+		{
+			struct isp_pipeline *pipe = to_isp_pipeline(&ccp2->phy->csi2->subdev.entity);
+			printk("pipe %p\n", pipe);
+			printk("external %p\n", pipe->external);
+			printk("priv %p\n", pipe->external->host_priv); 
+		}
+#endif
 	} else if (isp->revision == ISP_REVISION_15_0) {
 		ccp2->phy = &isp->isp_csiphy1;
 	}

@@ -42,6 +42,8 @@
  * published by the Free Software Foundation.
  */
 
+#define DEBUG
+
 #include <asm/cacheflush.h>
 
 #include <linux/clk.h>
@@ -2032,6 +2034,7 @@ static int isp_fwnode_parse(struct device *dev, struct fwnode_handle *fwn,
 	struct v4l2_fwnode_endpoint vfwn;
 	unsigned int i;
 	int ret;
+	int csi1 = 0;
 
 	ret = v4l2_fwnode_endpoint_parse(fwn, &vfwn);
 	if (ret)
@@ -2059,38 +2062,82 @@ static int isp_fwnode_parse(struct device *dev, struct fwnode_handle *fwn,
 
 	case ISP_OF_PHY_CSIPHY1:
 	case ISP_OF_PHY_CSIPHY2:
-		/* FIXME: always assume CSI-2 for now. */
+		switch (vfwn.bus_type) {
+		case V4L2_MBUS_CSI2:
+			dev_dbg(dev, "csi2 configuration\n");
+			csi1 = 0;
+			break;
+		case V4L2_MBUS_CCP2:
+		case V4L2_MBUS_CSI1:
+			dev_dbg(dev, "csi1 configuration\n");
+			csi1 = 1;
+			break;
+		default:
+			dev_err(dev, "unkonwn bus type\n");
+		}
+
 		switch (vfwn.base.port) {
 		case ISP_OF_PHY_CSIPHY1:
-			buscfg->interface = ISP_INTERFACE_CSI2C_PHY1;
+			if (csi1)
+				buscfg->interface = ISP_INTERFACE_CCP2B_PHY1;
+			else
+				buscfg->interface = ISP_INTERFACE_CSI2C_PHY1;
 			break;
 		case ISP_OF_PHY_CSIPHY2:
-			buscfg->interface = ISP_INTERFACE_CSI2A_PHY2;
+			if (csi1)
+				buscfg->interface = ISP_INTERFACE_CCP2B_PHY2;
+			else
+				buscfg->interface = ISP_INTERFACE_CSI2A_PHY2;
 			break;
+		default:
+			dev_err(dev, "bad port\n");
 		}
-		buscfg->bus.csi2.lanecfg.clk.pos = vfwn.bus.mipi_csi2.clock_lane;
-		buscfg->bus.csi2.lanecfg.clk.pol =
-			vfwn.bus.mipi_csi2.lane_polarities[0];
-		dev_dbg(dev, "clock lane polarity %u, pos %u\n",
-			buscfg->bus.csi2.lanecfg.clk.pol,
-			buscfg->bus.csi2.lanecfg.clk.pos);
+		if (csi1) {
+			buscfg->bus.ccp2.lanecfg.clk.pos = vfwn.bus.mipi_csi1.clock_lane;
+			buscfg->bus.ccp2.lanecfg.clk.pol =
+				vfwn.bus.mipi_csi1.lane_polarity[0];
+			dev_dbg(dev, "clock lane polarity %u, pos %u\n",
+				buscfg->bus.ccp2.lanecfg.clk.pol,
+				buscfg->bus.ccp2.lanecfg.clk.pos);
 
-		for (i = 0; i < ISP_CSIPHY2_NUM_DATA_LANES; i++) {
-			buscfg->bus.csi2.lanecfg.data[i].pos =
-				vfwn.bus.mipi_csi2.data_lanes[i];
-			buscfg->bus.csi2.lanecfg.data[i].pol =
-				vfwn.bus.mipi_csi2.lane_polarities[i + 1];
+			buscfg->bus.ccp2.lanecfg.data[0].pos = 1;
+			buscfg->bus.ccp2.lanecfg.data[0].pol = 0;
+
 			dev_dbg(dev, "data lane %u polarity %u, pos %u\n", i,
-				buscfg->bus.csi2.lanecfg.data[i].pol,
-				buscfg->bus.csi2.lanecfg.data[i].pos);
-		}
+				buscfg->bus.ccp2.lanecfg.data[0].pol,
+				buscfg->bus.ccp2.lanecfg.data[0].pos);
 
-		/*
-		 * FIXME: now we assume the CRC is always there.
-		 * Implement a way to obtain this information from the
-		 * sensor. Frame descriptors, perhaps?
-		 */
-		buscfg->bus.csi2.crc = 1;
+			buscfg->bus.ccp2.strobe_clk_pol = vfwn.bus.mipi_csi1.clock_inv;
+			buscfg->bus.ccp2.phy_layer = vfwn.bus.mipi_csi1.strobe;
+			buscfg->bus.ccp2.ccp2_mode = vfwn.bus_type == V4L2_MBUS_CCP2;
+			buscfg->bus.ccp2.vp_clk_pol = 1;
+			
+			buscfg->bus.ccp2.crc = 1;		
+		} else {
+			buscfg->bus.csi2.lanecfg.clk.pos = vfwn.bus.mipi_csi2.clock_lane;
+			buscfg->bus.csi2.lanecfg.clk.pol =
+				vfwn.bus.mipi_csi2.lane_polarities[0];
+			dev_dbg(dev, "clock lane polarity %u, pos %u\n",
+				buscfg->bus.csi2.lanecfg.clk.pol,
+				buscfg->bus.csi2.lanecfg.clk.pos);
+
+			for (i = 0; i < ISP_CSIPHY2_NUM_DATA_LANES; i++) {
+				buscfg->bus.csi2.lanecfg.data[i].pos =
+					vfwn.bus.mipi_csi2.data_lanes[i];
+				buscfg->bus.csi2.lanecfg.data[i].pol =
+					vfwn.bus.mipi_csi2.lane_polarities[i + 1];
+				dev_dbg(dev, "data lane %u polarity %u, pos %u\n", i,
+					buscfg->bus.csi2.lanecfg.data[i].pol,
+					buscfg->bus.csi2.lanecfg.data[i].pos);
+			}
+			/*
+			 * FIXME: now we assume the CRC is always there.
+			 * Implement a way to obtain this information from the
+			 * sensor. Frame descriptors, perhaps?
+			 */
+
+			buscfg->bus.csi2.crc = 1;
+		}
 		break;
 
 	default:
