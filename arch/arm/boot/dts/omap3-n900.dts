@@ -52,6 +52,14 @@
 			pinctrl-names = "default";
 			pinctrl-0 = <&debug_leds>;
 		};
+
+#if 0
+		camera-switch {
+			label = "debug::sleep";
+			gpios = <&gpio4 1 GPIO_ACTIVE_HIGH>; /* 97 */
+			//linux,default-trigger = "default-on";
+		};
+#endif
 	};
 
 	memory@80000000 {
@@ -153,50 +161,6 @@
 		};
 	};
 
-	front_camera: camera@1 {
-		compatible = "linux,camera";
-
-		module {
-			model = "VS6555";
-			sensor = <&cam2>;
-		};
-	};
-
-	video-bus-switch {
-		compatible = "video-bus-switch-gpio";
-
-		switch-gpios = <&gpio4 1 GPIO_ACTIVE_HIGH>; /* 97 */
-
-		ports {
-			#address-cells = <1>;
-			#size-cells = <0>;
-
-			port@0 {
-				reg = <0>;
-
-				csi_switch_in: endpoint {
-					remote-endpoint = <&csi_isp>;
-				};
-			};
-
-			port@1 {
-				reg = <1>;
-
-				csi_switch_out1: endpoint {
-					remote-endpoint = <&csi_cam1>;
-				};
-			};
-
-			port@2 {
-				reg = <2>;
-
-				csi_switch_out2: endpoint {
-					remote-endpoint = <&csi_cam2>;
-				};
-			};
-		};
-	};
-
 	pwm9: dmtimer-pwm {
 		compatible = "ti,omap-dmtimer-pwm";
 		#pwm-cells = <3>;
@@ -222,7 +186,7 @@
 			reg = <1>;
 
 			csi_isp: endpoint {
-				remote-endpoint = <&csi_switch_in>;
+				remote-endpoint = <&csi_cam1>;
 				bus-type = <3>; /* CCP2 */
 				clock-lanes = <0>;
 				data-lanes = <1>;
@@ -602,28 +566,6 @@
 
 	clock-frequency = <100000>;
 
-	cam2: camera@10 {
-		compatible = "nokia,smia";
-		reg = <0x10>;
-
-		vana-supply = <&vaux4>;
-
-		clocks = <&isp 0>;
-		clock-frequency = <9600000>;
-
-		port {
-			csi_cam2: endpoint {
-				link-frequencies = /bits/ 64 <60000000>;
-				bus-type = <3>; /* CCP2 */
-				strobe = <0>;
-				clock-inv = <0>;
-				crc = <0>;
-
-				remote-endpoint = <&csi_switch_out2>;
-			};
-		};
-	};
-
 	tlv320aic3x: tlv320aic3x@18 {
 		compatible = "ti,tlv320aic3x";
 		reg = <0x18>;
@@ -853,7 +795,7 @@
 				clock-inv = <0>;
 				crc = <1>;
 
-				remote-endpoint = <&csi_switch_out1>;
+				remote-endpoint = <&csi_isp>;
 			};
 		};
 	};
