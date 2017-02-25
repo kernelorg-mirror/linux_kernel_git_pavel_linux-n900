@@ -186,7 +186,6 @@
 
 	pinctrl-names = "default";
 	pinctrl-0 = <&camera_pins>;
-	ti,camera-flashes = <&adp1653 &cam1 &ad5820 &cam1>;
 
 	ports {
 		port@1 {
@@ -797,6 +796,9 @@
 		clock-frequency = <9600000>;
 
 		reset-gpio = <&gpio4 6 GPIO_ACTIVE_HIGH>; /* 102 */
+
+		flash = <&adp1653>;
+		lens = <&ad5820>;
 
 		port {
 			csi_cam1: endpoint {

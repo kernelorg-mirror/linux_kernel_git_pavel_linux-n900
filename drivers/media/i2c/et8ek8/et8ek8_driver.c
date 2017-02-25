@@ -32,12 +32,91 @@
 #include <linux/regulator/consumer.h>
 #include <linux/slab.h>
 #include <linux/sort.h>
-#include <linux/v4l2-mediabus.h>
 
+#include <media/v4l2-async.h>
+#include <linux/v4l2-mediabus.h>
 #include <media/media-entity.h>
 #include <media/v4l2-ctrls.h>
 #include <media/v4l2-device.h>
 #include <media/v4l2-subdev.h>
+
+static int simple_subdev_notifier_bound(struct v4l2_async_notifier *notifier,
+                                       struct v4l2_subdev *sd,
+                                       struct v4l2_async_subdev *asd)
+{
+       return 0;
+}
+
+static int simple_subdev_notifier_complete(
+       struct v4l2_async_notifier *notifier)
+{
+       struct v4l2_async_notifier_simple *notifier_s =
+               container_of(notifier, struct v4l2_async_notifier_simple, notifier);
+
+       return v4l2_device_register_subdev_nodes(notifier_s->v4l2_dev);
+}
+
+static inline int v4l2_simple_subnotifier_register(struct v4l2_subdev *subdev,
+				     struct v4l2_async_notifier_simple *notifier_s)
+{
+	struct v4l2_async_notifier *notifier = &notifier_s->notifier;
+	int rval;
+
+	if (!notifier->num_subdevs) {
+		return 0;
+	}
+
+	notifier_s->v4l2_dev = subdev->v4l2_dev;
+	notifier->bound = simple_subdev_notifier_bound;
+	notifier->complete = simple_subdev_notifier_complete;
+	rval = v4l2_async_subnotifier_register(subdev, notifier);
+	return rval;
+}
+
+static inline int simple_subdev_probe(struct device *dev,
+				      struct v4l2_async_notifier *notifier)
+{
+	static const char *props[] = { "flash", "lens" };
+	unsigned int i;
+	const int max_subdevs = 3;
+	
+	notifier->subdevs =
+		devm_kcalloc(dev, max_subdevs,
+			     sizeof(struct v4l2_async_subdev *), GFP_KERNEL);
+	if (!notifier->subdevs)
+		return -ENOMEM;
+
+	for (i = 0; i < ARRAY_SIZE(props); i++) {
+		struct device_node *node;
+		unsigned int j = 0;
+
+		while ((node = of_parse_phandle(dev->of_node, props[i], j++))) {
+			struct v4l2_async_subdev **asd =
+                                &notifier->subdevs[
+                                        notifier->num_subdevs];
+
+			if (WARN_ON(notifier->num_subdevs >= max_subdevs)) {
+				of_node_put(node);
+				return 0;
+			}
+
+			*asd = devm_kzalloc(
+				dev, sizeof(struct v4l2_async_subdev),
+				GFP_KERNEL);
+			if (!*asd) {
+				of_node_put(node);
+				return 0;
+			}
+
+			(*asd)->match.fwnode.fwnode = of_fwnode_handle(node);
+			(*asd)->match_type = V4L2_ASYNC_MATCH_FWNODE;
+			notifier->num_subdevs++;
+
+			of_node_put(node);
+		}
+	}
+	return 0;
+}
 
 #include "et8ek8_reg.h"
 
@@ -67,6 +146,8 @@ struct et8ek8_sensor {
 
 	struct mutex power_lock;
 	int power_count;
+
+	struct v4l2_async_notifier_simple notifier_s;
 };
 
 #define to_et8ek8_sensor(sd)	container_of(sd, struct et8ek8_sensor, subdev)
@@ -1509,8 +1590,9 @@ et8ek8_registered(struct v4l2_subdev *subdev)
 		dev_err(&client->dev, "controls initialization failed\n");
 		goto err_file;
 	}
-
+	
 	__et8ek8_get_pad_format(sensor, NULL, 0, V4L2_SUBDEV_FORMAT_ACTIVE);
+	v4l2_simple_subnotifier_register(subdev, &sensor->notifier_s);
 
 	return 0;
 
@@ -1663,7 +1745,13 @@ static int et8ek8_probe(struct i2c_client *client,
 		return ret;
 	}
 
+	sensor->subdev.entity.function = MEDIA_ENT_F_CAM_SENSOR;
+
 	mutex_init(&sensor->power_lock);
+	
+	ret = simple_subdev_probe(dev, &sensor->notifier_s.notifier);
+	if (ret < 0)
+		printk("Simple subdev probe failed\n");
 
 	v4l2_i2c_subdev_init(&sensor->subdev, client, &et8ek8_ops);
 	sensor->subdev.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
@@ -1703,6 +1791,7 @@ static int __exit et8ek8_remove(struct i2c_client *client)
 	}
 
 	v4l2_device_unregister_subdev(&sensor->subdev);
+	/* FIXME: v4l2_async_subnotifier_unregister(&sensor->notifier_s.notifier); */
 	device_remove_file(&client->dev, &dev_attr_priv_mem);
 	v4l2_ctrl_handler_free(&sensor->ctrl_handler);
 	v4l2_async_unregister_subdev(&sensor->subdev);
