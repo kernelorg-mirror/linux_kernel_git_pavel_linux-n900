@@ -2099,7 +2099,7 @@ static int isp_fwnode_parse(struct device *dev, struct fwnode_handle *fwnode,
 			buscfg->bus.ccp2.lanecfg.data[0].pol =
 				vep.bus.mipi_csi1.lane_polarity[1];
 
-			dev_dbg(dev, "data lane %u polarity %u, pos %u\n", i,
+			dev_dbg(dev, "data lane %u polarity %u, pos %u\n", 0,
 				buscfg->bus.ccp2.lanecfg.data[0].pol,
 				buscfg->bus.ccp2.lanecfg.data[0].pos);
 
@@ -2149,10 +2149,59 @@ static int isp_fwnode_parse(struct device *dev, struct fwnode_handle *fwnode,
 	return 0;
 }
 
+static int camera_subdev_parse(struct device *dev, struct v4l2_async_notifier *notifier,
+			       const char *key, int max)
+{
+	struct device_node *node;
+	struct isp_async_subdev *isd;
+	int num = 0;
+
+	printk("Looking for %s\n", key);
+
+	while (notifier->num_subdevs < max) {
+		node = of_parse_phandle(dev->of_node, key, num++);
+		if (!node)
+			return 0;
+
+		printk("Having subdevice: %p\n", node);
+		
+		isd = devm_kzalloc(dev, sizeof(*isd), GFP_KERNEL);
+		if (!isd)
+			return -ENOMEM;
+
+		notifier->subdevs[notifier->num_subdevs] = &isd->asd;
+
+		isd->asd.match.fwnode.fwn = of_fwnode_handle(node);
+		isd->asd.match_type = V4L2_ASYNC_MATCH_FWNODE;
+		notifier->num_subdevs++;
+	}
+
+	return 0;
+}
+
+static int camera_subdevs_parse(struct device *dev, struct v4l2_async_notifier *notifier,
+				int max)
+{
+	int res;
+
+	res = camera_subdev_parse(dev, notifier, "flash", max);
+	if (res)
+		return res;
+
+	res = camera_subdev_parse(dev, notifier, "lens-focus", max);
+	if (res)
+		return res;
+	
+	return 0;
+}
+
 static int isp_fwnodes_parse(struct device *dev,
 			     struct v4l2_async_notifier *notifier)
 {
 	struct fwnode_handle *fwnode = NULL;
+	struct device_node *node;
+	int flash = 0;
+	int res = 0;
 
 	notifier->subdevs = devm_kcalloc(
 		dev, ISP_MAX_SUBDEVS, sizeof(*notifier->subdevs), GFP_KERNEL);
@@ -2191,6 +2240,13 @@ static int isp_fwnodes_parse(struct device *dev,
 		notifier->num_subdevs++;
 	}
 
+	res = camera_subdevs_parse(dev, notifier, ISP_MAX_SUBDEVS);
+	if (res)
+		goto error;
+
+	if (notifier->num_subdevs == ISP_MAX_SUBDEVS) {
+		printk("isp: Maybe too many devices?\n");
+	}
 	return notifier->num_subdevs;
 
 error:

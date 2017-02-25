@@ -186,7 +186,8 @@
 
 	pinctrl-names = "default";
 	pinctrl-0 = <&camera_pins>;
-	ti,camera-flashes = <&adp1653 &cam1 &ad5820 &cam1>;
+	flash = <&adp1653>;
+	lens-focus = <&ad5820>;
 
 	ports {
 		port@1 {
