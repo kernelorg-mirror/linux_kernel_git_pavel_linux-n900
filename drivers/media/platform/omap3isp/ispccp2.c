@@ -385,7 +385,7 @@ static int ccp2_if_configure(struct isp_ccp2_device *ccp2)
 	pad = media_entity_remote_pad(&ccp2->pads[CCP2_PAD_SINK]);
 	sensor = media_entity_to_v4l2_subdev(pad->entity);
 	buscfg = sensor->host_priv;
-
+#if 0
 	{
 		struct v4l2_subdev *subdev2;
 		struct v4l2_of_endpoint vep;
@@ -404,6 +404,7 @@ static int ccp2_if_configure(struct isp_ccp2_device *ccp2)
 			printk("Configured ok?\n");
 		}
 	}
+#endif
 
 	ret = ccp2_phyif_config(ccp2, &buscfg->bus.ccp2);
 	if (ret < 0)
