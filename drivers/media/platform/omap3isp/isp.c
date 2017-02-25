@@ -2183,6 +2183,34 @@ static int isp_fwnodes_parse(struct device *dev,
 		notifier->num_subdevs++;
 	}
 
+#if 0
+	printk("Going through camera-flashes\n");
+	while (notifier->num_subdevs < ISP_MAX_SUBDEVS &&
+	       /* FIXME: fwnode_graph_get_remote_endpoint() */
+	       (fwn = /* FIXME */ fwnode_graph_get_next_endpoint(device_fwnode_handle(dev),
+								 fwn, ))) {
+		struct isp_async_subdev *isd;
+
+		isd = devm_kzalloc(dev, sizeof(*isd), GFP_KERNEL);
+		if (!isd)
+			goto error;
+
+		notifier->subdevs[notifier->num_subdevs] = &isd->asd;
+
+		isd->asd.match.fwnode.fwn = fwn;
+		if (!isd->asd.match.fwnode.fwn) {
+			dev_warn(dev, "bad remote port parent\n");
+			goto error;
+		}
+
+		isd->asd.match_type = V4L2_ASYNC_MATCH_FWNODE;
+		notifier->num_subdevs++;
+	}
+#endif
+
+	if (notifier->num_subdevs == ISP_MAX_SUBDEVS) {
+		printk("isp: Maybe too many devices?\n");
+	}
 	return notifier->num_subdevs;
 
 error:
