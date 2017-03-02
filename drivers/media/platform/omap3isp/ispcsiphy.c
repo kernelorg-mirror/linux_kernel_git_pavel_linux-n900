@@ -177,7 +177,7 @@ static int omap3isp_csiphy_config(struct isp_csiphy *phy)
 		struct isp_async_subdev *isd =
 			container_of(pipe->external->asd,
 				     struct isp_async_subdev, asd);
-		buscfg = &isd->bus;
+		buscfg = isd->bus;
 	}
 
 	if (buscfg->interface == ISP_INTERFACE_CCP2B_PHY1

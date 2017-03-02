@@ -2011,13 +2011,19 @@ enum isp_of_phy {
 static int isp_fwnode_parse(struct device *dev, struct fwnode_handle *fwnode,
 			    struct isp_async_subdev *isd)
 {
-	struct isp_bus_cfg *buscfg = &isd->bus;
+	struct isp_bus_cfg *buscfg;
 	struct v4l2_fwnode_endpoint vep;
 	unsigned int i;
 	int ret;
 	bool csi1 = false;
 
-	ret = v4l2_fwnode_endpoint_parse(fwnode, &vep);
+	buscfg = devm_kzalloc(dev, sizeof(*isd->bus), GFP_KERNEL);
+	if (!buscfg)
+		return -ENOMEM;
+
+	isd->bus = buscfg;
+
+	ret = v4l2_fwnode_endpoint_parse(fwn, vep);
 	if (ret)
 		return ret;
 
@@ -2190,7 +2196,7 @@ static int isp_subdev_notifier_bound(struct v4l2_async_notifier *async,
 		container_of(asd, struct isp_async_subdev, asd);
 
 	isd->sd = subdev;
-	isd->sd->host_priv = &isd->bus;
+	isd->sd->host_priv = isd->bus;
 
 	return 0;
 }
