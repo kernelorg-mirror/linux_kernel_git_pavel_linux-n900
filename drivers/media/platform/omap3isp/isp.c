@@ -2160,10 +2160,15 @@ static int isp_fwnodes_parse(struct device *dev,
 	if (!notifier->subdevs)
 		return -ENOMEM;
 
-	while (notifier->num_subdevs < ISP_MAX_SUBDEVS &&
-	       (fwnode = fwnode_graph_get_next_endpoint(
-			of_fwnode_handle(dev->of_node), fwnode))) {
+	while ((fwnode = fwnode_graph_get_next_endpoint(dev_fwnode(dev),
+							fwnode))) {
 		struct isp_async_subdev *isd;
+
+		if (notifier->num_subdevs >= ISP_MAX_SUBDEVS) {
+			dev_warn(dev, "too many endpoints, ignoring\n");
+			fwnode_handle_put(fwnode);
+			break;
+		}
 
 		isd = devm_kzalloc(dev, sizeof(*isd), GFP_KERNEL);
 		if (!isd)
