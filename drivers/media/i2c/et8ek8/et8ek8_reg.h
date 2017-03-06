@@ -37,19 +37,21 @@ struct et8ek8_mode {
 	u16 sensor_window_height;
 
 	/* Image data coming from sensor (after scaling) */
-	u16 width;
+	u16 width;			/* u */
 	u16 height;
 	u16 window_origin_x;
 	u16 window_origin_y;
-	u16 window_width;
-	u16 window_height;
+	u16 window_width;		/* u */
+	u16 window_height;		/* u */
 
-	u32 pixel_clock;		/* in Hz */
-	u32 ext_clock;			/* in Hz */
-	struct v4l2_fract timeperframe;
-	u32 max_exp;			/* Maximum exposure value */
-	u32 bus_format;			/* MEDIA_BUS_FMT_ */
+	u32 pixel_clock;		/* u in Hz */
+	u32 ext_clock;			/* u in Hz */
+	struct v4l2_fract timeperframe; /* u */
+	u32 max_exp;			/* u Maximum exposure value */
+	u32 bus_format;			/* u MEDIA_BUS_FMT_ */
 	u32 sensitivity;		/* 16.16 fixed point */
+
+	char *name;
 };
 
 #define ET8EK8_REG_8BIT			1
