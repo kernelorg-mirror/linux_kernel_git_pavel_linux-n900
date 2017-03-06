@@ -826,6 +826,8 @@ static void et8ek8_update_controls(struct et8ek8_sensor *sensor)
 	u32 min, max, pixel_rate;
 	static const int S = 8;
 
+	printk("Updating controls for %d x %d @ %d mode -- %s\n", mode->width, mode->height, mode->pixel_clock, mode->name);
+
 	ctrl = sensor->exposure;
 	printk("Updating controls for %d x %d @ %d mode -- %s\n", mode->width, mode->height, mode->pixel_clock, mode->name);
 
@@ -846,6 +848,128 @@ static void et8ek8_update_controls(struct et8ek8_sensor *sensor)
 	__v4l2_ctrl_modify_range(sensor->exposure_abs, min, max, min, max);
 	
 	__v4l2_ctrl_s_ctrl_int64(sensor->pixel_rate, pixel_rate << S);
+}
+
+static int read_8(struct i2c_client *client, unsigned long addr)
+{
+	int val;
+	et8ek8_i2c_read_reg(client, ET8EK8_REG_8BIT, addr, &val);
+	return val;
+}
+
+static int read_16(struct i2c_client *client, unsigned long addr)
+{
+	return read_8(client, addr);
+}
+
+static void assert_value(struct i2c_client *client, unsigned long addr, unsigned long val)
+{
+	unsigned long val2 = read_8(client, addr);
+	if (val != val2)
+		printk("et8ek8: assertion check %lx / should be %lx is %lx\n", addr, val, val2);
+}
+
+static void assert(struct i2c_client *client, int v, char *msg)
+{
+	if (!v)
+		printk("et8ek8: assertion: %s\n", msg);
+}
+
+static void assert_eq(struct i2c_client *client, int v1, int v2, char *msg)
+{
+	if (v1 != v2)
+		printk("et8ek8: assertion: %d == %d %s\n", v1, v2, msg);
+}
+
+static void et8ek8_check(struct et8ek8_sensor *sensor)
+{
+	/*
+	  1239 4F       # CKVAR_DIV
+	  1238 02       # CKVAR_DIV[8] CKREF_DIV
+	  123B 70       # MRCK_DIV LVDSCK_DIV
+	  123A 05       # VCO_DIV SPCK_DIV
+	  121B 63       # PIC_SIZE MONI_MODE
+	  1220 85       # H_COUNT
+	  1221 00       # H_COUNT[10:8]
+	  1222 58       # V_COUNT
+	  1223 00       # V_COUNT[12:8]
+	  121D 63       # H_SIZE H_INTERMIT
+	  125D 83       # CCP_LVDS_MODE/ _/ _/ _/ _/ CCP_COMP_MODE[2-0]
+	*/
+	struct et8ek8_reglist *r = sensor->current_reglist;
+	struct v4l2_subdev *subdev = &sensor->subdev;
+	struct i2c_client *client = v4l2_get_subdevdata(subdev);
+	int vco;
+	
+	printk("Mode validation:\n");
+
+	assert_value(client, 0x1220, (r->mode.width / 24) & 0xff);
+	assert_value(client, 0x1221, (r->mode.width / 24) >> 8);
+		
+	assert_value(client, 0x1222, (r->mode.height / 24) & 0xff);
+	assert_value(client, 0x1223, (r->mode.height / 24) >> 8);
+
+	{
+		int ckref_div = read_16(client, 0x1238) & 0xf;
+		int ckvar_div = ((read_16(client, 0x1238) & 0x80) >> 7) | (read_16(client, 0x1239) << 1);
+		int vco_div = read_16(client, 0x123A) >> 4;
+		int spck_div = read_16(client, 0x123A) & 0xf;
+		int mrck_div = read_16(client, 0x123B) >> 4;
+		int lvdsck_div = read_16(client, 0x123B) & 0xf;
+		int ccp2, spck;
+
+		vco = (r->mode.ext_clock * ckvar_div) / (ckref_div + 1);
+		printk("Vco is %d, %d %d %d\n", vco, r->mode.ext_clock, ckvar_div, ckref_div);
+		ccp2 = vco / ((lvdsck_div + 1) * (vco_div + 1));
+		spck = vco / ((spck_div + 1) * (vco_div + 1));
+
+		assert_eq(client, r->mode.pixel_clock, spck, "spck");
+	}
+
+	assert_eq(client, r->mode.max_exp, r->mode.height - 4, "max_exp");
+
+	assert(client, !(r->mode.sensor_window_width % r->mode.window_width), "window_width");
+	switch(r->mode.sensor_window_width / r->mode.window_width) {
+	case 1: assert_value(client, 0x121d, 0x64);
+		break;
+	case 2: assert_value(client, 0x121d, 0x63);
+		break;
+	case 3: assert_value(client, 0x121d, 0x62);
+		break;
+	default:
+		assert(client, 0, "bad window_width");
+	}
+
+	assert(client, !(r->mode.sensor_window_height % r->mode.window_height), "window_width");
+	switch(r->mode.sensor_window_height / r->mode.window_height) {
+	case 1: assert_value(client, 0x121b, 0x64);
+		break;
+	case 2: assert_value(client, 0x121b, 0x63);
+		break;
+	case 3: assert_value(client, 0x121b, 0x62);
+		break;
+	default:
+		assert(client, 0, "bad window_height");
+	}
+
+	//assert(r->mode.height * r->mode.width * fps == r->mode.pixel_clock);
+
+	switch (r->mode.bus_format) {
+	case MEDIA_BUS_FMT_SGRBG10_1X10:
+		assert_value(client, 0x125D, 0x88);
+		assert_eq(client, vco, r->mode.pixel_clock * 8, "vco_clock");
+		break;
+	case MEDIA_BUS_FMT_SGRBG10_DPCM8_1X8:
+		assert_value(client, 0x125D, 0x83);
+		assert_eq(client, vco, r->mode.pixel_clock * 6, "vco_clock");		
+		break;
+	default:
+		assert(client, 0, "unexpected bus format");
+
+		/* There are more possibilities, see 
+		   https://github.com/maemo-foss/omap3camera-firmware/blob/master/makemodes-et8ek8.pl
+		*/
+	}
 }
 
 static int et8ek8_configure(struct et8ek8_sensor *sensor)
@@ -899,6 +1023,8 @@ static int et8ek8_s_stream(struct v4l2_subdev *subdev, int streaming)
 	ret = et8ek8_configure(sensor);
 	if (ret < 0)
 		return ret;
+
+	et8ek8_check(sensor);
 
 	return et8ek8_stream_on(sensor);
 }
