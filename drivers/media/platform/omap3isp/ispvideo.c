@@ -772,6 +772,47 @@ isp_video_try_format(struct file *file, void *fh, struct v4l2_format *format)
 }
 
 static int
+isp_video_enum_format(struct file *file, void *fh, struct v4l2_fmtdesc *format)
+{
+	struct isp_video *video = video_drvdata(file);
+	struct v4l2_subdev *subdev;
+	u32 pad;
+
+	printk("ispvideo: enum_fmt\n");
+
+	subdev = isp_video_remote_subdev(video, &pad);
+	if (subdev == NULL) {
+		printk("No subdev\n");
+		//return -EINVAL;
+	}
+
+	//isp_video_pix_to_mbus(&format->fmt.pix, &fmt.format);
+	if (format->index)
+		return -EINVAL;
+	format->type = video->type;
+	format->flags = 0;
+	strcpy(format->description, "subdev description");
+	format->pixelformat = V4L2_PIX_FMT_SGRBG10;
+
+	printk("Returning SRGBG10\n");
+#if 0
+	{
+	int ret;
+	struct v4l2_subdev_format fmt;
+		
+	fmt.pad = pad;
+	fmt.which = V4L2_SUBDEV_FORMAT_ACTIVE;
+	ret = v4l2_subdev_call(subdev, pad, get_fmt, NULL, &fmt);
+	if (ret)
+		return ret == -ENOIOCTLCMD ? -ENOTTY : ret;
+
+	isp_video_mbus_to_pix(video, &fmt.format, &format->fmt.pix);
+	}
+#endif
+	return 0;
+}
+
+static int
 isp_video_get_selection(struct file *file, void *fh, struct v4l2_selection *sel)
 {
 	struct isp_video *video = video_drvdata(file);
@@ -1276,6 +1317,7 @@ static const struct v4l2_ioctl_ops isp_video_ioctl_ops = {
 	.vidioc_g_fmt_vid_cap		= isp_video_get_format,
 	.vidioc_s_fmt_vid_cap		= isp_video_set_format,
 	.vidioc_try_fmt_vid_cap		= isp_video_try_format,
+	.vidioc_enum_fmt_vid_cap        = isp_video_enum_format,
 	.vidioc_g_fmt_vid_out		= isp_video_get_format,
 	.vidioc_s_fmt_vid_out		= isp_video_set_format,
 	.vidioc_try_fmt_vid_out		= isp_video_try_format,
