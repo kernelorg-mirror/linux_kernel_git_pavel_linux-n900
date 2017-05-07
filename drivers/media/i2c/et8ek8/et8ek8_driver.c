@@ -58,6 +58,8 @@ struct et8ek8_sensor {
 
 	struct v4l2_ctrl_handler ctrl_handler;
 	struct v4l2_ctrl *exposure;
+	struct v4l2_ctrl *exposure_abs;
+	u32 cur_exposure;
 	struct v4l2_ctrl *pixel_rate;
 	struct et8ek8_reglist *current_reglist;
 
@@ -547,8 +549,6 @@ static int et8ek8_reglist_import(struct i2c_client *client,
 	return 0;
 }
 
-#undef COMPATIBLE
-#ifdef COMPATIBLE
 typedef unsigned int fixpoint8; /* .8 fixed point format. */
 
 /*
@@ -607,7 +607,6 @@ static int et8ek8_exposure_rows_to_us(struct et8ek8_sensor *sensor, int rows)
 {
 	return (et8ek8_get_row_time(sensor) * rows + (1 << 7)) >> 8;
 }
-#endif
 
 /* Called to change the V4L2 gain control value. This function
  * rounds and clamps the given value and updates the V4L2 control value.
@@ -700,23 +699,24 @@ static int et8ek8_set_ctrl(struct v4l2_ctrl *ctrl)
 {
 	struct et8ek8_sensor *sensor =
 		container_of(ctrl->handler, struct et8ek8_sensor, ctrl_handler);
+	u32 val = ctrl->val;
 
 	switch (ctrl->id) {
 	case V4L2_CID_GAIN:
 		return et8ek8_set_gain(sensor, ctrl->val);
 
+	case V4L2_CID_EXPOSURE_ABSOLUTE:
+		printk("Set Absolute exposure %d\n", val);
+		val = et8ek8_exposure_us_to_rows(sensor, &val);
+		/* Fall through */
+		
 	case V4L2_CID_EXPOSURE:
 	{
-		int rows;
 		struct i2c_client *client = v4l2_get_subdevdata(&sensor->subdev);
-#ifdef COMPATIBLE
-		u32 us = ctrl->val;
-		rows = et8ek8_exposure_us_to_rows(sensor, &us);
-#else
-		rows = ctrl->val;
-#endif
+		sensor->cur_exposure = val;
+		printk("Set exposure %d\n", val);		
 		return et8ek8_i2c_write_reg(client, ET8EK8_REG_16BIT, 0x1243,
-					    rows);
+					    val);
 	}
 
 	case V4L2_CID_TEST_PATTERN:
@@ -730,8 +730,32 @@ static int et8ek8_set_ctrl(struct v4l2_ctrl *ctrl)
 	}
 }
 
+static int et8ek8_get_ctrl(struct v4l2_ctrl *ctrl)
+{
+	struct et8ek8_sensor *sensor =
+		container_of(ctrl->handler, struct et8ek8_sensor, ctrl_handler);
+
+	switch (ctrl->id) {
+	case V4L2_CID_EXPOSURE_ABSOLUTE:
+		ctrl->val = et8ek8_exposure_rows_to_us(sensor, sensor->cur_exposure);
+		printk("Get absolute exposure %d\n", ctrl->val);
+		return 0;
+		
+	case V4L2_CID_EXPOSURE:
+		ctrl->val = sensor->cur_exposure;
+		printk("Get exposure %d\n", ctrl->val);
+		return 0;
+
+	default:
+		return -EINVAL;
+	}
+}
+
+
 static const struct v4l2_ctrl_ops et8ek8_ctrl_ops = {
 	.s_ctrl = et8ek8_set_ctrl,
+	.g_volatile_ctrl = et8ek8_get_ctrl,
+
 };
 
 static const char * const et8ek8_test_pattern_menu[] = {
@@ -761,14 +785,18 @@ static int et8ek8_init_controls(struct et8ek8_sensor *sensor)
 	{
 		u32 min = 1, max = max_rows;
 
-#ifdef COMPATIBLE
-		/* V4L2_CID_EXPOSURE */
-		min = et8ek8_exposure_rows_to_us(sensor, 1);
-		max = et8ek8_exposure_rows_to_us(sensor, max_rows);
-#endif
 		sensor->exposure =
 			v4l2_ctrl_new_std(&sensor->ctrl_handler, &et8ek8_ctrl_ops,
 					  V4L2_CID_EXPOSURE, min, max, min, max);
+		//sensor->exposure->flags |= V4L2_CTRL_FLAG_VOLATILE;
+
+		min = et8ek8_exposure_rows_to_us(sensor, 1);
+		max = et8ek8_exposure_rows_to_us(sensor, max);
+
+		sensor->exposure_abs =
+			v4l2_ctrl_new_std(&sensor->ctrl_handler, &et8ek8_ctrl_ops,
+					  V4L2_CID_EXPOSURE_ABSOLUTE, min, max, min, max);
+		//sensor->exposure_abs->flags |= V4L2_CTRL_FLAG_VOLATILE;
 	}
 
 	/* V4L2_CID_PIXEL_RATE */
@@ -800,15 +828,8 @@ static void et8ek8_update_controls(struct et8ek8_sensor *sensor)
 
 	printk("Updating controls for %d x %d @ %d mode -- %s\n", mode->width, mode->height, mode->pixel_clock, mode->name);
 
-	ctrl = sensor->exposure;
-
-#ifdef COMPATIBLE
-	min = et8ek8_exposure_rows_to_us(sensor, 1);
-	max = et8ek8_exposure_rows_to_us(sensor, mode->max_exp);
-#else
 	min = 1;
 	max = mode->max_exp;
-#endif
 
 	/*
 	 * Calculate average pixel clock per line. Assume buffers can spread
@@ -817,8 +838,12 @@ static void et8ek8_update_controls(struct et8ek8_sensor *sensor)
 	 */
 	pixel_rate = ((mode->pixel_clock + (1 << S) - 1) >> S) + mode->width;
 	pixel_rate = mode->window_width * (pixel_rate - 1) / mode->width;
+	__v4l2_ctrl_modify_range(sensor->exposure, min, max, min, max);
 
-	__v4l2_ctrl_modify_range(ctrl, min, max, min, max);
+	min = et8ek8_exposure_rows_to_us(sensor, 1);
+	max = et8ek8_exposure_rows_to_us(sensor, max);
+	__v4l2_ctrl_modify_range(sensor->exposure_abs, min, max, min, max);
+	
 	__v4l2_ctrl_s_ctrl_int64(sensor->pixel_rate, pixel_rate << S);
 }
 
