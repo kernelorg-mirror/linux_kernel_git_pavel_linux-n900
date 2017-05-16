@@ -74,13 +74,14 @@
 			/data/l/maemo/kernel-power/kernel-power-2.6.28/drivers/misc/nokia-av.c
 			sound/soc/omap/rx51.c
 			*/
+#if 0
 		eci_switch {
 			label = "Headset button";
 			gpios = <&gpio6 22 GPIO_ACTIVE_HIGH>; /* 182 */
 			linux,code = <KEY_PHONE>;
 			linux,can-disable;
  		};
-
+#endif
 #if 0
 		camera_focus {
 			label = "Camera Focus";
@@ -146,6 +147,7 @@
 		nokia,headphone-amplifier = <&tpa6130a2>;
 
 		tvout-selection-gpios = <&gpio2 8 GPIO_ACTIVE_HIGH>; /* 40 */
+		eci-switch-gpios = <&gpio6 22 GPIO_ACTIVE_HIGH>; /* 182 */
 		jack-detection-gpios = <&gpio6 17 GPIO_ACTIVE_HIGH>; /* 177 */
 		speaker-amplifier-gpios = <&twl_gpio 7 GPIO_ACTIVE_HIGH>;
 	};
