@@ -2026,7 +2026,7 @@ static int isp_fwnode_parse(struct device *dev, struct fwnode_handle *fwnode,
 
 	isd->bus = buscfg;
 
-	ret = v4l2_fwnode_endpoint_parse(fwn, vep);
+	ret = v4l2_fwnode_endpoint_parse(fwnode, &vep);
 	if (ret)
 		return ret;
 
