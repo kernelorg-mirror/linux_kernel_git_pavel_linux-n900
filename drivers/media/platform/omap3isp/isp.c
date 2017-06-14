@@ -1859,6 +1859,7 @@ static void isp_cleanup_modules(struct isp_device *isp)
 	omap3isp_ccdc_cleanup(isp);
 	omap3isp_ccp2_cleanup(isp);
 	omap3isp_csi2_cleanup(isp);
+	omap3isp_csiphy_cleanup(isp);
 }
 
 static int isp_initialize_modules(struct isp_device *isp)
@@ -1868,7 +1869,7 @@ static int isp_initialize_modules(struct isp_device *isp)
 	ret = omap3isp_csiphy_init(isp);
 	if (ret < 0) {
 		dev_err(isp->dev, "CSI PHY initialization failed\n");
-		goto error_csiphy;
+		return ret;
 	}
 
 	ret = omap3isp_csi2_init(isp);
@@ -1879,7 +1880,8 @@ static int isp_initialize_modules(struct isp_device *isp)
 
 	ret = omap3isp_ccp2_init(isp);
 	if (ret < 0) {
-		dev_err(isp->dev, "CCP2 initialization failed\n");
+		if (ret != -EPROBE_DEFER)
+			dev_err(isp->dev, "CCP2 initialization failed\n");
 		goto error_ccp2;
 	}
 
@@ -1936,7 +1938,8 @@ error_ccdc:
 error_ccp2:
 	omap3isp_csi2_cleanup(isp);
 error_csi2:
-error_csiphy:
+	omap3isp_csiphy_cleanup(isp);
+
 	return ret;
 }
 
@@ -2011,12 +2014,19 @@ enum isp_of_phy {
 static int isp_fwnode_parse(struct device *dev, struct fwnode_handle *fwnode,
 			    struct isp_async_subdev *isd)
 {
-	struct isp_bus_cfg *buscfg = &isd->bus;
+	struct isp_bus_cfg *buscfg;
 	struct v4l2_fwnode_endpoint vep;
 	unsigned int i;
 	int ret;
+	bool csi1 = false;
 
-	ret = v4l2_fwnode_endpoint_parse(fwnode, &vep);
+	buscfg = devm_kzalloc(dev, sizeof(*isd->bus), GFP_KERNEL);
+	if (!buscfg)
+		return -ENOMEM;
+
+	isd->bus = buscfg;
+
+	ret = v4l2_fwnode_endpoint_parse(fwn, vep);
 	if (ret)
 		return ret;
 
@@ -2043,44 +2053,95 @@ static int isp_fwnode_parse(struct device *dev, struct fwnode_handle *fwnode,
 
 	case ISP_OF_PHY_CSIPHY1:
 	case ISP_OF_PHY_CSIPHY2:
-		/* FIXME: always assume CSI-2 for now. */
+		switch (vep.bus_type) {
+		case V4L2_MBUS_CCP2:
+		case V4L2_MBUS_CSI1:
+			dev_dbg(dev, "csi1/ccp2 configuration\n");
+			csi1 = true;
+			break;
+		case V4L2_MBUS_CSI2:
+			dev_dbg(dev, "csi2 configuration\n");
+			csi1 = false;
+			break;
+		default:
+			dev_err(dev, "unsupported bus type %u\n",
+				vep.bus_type);
+			return -EINVAL;
+		}
+
 		switch (vep.base.port) {
 		case ISP_OF_PHY_CSIPHY1:
-			buscfg->interface = ISP_INTERFACE_CSI2C_PHY1;
+			if (csi1)
+				buscfg->interface = ISP_INTERFACE_CCP2B_PHY1;
+			else
+				buscfg->interface = ISP_INTERFACE_CSI2C_PHY1;
 			break;
 		case ISP_OF_PHY_CSIPHY2:
-			buscfg->interface = ISP_INTERFACE_CSI2A_PHY2;
+			if (csi1)
+				buscfg->interface = ISP_INTERFACE_CCP2B_PHY2;
+			else
+				buscfg->interface = ISP_INTERFACE_CSI2A_PHY2;
 			break;
 		}
-		buscfg->bus.csi2.lanecfg.clk.pos = vep.bus.mipi_csi2.clock_lane;
-		buscfg->bus.csi2.lanecfg.clk.pol =
-			vep.bus.mipi_csi2.lane_polarities[0];
-		dev_dbg(dev, "clock lane polarity %u, pos %u\n",
-			buscfg->bus.csi2.lanecfg.clk.pol,
-			buscfg->bus.csi2.lanecfg.clk.pos);
+		if (csi1) {
+			buscfg->bus.ccp2.lanecfg.clk.pos =
+				vep.bus.mipi_csi1.clock_lane;
+			buscfg->bus.ccp2.lanecfg.clk.pol =
+				vep.bus.mipi_csi1.lane_polarity[0];
+			dev_dbg(dev, "clock lane polarity %u, pos %u\n",
+				buscfg->bus.ccp2.lanecfg.clk.pol,
+				buscfg->bus.ccp2.lanecfg.clk.pos);
 
-		for (i = 0; i < ISP_CSIPHY2_NUM_DATA_LANES; i++) {
-			buscfg->bus.csi2.lanecfg.data[i].pos =
-				vep.bus.mipi_csi2.data_lanes[i];
-			buscfg->bus.csi2.lanecfg.data[i].pol =
-				vep.bus.mipi_csi2.lane_polarities[i + 1];
+			buscfg->bus.ccp2.lanecfg.data[0].pos =
+				vep.bus.mipi_csi1.data_lane;
+			buscfg->bus.ccp2.lanecfg.data[0].pol =
+				vep.bus.mipi_csi1.lane_polarity[1];
+
 			dev_dbg(dev, "data lane %u polarity %u, pos %u\n", i,
-				buscfg->bus.csi2.lanecfg.data[i].pol,
-				buscfg->bus.csi2.lanecfg.data[i].pos);
-		}
+				buscfg->bus.ccp2.lanecfg.data[0].pol,
+				buscfg->bus.ccp2.lanecfg.data[0].pos);
 
-		/*
-		 * FIXME: now we assume the CRC is always there.
-		 * Implement a way to obtain this information from the
-		 * sensor. Frame descriptors, perhaps?
-		 */
-		buscfg->bus.csi2.crc = 1;
+			buscfg->bus.ccp2.strobe_clk_pol =
+				vep.bus.mipi_csi1.clock_inv;
+			buscfg->bus.ccp2.phy_layer = vep.bus.mipi_csi1.strobe;
+			buscfg->bus.ccp2.ccp2_mode =
+				vep.bus_type == V4L2_MBUS_CCP2;
+			buscfg->bus.ccp2.vp_clk_pol = 1;
+
+			buscfg->bus.ccp2.crc = 1;
+		} else {
+			buscfg->bus.csi2.lanecfg.clk.pos =
+				vep.bus.mipi_csi2.clock_lane;
+			buscfg->bus.csi2.lanecfg.clk.pol =
+				vep.bus.mipi_csi2.lane_polarities[0];
+			dev_dbg(dev, "clock lane polarity %u, pos %u\n",
+				buscfg->bus.csi2.lanecfg.clk.pol,
+				buscfg->bus.csi2.lanecfg.clk.pos);
+
+			for (i = 0; i < ISP_CSIPHY2_NUM_DATA_LANES; i++) {
+				buscfg->bus.csi2.lanecfg.data[i].pos =
+					vep.bus.mipi_csi2.data_lanes[i];
+				buscfg->bus.csi2.lanecfg.data[i].pol =
+					vep.bus.mipi_csi2.lane_polarities[i + 1];
+				dev_dbg(dev,
+					"data lane %u polarity %u, pos %u\n", i,
+					buscfg->bus.csi2.lanecfg.data[i].pol,
+					buscfg->bus.csi2.lanecfg.data[i].pos);
+			}
+			/*
+			 * FIXME: now we assume the CRC is always there.
+			 * Implement a way to obtain this information from the
+			 * sensor. Frame descriptors, perhaps?
+			 */
+
+			buscfg->bus.csi2.crc = 1;
+		}
 		break;
 
 	default:
 		dev_warn(dev, "%s: invalid interface %u\n",
 			 to_of_node(fwnode)->full_name, vep.base.port);
-		break;
+		return -EINVAL;
 	}
 
 	return 0;
@@ -2096,19 +2157,26 @@ static int isp_fwnodes_parse(struct device *dev,
 	if (!notifier->subdevs)
 		return -ENOMEM;
 
-	while (notifier->num_subdevs < ISP_MAX_SUBDEVS &&
-	       (fwnode = fwnode_graph_get_next_endpoint(
-			of_fwnode_handle(dev->of_node), fwnode))) {
+	while ((fwnode = fwnode_graph_get_next_endpoint(dev_fwnode(dev),
+							fwnode))) {
 		struct isp_async_subdev *isd;
+
+		if (notifier->num_subdevs >= ISP_MAX_SUBDEVS) {
+			dev_warn(dev, "too many endpoints, ignoring\n");
+			fwnode_handle_put(fwnode);
+			break;
+		}
 
 		isd = devm_kzalloc(dev, sizeof(*isd), GFP_KERNEL);
 		if (!isd)
 			goto error;
 
-		notifier->subdevs[notifier->num_subdevs] = &isd->asd;
+		if (isp_fwnode_parse(dev, fwnode, isd)) {
+			devm_kfree(dev, isd);
+			continue;
+		}
 
-		if (isp_fwnode_parse(dev, fwnode, isd))
-			goto error;
+		notifier->subdevs[notifier->num_subdevs] = &isd->asd;
 
 		isd->asd.match.fwnode.fwnode =
 			fwnode_graph_get_remote_port_parent(fwnode);
@@ -2136,7 +2204,7 @@ static int isp_subdev_notifier_bound(struct v4l2_async_notifier *async,
 		container_of(asd, struct isp_async_subdev, asd);
 
 	isd->sd = subdev;
-	isd->sd->host_priv = &isd->bus;
+	isd->sd->host_priv = isd->bus;
 
 	return 0;
 }
