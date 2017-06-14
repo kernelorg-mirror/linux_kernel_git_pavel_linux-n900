@@ -2171,7 +2171,7 @@ static int camera_subdev_parse(struct device *dev, struct v4l2_async_notifier *n
 
 		notifier->subdevs[notifier->num_subdevs] = &isd->asd;
 
-		isd->asd.match.fwnode.fwn = of_fwnode_handle(node);
+		isd->asd.match.fwnode.fwnode = of_fwnode_handle(node);
 		isd->asd.match_type = V4L2_ASYNC_MATCH_FWNODE;
 		notifier->num_subdevs++;
 	}
