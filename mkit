@@ -5,7 +5,7 @@ set -e
 D=`git describe`
 TFTP=/srv/tftp
 # uImage LOADADDR=0x80008000
-#CROSS_COMPILE="ccache $CROSS_COMPILE"
+CROSS_COMPILE="ccache $CROSS_COMPILE"
 echo "Cross compile: $CROSS_COMPILE"
 ARCH=arm long make -j 5 zImage
     ARCH=arm make omap3-n900.dtb
