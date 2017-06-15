@@ -96,6 +96,7 @@ static int ad5820_write(struct ad5820_device *coil, u16 data)
 static int ad5820_update_hw(struct ad5820_device *coil)
 {
 	u16 status;
+	int ret;
 
 	status = RAMP_US_TO_CODE(coil->focus_ramp_time);
 	status |= coil->focus_ramp_mode
@@ -105,7 +106,11 @@ static int ad5820_update_hw(struct ad5820_device *coil)
 	if (coil->standby)
 		status |= AD5820_POWER_DOWN;
 
-	return ad5820_write(coil, status);
+	printk("ad5820: focusing to %d / %x\n", coil->focus_absolute, status);
+	ret = ad5820_write(coil, status);
+	if (ret)
+		printk("ad5820: writing to hardware failed: %d\n", ret);
+	return ret;
 }
 
 /*
