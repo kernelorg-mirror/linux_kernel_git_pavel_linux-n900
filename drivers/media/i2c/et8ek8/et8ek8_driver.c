@@ -40,8 +40,6 @@
 #include <media/v4l2-device.h>
 #include <media/v4l2-subdev.h>
 
-#define DEBUG
-
 static int simple_subdev_notifier_bound(struct v4l2_async_notifier *notifier,
                                        struct v4l2_subdev *sd,
                                        struct v4l2_async_subdev *asd)
@@ -55,8 +53,6 @@ static int simple_subdev_notifier_complete(
        struct v4l2_async_notifier_simple *notifier_s =
                container_of(notifier, struct v4l2_async_notifier_simple, notifier);
 
-       printf("Subdev notifier complete\n");
-
        return v4l2_device_register_subdev_nodes(notifier_s->v4l2_dev);
 }
 
@@ -67,7 +63,6 @@ static inline int v4l2_simple_subnotifier_register(struct v4l2_subdev *subdev,
 	int rval;
 
 	if (!notifier->num_subdevs) {
-		printf("et8: no subdevs\n");
 		return 0;
 	}
 
@@ -75,7 +70,6 @@ static inline int v4l2_simple_subnotifier_register(struct v4l2_subdev *subdev,
 	notifier->bound = simple_subdev_notifier_bound;
 	notifier->complete = simple_subdev_notifier_complete;
 	rval = v4l2_async_subnotifier_register(subdev, notifier);
-	printf("et8: subnotifier register: %d\n", rval);
 	return rval;
 }
 
@@ -96,14 +90,10 @@ static inline int simple_subdev_probe(struct device *dev,
 		struct device_node *node;
 		unsigned int j = 0;
 
-		printk("et8: Looking for %s\n", props[i]);
-
 		while ((node = of_parse_phandle(dev->of_node, props[i], j++))) {
 			struct v4l2_async_subdev **asd =
                                 &notifier->subdevs[
                                         notifier->num_subdevs];
-
-			printk("et8: Got subdev.\n");
 
 			if (WARN_ON(notifier->num_subdevs >= max_subdevs)) {
 				of_node_put(node);
@@ -1755,7 +1745,6 @@ static int et8ek8_probe(struct i2c_client *client,
 		return ret;
 	}
 
-	printk("et8: initializing power\n");
 	sensor->subdev.entity.function = MEDIA_ENT_F_CAM_SENSOR;
 
 	mutex_init(&sensor->power_lock);
@@ -1764,7 +1753,6 @@ static int et8ek8_probe(struct i2c_client *client,
 	if (ret < 0)
 		printk("Simple subdev probe failed\n");
 
-	printk("et8: initializing subdev\n");
 	v4l2_i2c_subdev_init(&sensor->subdev, client, &et8ek8_ops);
 	sensor->subdev.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
 	sensor->subdev.internal_ops = &et8ek8_internal_ops;
@@ -1776,12 +1764,10 @@ static int et8ek8_probe(struct i2c_client *client,
 		goto err_mutex;
 	}
 
-	printk("et8: async register\n");	
 	ret = v4l2_async_register_subdev(&sensor->subdev);
 	if (ret < 0)
 		goto err_entity;
 
-	printk("et8: initialized!\n");
 	dev_dbg(dev, "initialized!\n");
 
 	return 0;
@@ -1790,7 +1776,6 @@ err_entity:
 	media_entity_cleanup(&sensor->subdev.entity);
 err_mutex:
 	mutex_destroy(&sensor->power_lock);
-	printk("et8ek8: init failed\n");
 	return ret;
 }
 
