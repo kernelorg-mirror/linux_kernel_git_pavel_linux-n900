@@ -40,6 +40,8 @@
 #include <media/v4l2-device.h>
 #include <media/v4l2-subdev.h>
 
+#define DEBUG
+
 static int simple_subdev_notifier_bound(struct v4l2_async_notifier *notifier,
                                        struct v4l2_subdev *sd,
                                        struct v4l2_async_subdev *asd)
@@ -1744,8 +1746,12 @@ static int et8ek8_probe(struct i2c_client *client,
 		return ret;
 	}
 
+	printk("et8: initializing power\n");
+	sensor->subdev.entity.function = MEDIA_ENT_F_CAM_SENSOR;
+
 	mutex_init(&sensor->power_lock);
 
+	printk("et8: initializing subdev\n");
 	v4l2_i2c_subdev_init(&sensor->subdev, client, &et8ek8_ops);
 	sensor->subdev.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
 	sensor->subdev.internal_ops = &et8ek8_internal_ops;
@@ -1757,12 +1763,16 @@ static int et8ek8_probe(struct i2c_client *client,
 		goto err_mutex;
 	}
 
+	printk("et8: async register\n");	
 	ret = v4l2_async_register_subdev(&sensor->subdev);
 	if (ret < 0)
 		goto err_entity;
 
-	simple_subdev_probe(dev, &sensor->notifier_s.notifier);
+	ret = simple_subdev_probe(dev, &sensor->notifier_s.notifier);
+	if (ret < 0)
+		printk("Simple subdev probe failed\n");
 
+	printk("et8: initialized!\n");
 	dev_dbg(dev, "initialized!\n");
 
 	return 0;
@@ -1771,6 +1781,7 @@ err_entity:
 	media_entity_cleanup(&sensor->subdev.entity);
 err_mutex:
 	mutex_destroy(&sensor->power_lock);
+	printk("et8ek8: init failed\n");
 	return ret;
 }
 
