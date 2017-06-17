@@ -104,6 +104,11 @@ struct v4l2_async_notifier {
 		       struct v4l2_async_subdev *asd);
 };
 
+struct v4l2_async_notifier_simple {
+	struct v4l2_async_notifier notifier;
+	struct v4l2_device * v4l2_dev;
+};
+
 /**
  * v4l2_async_notifier_register - registers a subdevice asynchronous subnotifier
  *
