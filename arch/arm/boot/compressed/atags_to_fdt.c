@@ -55,27 +55,6 @@ static const void *getprop(const void *fdt, const char *node_path,
 	return fdt_getprop(fdt, offset, property, len);
 }
 
-static void *getprop_w(void *fdt, const char *node_path,
-		       const char *property, int *len)
-{
-	int offset = fdt_path_offset(fdt, node_path);
-
-	if (offset == -FDT_ERR_NOTFOUND)
-		return NULL;
-
-	return fdt_getprop_w(fdt, offset, property, len);
-}
-
-static int appendprop_string(void *fdt, const char *node_path,
-			     const char *property, const char *string)
-{
-	int offset = node_offset(fdt, node_path);
-
-	if (offset < 0)
-		return offset;
-	return fdt_appendprop_string(fdt, offset, property, string);
-}
-
 static uint32_t get_cell_size(const void *fdt)
 {
 	int len;
@@ -87,25 +66,35 @@ static uint32_t get_cell_size(const void *fdt)
 	return cell_size;
 }
 
-/* This is called early on from head.S, so it can't use much stack. */
-static void merge_fdt_bootargs(void *fdt, const char *atag_cmdline)
+static void merge_fdt_bootargs(void *fdt, const char *fdt_cmdline)
 {
-	char *fdt_bootargs;
+	char cmdline[COMMAND_LINE_SIZE];
+	const char *fdt_bootargs;
+	char *ptr = cmdline;
 	int len = 0;
 
-	/* With no ATAG command line or an empty one, there is nothing to do. */
-	if (!atag_cmdline || strlen(atag_cmdline) == 0)
-		return;
+	/* copy the fdt command line into the buffer */
+	fdt_bootargs = getprop(fdt, "/chosen", "bootargs", &len);
+	if (fdt_bootargs)
+		if (len < COMMAND_LINE_SIZE) {
+			memcpy(ptr, fdt_bootargs, len);
+			/* len is the length of the string
+			 * including the NULL terminator */
+			ptr += len - 1;
+		}
 
-	fdt_bootargs = getprop_w(fdt, "/chosen", "bootargs", &len);
-
-	/* With no FDT command line or an empty one, just use the ATAG one. */
-	if (!fdt_bootargs || len <= 1) {
-		setprop_string(fdt, "/chosen", "bootargs", atag_cmdline);
-		return;
+	/* and append the ATAG_CMDLINE */
+	if (fdt_cmdline) {
+		len = strlen(fdt_cmdline);
+		if (ptr - cmdline + len + 2 < COMMAND_LINE_SIZE) {
+			*ptr++ = ' ';
+			memcpy(ptr, fdt_cmdline, len);
+			ptr += len;
+		}
 	}
-	fdt_bootargs[len - 1] = ' ';
-	appendprop_string(fdt, "/chosen", "bootargs", atag_cmdline);
+	*ptr = '\0';
+
+	setprop_string(fdt, "/chosen", "bootargs", cmdline);
 }
 
 /*
