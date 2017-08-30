@@ -53,8 +53,12 @@ struct led_rgb led_hsv_to_rgb(struct led_hsv hsv)
 		r = v; g = p; b = q; break;
 	}
 
+	printk("hsv_to: h %5d, s %5d, v %5d -> %5d, %5d, %5d\n",
+	       h*390, s*390, v*390, r*390, g*390, b*390);
+	
 	res.red = r << 24;
 	res.green = g << 24;
 	res.blue = b << 24;
+	return res;
 }
 EXPORT_SYMBOL_GPL(led_hsv_to_rgb);
