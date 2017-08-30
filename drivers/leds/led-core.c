@@ -64,7 +64,7 @@ static void led_timer_function(unsigned long data)
 	}
 
 	brightness = led_get_brightness(led_cdev);
-	if (!__is_brightness_set(brightness)) {
+	if (!brightness) {
 		/* Time to switch the LED on. */
 		if (test_and_clear_bit(LED_BLINK_BRIGHTNESS_CHANGE,
 					&led_cdev->work_flags))
@@ -135,9 +135,8 @@ static void led_set_software_blink(struct led_classdev *led_cdev,
 	if (current_brightness)
 		led_cdev->blink_brightness = current_brightness;
 	if (!led_cdev->blink_brightness)
-		led_cdev->blink_brightness =
-				led_confine_brightness(led_cdev,
-						led_cdev->max_brightness);
+		led_cdev->blink_brightness = led_cdev->max_brightness;
+
 	led_cdev->blink_delay_on = delay_on;
 	led_cdev->blink_delay_off = delay_off;
 
@@ -271,7 +270,7 @@ EXPORT_SYMBOL_GPL(led_set_brightness_nopm);
 void led_set_brightness_nosleep(struct led_classdev *led_cdev,
 				enum led_brightness value)
 {
-	led_cdev->brightness = led_confine_brightness(led_cdev, value);
+	led_cdev->brightness = min(value, led_cdev->max_brightness);
 
 	if (led_cdev->flags & LED_SUSPENDED)
 		return;
@@ -286,7 +285,7 @@ int led_set_brightness_sync(struct led_classdev *led_cdev,
 	if (led_cdev->blink_delay_on || led_cdev->blink_delay_off)
 		return -EBUSY;
 
-	led_cdev->brightness = led_confine_brightness(led_cdev, value);
+	led_cdev->brightness = min(value, led_cdev->max_brightness);
 
 	if (led_cdev->flags & LED_SUSPENDED)
 		return 0;

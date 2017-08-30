@@ -33,10 +33,7 @@ static ssize_t brightness_show(struct device *dev,
 	/* no lock needed for this */
 	led_update_brightness(led_cdev);
 
-	if (led_cdev->brightness > LED_FULL)
-		return sprintf(buf, "%#.6x\n", led_cdev->brightness);
-	else
-		return sprintf(buf, "%u\n", led_cdev->brightness);
+	return sprintf(buf, "%u\n", led_cdev->brightness);
 }
 
 static ssize_t brightness_store(struct device *dev,
@@ -53,11 +50,11 @@ static ssize_t brightness_store(struct device *dev,
 		goto unlock;
 	}
 
-	ret = kstrtoul(buf, 0, &state);
+	ret = kstrtoul(buf, 10, &state);
 	if (ret)
 		goto unlock;
 
-	if (!__is_brightness_set(state))
+	if (state == LED_OFF)
 		led_trigger_remove(led_cdev);
 	led_set_brightness(led_cdev, state);
 
@@ -272,12 +269,6 @@ int of_led_classdev_register(struct device *parent, struct device_node *np,
 	if (ret)
 		dev_warn(parent, "Led %s renamed to %s due to name collision",
 				led_cdev->name, dev_name(led_cdev->dev));
-	/*
-	 * Reading back the color is not supported as multiple
-	 * HSV -> RGB -> HSV conversions may distort the color due to
-	 * rounding issues in the conversion algorithm
-	 */
-	WARN_ON(led_cdev->flags & LED_DEV_CAP_RGB && led_cdev->brightness_get);
 
 	if (led_cdev->flags & LED_BRIGHT_HW_CHANGED) {
 		ret = led_add_brightness_hw_changed(led_cdev);
