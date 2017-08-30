@@ -31,7 +31,15 @@ enum led_brightness {
 	LED_ON		= 1,
 	LED_HALF	= 127,
 	LED_FULL	= 255,
+	/*
+	 * dummy enum value to make gcc use a 32 bit type for the enum
+	 * even if compiled with -fshort-enums. This is needed for
+	 * the enum to store hsv values.
+	 */
+	LED_LEVEL_DUMMY	= 0xffffffff,
 };
+
+#define LED_SET_HUE_SAT		BIT(24)
 
 struct led_classdev {
 	const char		*name;
@@ -49,6 +57,7 @@ struct led_classdev {
 #define LED_HW_PLUGGABLE	(1 << 19)
 #define LED_PANIC_INDICATOR	(1 << 20)
 #define LED_BRIGHT_HW_CHANGED	(1 << 21)
+#define LED_DEV_CAP_RGB		(1 << 24)
 
 	/* set_brightness_work / blink_timer flags, atomic, private. */
 	unsigned long		work_flags;
@@ -59,6 +68,7 @@ struct led_classdev {
 #define LED_BLINK_INVERT		3
 #define LED_BLINK_BRIGHTNESS_CHANGE 	4
 #define LED_BLINK_DISABLE		5
+
 
 	/* Set LED brightness level
 	 * Must not sleep. Use brightness_set_blocking for drivers

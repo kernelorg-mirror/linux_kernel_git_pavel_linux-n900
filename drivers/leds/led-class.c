@@ -54,7 +54,7 @@ static ssize_t brightness_store(struct device *dev,
 	if (ret)
 		goto unlock;
 
-	if (state == LED_OFF)
+	if (!__is_brightness_set(state))
 		led_trigger_remove(led_cdev);
 	led_set_brightness(led_cdev, state);
 
