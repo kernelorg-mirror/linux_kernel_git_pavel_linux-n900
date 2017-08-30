@@ -176,6 +176,8 @@ static int lp55xx_init_led(struct lp55xx_led *led,
 	led->cdev.brightness_set_blocking = lp55xx_set_brightness;
 	led->cdev.groups = lp55xx_led_groups;
 
+	printk("Led %d name %s\n", chan, pdata->led_config[chan].name);
+
 	if (pdata->led_config[chan].name) {
 		led->cdev.name = pdata->led_config[chan].name;
 	} else {

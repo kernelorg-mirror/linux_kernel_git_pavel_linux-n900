@@ -12,43 +12,26 @@
 #include <linux/leds.h>
 #include "leds.h"
 
-/*
- * The color extension handles RGB LEDs but uses a HSV color model internally.
- * led_rgb_adjust_hue_sat sets hue and saturation part of the HSV color value.
- */
-static enum led_brightness led_rgb_adjust_hue_sat(struct led_classdev *led_cdev,
-						  enum led_brightness value)
+struct led_rgb led_hsv_to_rgb(struct led_hsv hsv)
 {
-	/* LED_SET_HUE_SAT sets hue and saturation even if both are zero */
-	if (value & LED_SET_HUE_SAT || value > LED_FULL)
-		return value & LED_HUE_SAT_MASK;
-	else
-		return led_cdev->brightness & ~LED_BRIGHTNESS_MASK;
-}
-
-enum led_brightness led_confine_brightness(struct led_classdev *led_cdev,
-					   enum led_brightness value)
-{
-	enum led_brightness brightness = 0;
-
-	if (led_cdev->flags & LED_DEV_CAP_RGB)
-		brightness = led_rgb_adjust_hue_sat(led_cdev, value);
-
-	return brightness |
-	       min(value & LED_BRIGHTNESS_MASK, led_cdev->max_brightness);
-}
-
-enum led_brightness led_hsv_to_rgb(enum led_brightness hsv)
-{
-	int h = min_t(int, (hsv >> 16) & 0xff, 251);
-	int s = (hsv >> 8) & 0xff;
-	int v = hsv & 0xff;
+	int h = hsv.hue >> 24;
+	int s = hsv.saturation >> 24;
+	int v = hsv.value >> 24;
 	int f, p, q, t, r, g, b;
+	struct led_rgb res;
 
-	if (!v)
-		return 0;
-	if (!s)
-		return (v << 16) + (v << 8) + v;
+	if (!v) {
+		res.red = 0;
+		res.green = 0;
+		res.blue = 0;
+		return res;
+	}
+	if (!s) {
+		res.red = v << 24;
+		res.green = v << 24;
+		res.blue = v << 24;
+		return res;
+	}
 
 	f = DIV_ROUND_CLOSEST((h % 42) * 255, 42);
 	p = v - DIV_ROUND_CLOSEST(s * v, 255);
@@ -70,6 +53,8 @@ enum led_brightness led_hsv_to_rgb(enum led_brightness hsv)
 		r = v; g = p; b = q; break;
 	}
 
-	return (r << 16) + (g << 8) + b;
+	res.red = r << 24;
+	res.green = g << 24;
+	res.blue = b << 24;
 }
 EXPORT_SYMBOL_GPL(led_hsv_to_rgb);
