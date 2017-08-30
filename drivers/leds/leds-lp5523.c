@@ -816,7 +816,7 @@ int lp5523_rgb_brightness(struct lp55xx_led *led, struct led_rgb r)
 	if (!ret)
 		lp55xx_write(chip, LP5523_REG_LED_PWM_BASE + led->chan_nr - 1, r.green);
 	if (!ret)
-		lp55xx_write(chip, LP5523_REG_LED_PWM_BASE + led->chan_nr - 1, r.blue);
+		lp55xx_write(chip, LP5523_REG_LED_PWM_BASE + led->chan_nr - 2, r.blue);
 	mutex_unlock(&chip->lock);
 	return ret;
 

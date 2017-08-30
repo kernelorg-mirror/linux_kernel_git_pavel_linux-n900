@@ -14,10 +14,10 @@
 
 struct led_rgb led_hsv_to_rgb(struct led_hsv hsv)
 {
-	int h = hsv.hue >> 24;
-	int s = hsv.saturation >> 24;
-	int v = hsv.value >> 24;
-	int f, p, q, t, r, g, b;
+	unsigned int h = hsv.hue >> 24;
+	unsigned int s = hsv.saturation >> 24;
+	unsigned int v = hsv.value >> 24;
+	unsigned int f, p, q, t, r, g, b;
 	struct led_rgb res;
 
 	if (!v) {
