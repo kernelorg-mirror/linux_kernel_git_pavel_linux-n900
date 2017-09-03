@@ -241,12 +241,14 @@ static inline bool led_sysfs_is_disabled(struct led_classdev *led_cdev)
 	return led_cdev->flags & LED_SYSFS_DISABLE;
 }
 
+/* 0.32 fixed point */
 struct led_hsv {
 	u32 hue;
 	u32 saturation;
 	u32 value;
 };
 
+/* 0.32 fixed point */
 struct led_rgb {
 	u32 red;
 	u32 green;
