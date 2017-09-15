@@ -285,9 +285,10 @@ struct l2cap_ctrl {
 		fcs:1,
 		sar:2,
 		super:2;
-	__u16	reqseq;
-	__u16	txseq;
-	__u8	retries;
+
+	u16	reqseq;
+	u16	txseq;
+	u8	retries;
 	__le16  psm;
 	bdaddr_t bdaddr;
 	struct l2cap_chan *chan;
@@ -303,7 +304,7 @@ typedef void (*hci_req_complete_skb_t)(struct hci_dev *hdev, u8 status,
 #define HCI_REQ_SKB	BIT(1)
 
 struct hci_ctrl {
-	__u16 opcode;
+	u16 opcode;
 	u8 req_flags;
 	u8 req_event;
 	union {
@@ -313,10 +314,10 @@ struct hci_ctrl {
 };
 
 struct bt_skb_cb {
-	__u8 pkt_type;
-	__u8 force_active;
-	__u16 expect;
-	__u8 incoming:1;
+	u8 pkt_type;
+	u8 force_active;
+	u16 expect;
+	u8 incoming:1;
 	union {
 		struct l2cap_ctrl l2cap;
 		struct hci_ctrl hci;
