@@ -790,9 +790,7 @@ EXPORT_SYMBOL(__page_cache_alloc);
  */
 wait_queue_head_t *page_waitqueue(struct page *page)
 {
-	const struct zone *zone = page_zone(page);
-
-	return &zone->wait_table[hash_ptr(page, zone->wait_table_bits)];
+	return bit_waitqueue(page, 0);
 }
 EXPORT_SYMBOL(page_waitqueue);
 
@@ -1941,7 +1939,7 @@ generic_file_read_iter(struct kiocb *iocb, struct iov_iter *iter)
 		file_accessed(file);
 
 		retval = mapping->a_ops->direct_IO(iocb, &data);
-		if (retval > 0) {
+		if (retval >= 0) {
 			iocb->ki_pos += retval;
 			iov_iter_advance(iter, retval);
 		}

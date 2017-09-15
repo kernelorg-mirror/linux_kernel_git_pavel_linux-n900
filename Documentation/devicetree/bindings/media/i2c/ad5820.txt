@@ -10,7 +10,11 @@ Required Properties:
 
 Example:
 
+<<<<<<< HEAD
        ad5820: coil@0c {
+=======
+       ad5820: coil@c {
+>>>>>>> a909d3e636995ba7c349e2ca5dbb528154d4ac30
                compatible = "adi,ad5820";
                reg = <0x0c>;
 
