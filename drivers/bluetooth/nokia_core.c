@@ -198,6 +198,8 @@ static void h4p_simple_send_frame(struct h4p_info *info, struct sk_buff *skb)
 	h4p_enable_tx_nopm(info);
 }
 
+#define _skb_put(a, b) ((char *) skb_put(a, b))
+
 /* Negotiation functions */
 static int h4p_send_alive_packet(struct h4p_info *info)
 {
@@ -214,7 +216,7 @@ static int h4p_send_alive_packet(struct h4p_info *info)
 		return -ENOMEM;
 
 	memset(skb->data, 0x00, len);
-	*skb_put(skb, 1) = H4_ALIVE_PKT;
+	*_skb_put(skb, 1) = H4_ALIVE_PKT;
 	hdr = (struct h4p_alive_hdr *)skb_put(skb, sizeof(*hdr));
 	hdr->dlen = sizeof(*pkt);
 	pkt = (struct h4p_alive_pkt *)skb_put(skb, sizeof(*pkt));
@@ -267,7 +269,7 @@ static int h4p_send_negotiation(struct h4p_info *info)
 		return -ENOMEM;
 
 	memset(skb->data, 0x00, len);
-	*skb_put(skb, 1) = H4_NEG_PKT;
+	*_skb_put(skb, 1) = H4_NEG_PKT;
 	neg_hdr = (struct h4p_neg_hdr *)skb_put(skb, sizeof(*neg_hdr));
 	neg_cmd = (struct h4p_neg_cmd *)skb_put(skb, sizeof(*neg_cmd));
 
@@ -449,7 +451,7 @@ static inline void h4p_handle_byte(struct h4p_info *info, u8 byte)
 		break;
 	case WAIT_FOR_HEADER:
 		info->rx_count--;
-		*skb_put(info->rx_skb, 1) = byte;
+		*_skb_put(info->rx_skb, 1) = byte;
 		if (info->rx_count != 0)
 			break;
 		info->rx_count = h4p_get_data_len(info, info->rx_skb);
@@ -465,7 +467,7 @@ static inline void h4p_handle_byte(struct h4p_info *info, u8 byte)
 		break;
 	case WAIT_FOR_DATA:
 		info->rx_count--;
-		*skb_put(info->rx_skb, 1) = byte;
+		*_skb_put(info->rx_skb, 1) = byte;
 		break;
 	default:
 		WARN_ON(1);
@@ -931,12 +933,12 @@ static int h4p_hci_send_frame(struct hci_dev *hdev, struct sk_buff *skb)
 	}
 
 	/* Push frame type to skb */
-	*skb_push(skb, 1) = bt_cb(skb)->pkt_type;
+	*((char *) skb_push(skb, 1)) = bt_cb(skb)->pkt_type;
 	/* We should always send word aligned data to h4+ devices */
 	if (skb->len % 2) {
 		if (skb_pad(skb, 1))
 			return -ENOMEM;
-		*skb_put(skb, 1) = 0x00;
+		*_skb_put(skb, 1) = 0x00;
 	}
 	if (err)
 		return err;
