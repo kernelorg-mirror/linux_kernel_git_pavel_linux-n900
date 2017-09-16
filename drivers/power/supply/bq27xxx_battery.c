@@ -1627,10 +1627,19 @@ static void bq27xxx_battery_poll(struct work_struct *work)
 				     work.work);
 
 	bq27xxx_battery_update(di);
-	//generic_protect(di->bat);
 
 	if (poll_interval > 0)
 		schedule_delayed_work(&di->work, poll_interval * HZ);
+}
+
+static void bq27xxx_battery_poll_protect(struct work_struct *work)
+{
+	struct bq27xxx_device_info *di =
+			container_of(work, struct bq27xxx_device_info,
+				     work.work);
+
+	bq27xxx_battery_poll(work);
+	generic_protect(di->bat);
 }
 
 /*
@@ -1862,7 +1871,7 @@ int bq27xxx_battery_setup(struct bq27xxx_device_info *di)
 		.drv_data = di,
 	};
 
-	INIT_DELAYED_WORK(&di->work, bq27xxx_battery_poll);
+	INIT_DELAYED_WORK(&di->work, bq27xxx_battery_poll_protect);
 	mutex_init(&di->lock);
 
 	di->regs       = bq27xxx_chip_data[di->chip].regs;
