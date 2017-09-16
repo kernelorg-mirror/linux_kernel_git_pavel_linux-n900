@@ -168,4 +168,3 @@ mapping and is thus transparent to GPIO consumers.
 
 A set of functions such as gpiod_set_value() is available to work with
 the new descriptor-oriented interface.
-
