@@ -803,9 +803,6 @@
 
 		reset-gpio = <&gpio4 6 GPIO_ACTIVE_HIGH>; /* 102 */
 
-		flash = <&adp1653>;
-		lens = <&ad5820>;
-
 		port {
 			csi_cam1: endpoint {
 				bus-type = <3>; /* CCP2 */
@@ -847,7 +844,7 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&mmc2_pins>;
 	vmmc-supply = <&vaux3>;
-	vmmc_aux-supply = <&vsim>;
+	vqmmc-supply = <&vsim>;
 	bus-width = <8>;
 	non-removable;
 	no-sdio;

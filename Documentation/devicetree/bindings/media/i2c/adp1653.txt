@@ -1,4 +1,4 @@
-* Analog Devices ADP1653 flash LED
+* Analog Devices ADP1653 flash LED driver
 
 Required Properties:
 

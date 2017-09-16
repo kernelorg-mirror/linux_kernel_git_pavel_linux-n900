@@ -373,6 +373,14 @@ static int aio_migratepage(struct address_space *mapping, struct page *new,
 	pgoff_t idx;
 	int rc;
 
+	/*
+	 * We cannot support the _NO_COPY case here, because copy needs to
+	 * happen under the ctx->completion_lock. That does not work with the
+	 * migration workflow of MIGRATE_SYNC_NO_COPY.
+	 */
+	if (mode == MIGRATE_SYNC_NO_COPY)
+		return -EINVAL;
+
 	rc = 0;
 
 	/* mapping->private_lock here protects against the kioctx teardown.  */
@@ -1595,12 +1603,6 @@ static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
 	ret = kiocb_set_rw_flags(&req->common, iocb->aio_rw_flags);
 	if (unlikely(ret)) {
 		pr_debug("EINVAL: aio_rw_flags\n");
-		goto out_put_req;
-	}
-
-	if ((req->common.ki_flags & IOCB_NOWAIT) &&
-			!(req->common.ki_flags & IOCB_DIRECT)) {
-		ret = -EOPNOTSUPP;
 		goto out_put_req;
 	}
 
