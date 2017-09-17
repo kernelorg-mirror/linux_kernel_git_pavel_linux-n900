@@ -1579,15 +1579,16 @@ EXPORT_SYMBOL_GPL(bq27xxx_battery_update);
 
 static void shutdown(char *reason)
 {
-	pr_alert("%s Forcing shutdown\n", reason);
-	orderly_poweroff(true);
 }
 
 static int generic_protect(struct power_supply *psy)
 {
 	union power_supply_propval val;
 	int res;
-	int mV, mA, mOhm = 430, mVadj = 0;
+	int mV, mA, mVadj = 0;
+	const int mOhm = 430;
+	const int mV_limit = 2950;
+	const int mV_open_limit = 3150;
 
 	res = psy->desc->get_property(psy, POWER_SUPPLY_PROP_HEALTH, &val);
 	if (res)
@@ -1603,8 +1604,10 @@ static int generic_protect(struct power_supply *psy)
 		return res;
 	mV = val.intval / 1000;
 
-	if (mV < 2950)
-		shutdown("Battery below 2.95V.");
+	if (mV < mV_limit) {
+		pr_alert("Battery below %d mV.", mV_limit);
+		orderly_poweroff(true);
+	}
 
 	res = psy->desc->get_property(psy, POWER_SUPPLY_PROP_CURRENT_NOW, &val);
 	if (res)
@@ -1612,8 +1615,10 @@ static int generic_protect(struct power_supply *psy)
 	mA = val.intval / 1000;
 	mVadj = mV + (mA * mOhm) / 1000;
 
-	if (mVadj < 3150)
-		shutdown("Battery open circuit voltage below 3.15V.");
+	if (mVadj < mV_open_limit) {
+		pr_alert("Battery open circuit voltage below %d mV.", mV_open_limit);
+		orderly_poweroff(true);
+	}
 	
 	printk(KERN_INFO "Main battery %d mV, open circuit voltage %d mV\n",
 	       mV, mVadj);
