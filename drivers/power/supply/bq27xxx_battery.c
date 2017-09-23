@@ -1579,6 +1579,8 @@ EXPORT_SYMBOL_GPL(bq27xxx_battery_update);
 
 static void shutdown(char *reason)
 {
+	pr_alert("Forcing shutdown: %s\n", reason);
+	orderly_poweroff(true);
 }
 
 static int generic_protect(struct power_supply *psy)
