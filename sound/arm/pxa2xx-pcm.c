@@ -1,5 +1,5 @@
 /*
- * sound/arm/pxa2xx-pcm.c -- ALSA PCM interface for the Intel PXA2xx chip
+ * linux/sound/arm/pxa2xx-pcm.c -- ALSA PCM interface for the Intel PXA2xx chip
  *
  * Author:	Nicolas Pitre
  * Created:	Nov 30, 2004
