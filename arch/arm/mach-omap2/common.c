@@ -14,6 +14,7 @@
  */
 #include <linux/kernel.h>
 #include <linux/init.h>
+#include <linux/gpio.h>
 
 #include "common.h"
 #include "omap-secure.h"
@@ -32,3 +33,20 @@ void __init omap_reserve(void)
 	omap_secure_ram_reserve_memblock();
 	omap_barrier_reserve_memblock();
 }
+
+void iam_alive(void)
+{
+	int i;
+	int debug_gpio = 92;
+	printk("request: %d\n", gpio_request(debug_gpio, "debug"));
+	printk("output: %d\n", gpio_direction_output(debug_gpio, 1));
+
+	for (i=0; i<5; i++) {
+		gpio_set_value(debug_gpio, 0);
+		msleep(1000);
+		gpio_set_value(debug_gpio, 1);
+		msleep(1000);
+	}
+	
+}
+
