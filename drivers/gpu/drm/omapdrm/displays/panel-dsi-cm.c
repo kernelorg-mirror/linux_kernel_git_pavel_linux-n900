@@ -1396,6 +1396,15 @@ static int dsicm_probe(struct platform_device *pdev)
 		goto err_bl;
 	}
 
+#if 0
+	mutex_lock(&ddata->lock);
+	ddata->in->ops.dsi->bus_lock(ddata->in);
+	r = dsicm_wake_up(ddata);
+	if (!r)
+		r = dsicm_dcs_write_1(ddata, DCS_BRIGHTNESS, 0xff);
+	ddata->in->ops.dsi->bus_unlock(ddata->in);
+	mutex_unlock(&ddata->lock);
+#endif
 	return 0;
 
 err_bl:
