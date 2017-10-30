@@ -120,7 +120,7 @@ static void omap2_show_dma_caps(void)
 				revision >> 4, revision & 0xf);
        {
               extern void iam_alive(void);
-               iam_alive();
+	      //iam_alive();
       }
 }
 
