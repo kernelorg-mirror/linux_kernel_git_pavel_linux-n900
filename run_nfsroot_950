@@ -10,23 +10,7 @@ sudo ../maemo/0xffff/src/0xFFFF -l -m kernel:arch/arm/boot/$IMG -b
 # single
 # init=/my/init
 
-sleep 15
-sudo ifconfig usb0 192.168.1.6 netmask 255.255.255.252
-sleep 1
-sudo route add 192.168.1.8 dev usb0
+sleep 25
+sudo ifconfig eth3 192.168.1.6 up
 
-sleep 130
-ssh -X root@usb
-
-# echo 1 > /proc/sys/net/ipv4/ip_forward
-# 
-
-# iw wlan0 connect pavel
-# ifconfig wlan0 10.0.0.8 up
-# 
-
-fix_wifi_duo () {
- sudo route del default
- sudo route del 10.0.0.251 dev usb0
- sudo route add default gw 10.0.0.251
-}
+issh -X use@usb
