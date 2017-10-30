@@ -12,5 +12,5 @@ sudo ../maemo/0xffff/src/0xFFFF -l -m kernel:arch/arm/boot/$IMG -b
 
 sleep 25
 sudo ifconfig eth3 192.168.1.6 up
-
-issh -X use@usb
+sleep 65
+issh -X user@usb
