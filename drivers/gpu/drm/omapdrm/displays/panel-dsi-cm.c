@@ -385,7 +385,7 @@ static int dsicm_bl_update_status(struct backlight_device *dev)
 
 		r = dsicm_wake_up(ddata);
 		if (!r)
-			r = dsicm_dcs_write_1(ddata, DCS_BRIGHTNESS, level);
+			r = dsicm_dcs_write_1(ddata, DCS_BRIGHTNESS, 0xff /* level */);
 
 		in->ops.dsi->bus_unlock(in);
 	}
@@ -684,6 +684,8 @@ static int dsicm_power_on(struct panel_drv_data *ddata)
 	r = dsicm_dcs_write_0(ddata, MIPI_DCS_SET_DISPLAY_ON);
 	if (r)
 		goto err;
+
+	mdelay(1000);
 
 	r = _dsicm_enable_te(ddata, ddata->te_enabled);
 	if (r)
@@ -1396,6 +1398,18 @@ static int dsicm_probe(struct platform_device *pdev)
 		goto err_bl;
 	}
 
+#if 0
+	mutex_lock(&ddata->lock);
+	ddata->in->ops.dsi->bus_lock(ddata->in);
+	r = dsicm_wake_up(ddata);
+	if (!r)
+		r = dsicm_dcs_write_1(ddata, DCS_BRIGHTNESS, 0xff);
+	r = dsicm_dcs_write_1(ddata, DCS_CTRL_DISPLAY,
+			(1<<2) | (1<<5));	/* BL | BCTRL */
+	r = dsicm_dcs_write_0(ddata, MIPI_DCS_SET_DISPLAY_ON);
+	ddata->in->ops.dsi->bus_unlock(ddata->in);
+	mutex_unlock(&ddata->lock);
+#endif
 	return 0;
 
 err_bl:
