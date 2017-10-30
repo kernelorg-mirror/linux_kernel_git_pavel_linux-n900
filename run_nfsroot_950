@@ -3,7 +3,8 @@
 # ..a nebo aspon neco s podporou nfs.
 IMG=zImage-dtb
 #IMG=zImage-dtb810
-sudo ../maemo/0xffff/src/0xFFFF -l -m kernel:arch/arm/boot/$IMG -b -m initfs:/tmp/postmarketOS-export/initramfs-nokia-n9
+sudo ../maemo/0xffff/src/0xFFFF -l -m kernel:arch/arm/boot/$IMG -b
+#-m initfs:/tmp/postmarketOS-export/initramfs-nokia-n9
 # -l -b 'console=ttyS2,115200 console=tty0 earlyprintk earlycon g_ether.host_addr=00:00:00:00:23:42 root=/dev/mmcblk0p3 rootwait rw'
 
 # single
