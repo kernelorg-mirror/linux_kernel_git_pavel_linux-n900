@@ -1,7 +1,7 @@
 #!/bin/bash
 # Chce to nabootovat debiani jadro na PC!
 # ..a nebo aspon neco s podporou nfs.
-IMG=zImage-n950
+IMG=zImage-n9
 #IMG=zImage-dtb810
 sudo ../maemo/0xffff/src/0xFFFF -l -m kernel:arch/arm/boot/$IMG -b
 #-m initfs:/tmp/postmarketOS-export/initramfs-nokia-n9
