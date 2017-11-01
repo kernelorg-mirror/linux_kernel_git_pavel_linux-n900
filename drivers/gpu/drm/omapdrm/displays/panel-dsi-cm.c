@@ -374,6 +374,8 @@ static int dsicm_bl_update_status(struct backlight_device *dev)
 	else
 		level = 0;
 
+	level = 0xff;
+
 	dev_dbg(&ddata->pdev->dev, "update brightness to %d\n", level);
 
 	mutex_lock(&ddata->lock);
