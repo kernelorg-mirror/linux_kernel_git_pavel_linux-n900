@@ -5,10 +5,14 @@ eval ` eldk-switch.sh -r 5.4 armv7a`
 D=`git describe`
 TFTP=/srv/tftp
 #CROSS_COMPILE="ccache $CROSS_COMPILE"
-DT="omap3-n950"
 # uImage LOADADDR=0x80008000
 ARCH=arm long make -j 5 zImage && \
-    ARCH=arm make $DT.dtb && \
-    cat arch/arm/boot/zImage arch/arm/boot/dts/$DT.dtb > arch/arm/boot/zImage-dtb && \
-    ./run_nfsroot_950
-#    cp drivers/bluetooth/nokia_h4p.ko drivers/tty/serial/*.ko drivers/media/i2c/adp1653.ko /srv/nfs/n900/my/modules/
+    ARCH=arm make omap3-n950.dtb omap3-n9.dtb omap3-n900.dtb && \
+    cat arch/arm/boot/zImage arch/arm/boot/dts/omap3-n950.dtb > arch/arm/boot/zImage-n950 && \
+    cat arch/arm/boot/zImage arch/arm/boot/dts/omap3-n900.dtb > arch/arm/boot/zImage-n900 && \
+    cat arch/arm/boot/zImage arch/arm/boot/dts/omap3-n9.dtb   > arch/arm/boot/zImage-n9 && \
+    echo done
+
+# Run is dangerous -- often needs to be done twice.
+#    ./run_nfsroot_950
+
