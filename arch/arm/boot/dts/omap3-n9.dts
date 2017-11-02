@@ -55,6 +55,18 @@
 			};
 		};
 	};
+
+	touch@4b {
+		compatible = "atmel,maxtouch";
+		reg = <0x4b>;
+		interrupt-parent = <&gpio2>;
+		interrupts = <29 2>; /* gpio_61, IRQF_TRIGGER_FALLING*/
+		atmel,reset-gpio = <&gpio3 17 0>; /* gpio_81 */
+		vdd-supply = <&vio>;
+		avdd-supply = <&vaux1>;
+		atmel,suspend-mode = <2>; /* MXT_SUSPEND_REGULATOR */
+		atmel,cfg_name = "RM-696_Pyrenees_SMD_V1_6.raw";
+	};
 };
 
 &isp {

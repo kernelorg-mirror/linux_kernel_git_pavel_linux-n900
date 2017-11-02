@@ -149,6 +149,13 @@
 			OMAP3630_CORE2_IOPAD(0x25ec, PIN_OUTPUT | MUX_MODE4)         /* gpio_23 (cmt_en) */
 		>;
 	};
+
+	ts_pins: pinmux_ts_pins {
+		pinctrl-single,pins = <
+			OMAP3_CORE1_IOPAD(0x20c8, PIN_INPUT  | MUX_MODE4)	/* gpmc_nbe1.gpio_61 -> TINTX */
+			OMAP3_CORE1_IOPAD(0x20f2, PIN_OUTPUT | MUX_MODE4)	/* dss_data11.gpio_81 -> TRESX */
+		>;
+	};
 };
 
 &i2c1 {
