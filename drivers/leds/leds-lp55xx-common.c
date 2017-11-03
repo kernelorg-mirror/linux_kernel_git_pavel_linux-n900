@@ -413,7 +413,7 @@ int lp55xx_init_device(struct lp55xx_chip *chip)
 		usleep_range(1000, 2000); /* 500us abs min. */
 	}
 
-	lp55xx_reset_device(chip);
+	//lp55xx_reset_device(chip); FIXME: breaks n950
 
 	/*
 	 * Exact value is not available. 10 - 20ms

@@ -90,6 +90,66 @@
 		};
 	};
 
+       leds@32 {
+               compatible = "national,lp5523";
+               reg = <0x32>;
+
+               enable-gpio = <&gpio2 9 GPIO_ACTIVE_HIGH>; /* 41 */
+               clock-mode = /bits/ 8 <2>; /* external */
+
+               chan0 {
+                       chan-name = "lp5523:kb5"; /* Keyboard ooooox */
+                       led-cur = /bits/ 8 <50>;
+                       max-cur = /bits/ 8 <130>;
+               };
+
+               chan1 {
+                       chan-name = "lp5523:kb4"; /* Keyboard ooooxo */
+                       led-cur = /bits/ 8 <50>;
+                       max-cur = /bits/ 8 <130>;
+               };
+
+               chan2 {
+                       chan-name = "lp5523:kb3"; /* Keyboard oooxoo */
+                       led-cur = /bits/ 8 <50>;
+                       max-cur = /bits/ 8 <130>;
+               };
+
+               chan3 {
+                       chan-name = "lp5523:kb2"; /* Keyboard ooxooo */
+                       led-cur = /bits/ 8 <50>;
+                       max-cur = /bits/ 8 <130>;
+               };
+
+               chan4 {
+                       chan-name = "lp5523:kb1"; /* Keyboard oxoooo */
+                       led-cur = /bits/ 8 <50>;
+                       max-cur = /bits/ 8 <130>;
+               };
+
+               chan5 {
+                       chan-name = "lp5523:kb0"; /* Keyboard xooooo */
+                       led-cur = /bits/ 8 <50>;
+                       max-cur = /bits/ 8 <130>;
+               };
+
+               chan6 {
+                       led-cur = /bits/ 8 <0>;
+                       max-cur = /bits/ 8 <0>;
+               };
+
+               chan7 {
+                       led-cur = /bits/ 8 <0>;
+                       max-cur = /bits/ 8 <0>;
+               };
+
+               chan8 {
+                       chan-name = "lp5523:status-led";
+                       led-cur = /bits/ 8 <50>;
+                       max-cur = /bits/ 8 <130>;
+               };
+       };
+
 	touch@4b {
 		compatible = "atmel,maxtouch";
 		reg = <0x4b>;
