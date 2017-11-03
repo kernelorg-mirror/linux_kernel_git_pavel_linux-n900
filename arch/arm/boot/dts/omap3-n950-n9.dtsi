@@ -276,6 +276,26 @@
 
 &i2c2 {
 	clock-frequency = <400000>;
+
+	bq27521: bq27521@55 {
+		compatible = "ti,bq27521";
+		reg = <0x55>;
+	};
+
+
+	bq24153a@6b {
+		compatible = "ti,bq24150a";
+ 		reg = <0x6b>;
+
+                ti,current-limit = <100>;
+ 		ti,weak-battery-voltage = <3400>;
+ 		ti,battery-regulation-voltage = <4000>; /* FIXME: 4200 */
+ 		ti,charge-current = <500>; /* FIXME: 650 */
+ 		ti,termination-current = <100>;
+
+		ti,resistor-sense = <68>;
+ 		ti,usb-charger-detection = <&twl_power>;
+	};
 };
 
 &i2c3 {
