@@ -21,6 +21,7 @@
  *
  */
 
+#define DEBUG
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/platform_device.h>
@@ -33,6 +34,8 @@
 #include <linux/regulator/consumer.h>
 #include <linux/ulpi/regs.h>
 #include <linux/i2c/twl.h>
+
+#define dev_dbg dev_info
 
 #define TWL5031_BCC_CTRL2		0x01
 #define TWL5031_CHGMODE_SW		BIT(0)
@@ -266,6 +269,7 @@ static void twl5031_bcc_psy_fsm_detect(struct twl5031_bcc_data *bcc)
 	if (ctl < 0)
 		goto out;
 
+	printk("twl5031: enabling USB detection: setting control to %lx\n", ctl);
 	ctl |= (TWL5031_CHGMODE_SW | TWL5031_SW_USB_DET_EN);
 	if (twl5031_bcc_write(TWL5031_BCC_CTRL2, ctl) < 0)
 		goto out;
@@ -297,6 +301,7 @@ static void twl5031_bcc_psy_fsm_detect(struct twl5031_bcc_data *bcc)
 	} while (!time_after(jiffies, timeout) && bcc->dcd_online);
 
 	switch (res) {
+	case TWL5031_USB_DET_STS_100MA:
 	case TWL5031_USB_DET_STS_500MA:
 		ctl |= TWL5031_SW_CHRG_DET | TWL5031_SW_USBCHRG_EN;
 		bcc->usb_present = true;
@@ -304,6 +309,7 @@ static void twl5031_bcc_psy_fsm_detect(struct twl5031_bcc_data *bcc)
 		psy_type = twl5031_bcc_usb_charger_type(bcc);
 		dev_dbg(bcc->dev, "500mA detected, STS %02x\n", res);
 		break;
+#if 0		
 	case TWL5031_USB_DET_STS_100MA:
 		ctl |= TWL5031_SW_USBCHRG_EN;
 		psy_type = POWER_SUPPLY_TYPE_USB;
@@ -311,6 +317,7 @@ static void twl5031_bcc_psy_fsm_detect(struct twl5031_bcc_data *bcc)
 		bcc->usb_current = 100;
 		dev_dbg(bcc->dev, "100mA detected, STS %02x\n", res);
 		break;
+#endif
 	default:
 		ctl &= ~TWL5031_SW_USBCHRG_EN;
 		dev_dbg(bcc->dev, "No charger detected, STS %02x\n", res);
@@ -323,6 +330,7 @@ static void twl5031_bcc_psy_fsm_detect(struct twl5031_bcc_data *bcc)
 	}
 
 	ctl &= ~TWL5031_SW_USB_DET_EN; /* save result, stop FSM */
+	printk("twl5031: fsm detect: setting control to %lx\n", ctl);
 	if (twl5031_bcc_write(TWL5031_BCC_CTRL2, ctl) < 0)
 		goto out;
 
@@ -353,7 +361,7 @@ static void twl5031_bcc_psy_usb_detect(struct twl5031_bcc_data *bcc)
 			dev_dbg(bcc->dev, "Dedicated Charging Port\n");
 			break;
 		default:
-			dev_dbg(bcc->dev, "UNKOWN port type, trying to connect\n");
+			dev_dbg(bcc->dev, "UNKNOWN port type, trying to connect\n");
 		}
 	}
 }

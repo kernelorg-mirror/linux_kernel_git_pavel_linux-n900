@@ -24,6 +24,7 @@
  * http://www.ti.com/product/bq24158
  */
 
+#define DEBUG
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/param.h>

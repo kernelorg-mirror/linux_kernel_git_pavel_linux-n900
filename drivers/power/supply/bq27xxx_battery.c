@@ -1948,6 +1948,22 @@ int bq27xxx_battery_setup(struct bq27xxx_device_info *di)
 
 	dev_info(di->dev, "support ver. %s enabled\n", DRIVER_VERSION);
 
+	if (di->chip == BQ27521) {
+		int val;
+		val = di->bus.read(di, 0x32, false);
+		if (val == 0x2100) {
+			printk("rev. 13 chip detected; add support\n");
+			/* https://elinux.org/N950 has details */
+			return PTR_ERR(ENODEV);
+		}
+
+		val = di->bus.read(di, 0x34, false);
+		if ((val & 0xff00) != 0x2100) {
+			printk("rev. 14 chip not detected?!\n");
+			return PTR_ERR(EINVAL);
+		}
+	}
+
 	bq27xxx_battery_settings(di);
 	bq27xxx_battery_update(di);
 
