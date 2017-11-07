@@ -386,8 +386,8 @@ static u8 bq27xxx_regs[][BQ27XXX_REG_MAX] = {
 		[BQ27XXX_REG_TEMP] = 0x0a,
 		[BQ27XXX_REG_INT_TEMP] = INVALID_REG_ADDR,
 		[BQ27XXX_REG_VOLT] = 0x0c,
-		[BQ27XXX_REG_AI] = INVALID_REG_ADDR,
-		[BQ27XXX_REG_FLAGS] = INVALID_REG_ADDR,
+		[BQ27XXX_REG_AI] = 0x0e,
+		[BQ27XXX_REG_FLAGS] = 0x08,
 		[BQ27XXX_REG_TTE] = INVALID_REG_ADDR,
 		[BQ27XXX_REG_TTF] = INVALID_REG_ADDR,
 		[BQ27XXX_REG_TTES] = INVALID_REG_ADDR,
@@ -1479,6 +1479,7 @@ static int bq27xxx_battery_read_temperature(struct bq27xxx_device_info *di)
 	int temp;
 
 	temp = bq27xxx_read(di, BQ27XXX_REG_TEMP, false);
+	printk("Temp: %d\n", temp);
 	if (temp < 0) {
 		dev_err(di->dev, "error reading temperature\n");
 		return temp;
@@ -1637,6 +1638,7 @@ void bq27xxx_battery_update(struct bq27xxx_device_info *di)
 	cache.flags = bq27xxx_read(di, BQ27XXX_REG_FLAGS, has_singe_flag);
 	if ((cache.flags & 0xff) == 0xff)
 		cache.flags = -1; /* read error */
+	printk("bq27: poll cache.flags %x\n", cache.flags);
 	if (cache.flags >= 0) {
 		cache.temperature = bq27xxx_battery_read_temperature(di);
 		if (has_ci_flag && (cache.flags & BQ27000_FLAG_CI)) {
@@ -1858,6 +1860,10 @@ static int bq27xxx_battery_get_property(struct power_supply *psy,
 		ret = bq27xxx_simple_value(di->cache.temperature, val);
 		if (ret == 0)
 			val->intval -= 2731; /* convert decidegree k to c */
+		printk("cached %d\n", val->intval);
+		val->intval = bq27xxx_battery_read_temperature(di);
+		val->intval -= 2731; /* convert decidegree k to c */
+		printk("new %d\n", val->intval);
 		break;
 	case POWER_SUPPLY_PROP_TIME_TO_EMPTY_NOW:
 		ret = bq27xxx_simple_value(di->cache.time_to_empty, val);
@@ -1962,6 +1968,7 @@ int bq27xxx_battery_setup(struct bq27xxx_device_info *di)
 			printk("rev. 14 chip not detected?!\n");
 			return PTR_ERR(EINVAL);
 		}
+		printk("verified chip rev. 14\n");
 	}
 
 	bq27xxx_battery_settings(di);
