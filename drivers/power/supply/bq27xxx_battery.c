@@ -1479,7 +1479,6 @@ static int bq27xxx_battery_read_temperature(struct bq27xxx_device_info *di)
 	int temp;
 
 	temp = bq27xxx_read(di, BQ27XXX_REG_TEMP, false);
-	printk("Temp: %d\n", temp);
 	if (temp < 0) {
 		dev_err(di->dev, "error reading temperature\n");
 		return temp;
@@ -1633,7 +1632,6 @@ void bq27xxx_battery_update(struct bq27xxx_device_info *di)
 	cache.flags = bq27xxx_read(di, BQ27XXX_REG_FLAGS, has_singe_flag);
 	if ((cache.flags & 0xff) == 0xff)
 		cache.flags = -1; /* read error */
-	printk("bq27: poll cache.flags %x\n", cache.flags);
 	if (cache.flags >= 0) {
 		cache.temperature = bq27xxx_battery_read_temperature(di);
 		if (has_ci_flag && (cache.flags & BQ27000_FLAG_CI)) {
@@ -1821,23 +1819,19 @@ static int bq27xxx_battery_get_property(struct power_supply *psy,
 
 	mutex_lock(&di->lock);
 	if (time_is_before_jiffies(di->last_update + 5 * HZ)) {
-		printk("Time is before; updating\n");
 		cancel_delayed_work_sync(&di->work);
 		bq27xxx_battery_poll(&di->work.work);
-	} else printk("Time is not before; not updating\n");
+	}
 	mutex_unlock(&di->lock);
 
 	if (psp != POWER_SUPPLY_PROP_PRESENT && di->cache.flags < 0)
 		return -ENODEV;
-
-	printk("bq27: get property %d\n", psp);
 
 	switch (psp) {
 	case POWER_SUPPLY_PROP_STATUS:
 		ret = bq27xxx_battery_status(di, val);
 		break;
 	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
-		printk("bq27: get voltage\n");
 		ret = bq27xxx_battery_voltage(di, val);
 		break;
 	case POWER_SUPPLY_PROP_PRESENT:
@@ -1856,10 +1850,6 @@ static int bq27xxx_battery_get_property(struct power_supply *psy,
 		ret = bq27xxx_simple_value(di->cache.temperature, val);
 		if (ret == 0)
 			val->intval -= 2731; /* convert decidegree k to c */
-		printk("cached %d\n", val->intval);
-		val->intval = bq27xxx_battery_read_temperature(di);
-		val->intval -= 2731; /* convert decidegree k to c */
-		printk("new %d\n", val->intval);
 		break;
 	case POWER_SUPPLY_PROP_TIME_TO_EMPTY_NOW:
 		ret = bq27xxx_simple_value(di->cache.time_to_empty, val);
@@ -2060,12 +2050,8 @@ static int bq27xxx_battery_platform_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, di);
 
-	printk("bq27: probe\n");
 	di->dev = &pdev->dev;
 	di->chip = pdata->chip;
-	printk("bq27: probe chip %d\n", di->chip);
-	di->chip = BQ27521;
-	printk("bq27: probe chip %d\n", di->chip);	
 	di->name = pdata->name ?: dev_name(&pdev->dev);
 	di->bus.read = bq27xxx_battery_platform_read;
 
