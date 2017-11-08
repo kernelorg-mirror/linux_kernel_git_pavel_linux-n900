@@ -485,15 +485,55 @@ static int twl5031_bcc_get_property(struct power_supply *psy,
 		val->intval = (psy->desc->type == POWER_SUPPLY_TYPE_MAINS) ?
 			bcc->vac_current : bcc->usb_current;
 		break;
+	case POWER_SUPPLY_PROP_ONLINE:
+		printk("Getting online");
+		val->intval = 0;
+#if 0		
+		twl5031_bcc_psy_usb_detect(bcc);
+#endif
+		break;
 	default:
 		ret = -EINVAL;
 	}
 	return ret;
 }
 
+static int twl5031_charger_set_property(struct power_supply *psy,
+					enum power_supply_property psp,
+					const union power_supply_propval *val)
+
+{
+	struct twl5031_bcc_data *bcc = dev_get_drvdata(psy->dev.parent);
+	int ret = 0;
+
+	switch (psp) {
+	case POWER_SUPPLY_PROP_ONLINE:
+		printk("Setting online... %d\n", val->intval);
+#if 0		
+		twl5031_bcc_psy_usb_detect(bcc);
+#endif
+		break;
+	default:
+		ret = -EINVAL;
+	}
+	return ret;
+}
+
+static int twl5031_charger_property_is_writeable(struct power_supply *psy,
+						 enum power_supply_property psp)
+{
+	switch (psp) {
+	case POWER_SUPPLY_PROP_ONLINE:
+		return 1;
+	default:
+		return 0;
+	}
+}
+
 static enum power_supply_property twl5031_charger_props[] = {
 	POWER_SUPPLY_PROP_PRESENT,
 	POWER_SUPPLY_PROP_CURRENT_NOW,
+	POWER_SUPPLY_PROP_ONLINE,
 };
 
 static int twl5031_bcc_probe(struct platform_device *pdev)
@@ -512,11 +552,11 @@ static int twl5031_bcc_probe(struct platform_device *pdev)
 	if (IS_ERR(bcc->usb3v1))
 		return ret;
 
-	bcc->vac_desc.name = "twl5031_vac",
-	bcc->vac_desc.type = POWER_SUPPLY_TYPE_MAINS,
-	bcc->vac_desc.properties = twl5031_charger_props,
-	bcc->vac_desc.num_properties = ARRAY_SIZE(twl5031_charger_props),
-	bcc->vac_desc.get_property = twl5031_bcc_get_property,
+	bcc->vac_desc.name = "twl5031_vac";
+	bcc->vac_desc.type = POWER_SUPPLY_TYPE_MAINS;
+	bcc->vac_desc.properties = twl5031_charger_props;
+	bcc->vac_desc.num_properties = ARRAY_SIZE(twl5031_charger_props);
+	bcc->vac_desc.get_property = twl5031_bcc_get_property;
 	bcc->vac = devm_power_supply_register(&pdev->dev, &bcc->vac_desc,
 					     NULL);
 	if (IS_ERR(bcc->vac)) {
@@ -525,11 +565,13 @@ static int twl5031_bcc_probe(struct platform_device *pdev)
 		return ret;
 	}
 
-	bcc->usb_desc.name = "twl5031_usb",
-	bcc->usb_desc.type = POWER_SUPPLY_TYPE_USB,
-	bcc->usb_desc.properties = twl5031_charger_props,
-	bcc->usb_desc.num_properties = ARRAY_SIZE(twl5031_charger_props),
-	bcc->usb_desc.get_property = twl5031_bcc_get_property,
+	bcc->usb_desc.name = "twl5031_usb";
+	bcc->usb_desc.type = POWER_SUPPLY_TYPE_USB;
+	bcc->usb_desc.properties = twl5031_charger_props;
+	bcc->usb_desc.num_properties = ARRAY_SIZE(twl5031_charger_props);
+	bcc->usb_desc.get_property = twl5031_bcc_get_property;
+	bcc->usb_desc.set_property = twl5031_charger_set_property;
+	bcc->usb_desc.property_is_writeable = twl5031_charger_property_is_writeable;
 	bcc->usb = devm_power_supply_register(&pdev->dev, &bcc->usb_desc,
 					      NULL);
 	if (IS_ERR(bcc->usb)) {
