@@ -969,21 +969,16 @@ static int bq24190_charger_set_property(struct power_supply *psy,
 static int bq24190_charger_property_is_writeable(struct power_supply *psy,
 		enum power_supply_property psp)
 {
-	int ret;
-
 	switch (psp) {
 	case POWER_SUPPLY_PROP_ONLINE:
 	case POWER_SUPPLY_PROP_TEMP_ALERT_MAX:
 	case POWER_SUPPLY_PROP_CHARGE_TYPE:
 	case POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT:
 	case POWER_SUPPLY_PROP_CONSTANT_CHARGE_VOLTAGE:
-		ret = 1;
-		break;
+		return 1;
 	default:
-		ret = 0;
+		return 0;
 	}
-
-	return ret;
 }
 
 static enum power_supply_property bq24190_charger_properties[] = {
