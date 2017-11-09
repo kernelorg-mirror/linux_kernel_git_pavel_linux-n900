@@ -283,8 +283,8 @@
 	};
 
 
-	bq24153a@6b {
-		compatible = "ti,bq24150a";
+	bq24153@6b {
+		compatible = "ti,bq24153";
  		reg = <0x6b>;
 
                 ti,current-limit = <100>;
@@ -294,7 +294,7 @@
  		ti,termination-current = <100>;
 
 		ti,resistor-sense = <68>;
- 		ti,usb-charger-detection = <&twl_power>;
+ 		ti,usb-charger-detection = <&usb_otg_hs>; /* Hmm, probably wrong? */
 	};
 };
 

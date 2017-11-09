@@ -315,6 +315,7 @@ static int bq2415x_exec_command(struct bq2415x_device *bq,
 
 	switch (command) {
 	case BQ2415X_TIMER_RESET:
+		printk("bq2415x: command Timer reset\n");
 		return bq2415x_i2c_write_bit(bq, BQ2415X_REG_STATUS,
 				1, BQ2415X_BIT_TMR_RST);
 	case BQ2415X_OTG_STATUS:
@@ -469,6 +470,8 @@ static int bq2415x_detect_revision(struct bq2415x_device *bq)
 
 	if (ret < 0 || chip < 0)
 		return -1;
+
+	printk("Detecting chip: %d\n", chip);
 
 	switch (chip) {
 	case BQ24150:
@@ -870,6 +873,7 @@ static void bq2415x_set_autotimer(struct bq2415x_device *bq, int state)
 
 	if (state) {
 		schedule_delayed_work(&bq->work, BQ2415X_TIMER_TIMEOUT * HZ);
+		printk("bq2415x: Timer reset\n");
 		bq2415x_exec_command(bq, BQ2415X_TIMER_RESET);
 		bq->timer_error = NULL;
 	} else {
@@ -1131,6 +1135,8 @@ static ssize_t bq2415x_sysfs_set_timer(struct device *dev,
 	struct power_supply *psy = dev_get_drvdata(dev);
 	struct bq2415x_device *bq = power_supply_get_drvdata(psy);
 	int ret = 0;
+
+	printk("sysfs: set timer\n");
 
 	if (strncmp(buf, "auto", 4) == 0)
 		bq2415x_set_autotimer(bq, 1);

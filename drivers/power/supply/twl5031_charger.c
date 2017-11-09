@@ -366,13 +366,10 @@ static void twl5031_bcc_psy_usb_detect(struct twl5031_bcc_data *bcc)
 	}
 }
 
-static void twl5031_bcc_event_work(struct work_struct *work)
+static void twl5031_bcc_event_handle(struct twl5031_bcc_data *bcc)
 {
-	struct twl5031_bcc_data	*bcc;
 	unsigned long event;
 	int mA;
-
-	bcc = container_of(work, struct twl5031_bcc_data, work);
 
 	mutex_lock(&bcc->mutex);
 
@@ -417,6 +414,15 @@ static void twl5031_bcc_event_work(struct work_struct *work)
 
 	power_supply_changed(bcc->usb);
 	mutex_unlock(&bcc->mutex);
+}
+
+static void twl5031_bcc_event_work(struct work_struct *work)
+{
+	struct twl5031_bcc_data	*bcc;
+
+	bcc = container_of(work, struct twl5031_bcc_data, work);
+
+	twl5031_bcc_event_handle(bcc);
 }
 
 /* atomic notifier support */
@@ -509,9 +515,15 @@ static int twl5031_charger_set_property(struct power_supply *psy,
 	switch (psp) {
 	case POWER_SUPPLY_PROP_ONLINE:
 		printk("Setting online... %d\n", val->intval);
-#if 0		
-		twl5031_bcc_psy_usb_detect(bcc);
-#endif
+		if (val->intval) {
+			bcc->event = USB_EVENT_VBUS;
+			bcc->mA = 500;
+		} else {
+			bcc->event = USB_EVENT_NONE;
+			bcc->mA = 0;
+		}
+		twl5031_bcc_event_handle(bcc);
+		ret = 0;
 		break;
 	default:
 		ret = -EINVAL;
