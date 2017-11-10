@@ -415,6 +415,13 @@ config CHARGER_TWL4030
 	help
 	  Say Y here to enable support for TWL4030 Battery Charge Interface.
 
+config CHARGER_TWL5031
+	tristate "TWL5031 Battery Charge Control driver"
+	depends on TWL4030_CORE
+	help
+	  Say Y to enable support for TWL5031 BCC.
+	  This driver enables VAC/USB chargers detection.
+
 config CHARGER_LP8727
 	tristate "TI/National Semiconductor LP8727 charger driver"
 	depends on I2C

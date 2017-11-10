@@ -149,6 +149,13 @@
 			OMAP3630_CORE2_IOPAD(0x25ec, PIN_OUTPUT | MUX_MODE4)         /* gpio_23 (cmt_en) */
 		>;
 	};
+
+	ts_pins: pinmux_ts_pins {
+		pinctrl-single,pins = <
+			OMAP3_CORE1_IOPAD(0x20c8, PIN_INPUT  | MUX_MODE4)	/* gpmc_nbe1.gpio_61 -> TINTX */
+			OMAP3_CORE1_IOPAD(0x20f2, PIN_OUTPUT | MUX_MODE4)	/* dss_data11.gpio_81 -> TRESX */
+		>;
+	};
 };
 
 &i2c1 {
@@ -162,6 +169,10 @@
 };
 
 /include/ "twl4030.dtsi"
+
+&charger {
+	compatible =  "ti,twl5031-bcc";
+};
 
 &twl {
 	compatible = "ti,twl5031";
@@ -282,6 +293,25 @@
 			reg = <0x1>;
 			led-max-microamp = <10000>;
 		};
+
+	bq27521: bq27521@55 {
+		compatible = "ti,bq27521";
+		reg = <0x55>;
+	};
+
+
+	bq24153@6b {
+		compatible = "ti,bq24153";
+ 		reg = <0x6b>;
+
+                ti,current-limit = <100>;
+ 		ti,weak-battery-voltage = <3400>;
+ 		ti,battery-regulation-voltage = <4000>; /* FIXME: 4200 */
+ 		ti,charge-current = <500>; /* FIXME: 650 */
+ 		ti,termination-current = <100>;
+
+		ti,resistor-sense = <68>;
+ 		ti,usb-charger-detection = <&usb_otg_hs>; /* Hmm, probably wrong? */
 	};
 };
 

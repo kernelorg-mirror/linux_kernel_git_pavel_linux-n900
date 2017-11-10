@@ -33,8 +33,6 @@
 #define TCH 0
 
 #define DCS_READ_NUM_ERRORS	0x05
-#define DCS_BRIGHTNESS		0x51
-#define DCS_CTRL_DISPLAY	0x53
 #define DCS_GET_ID1		0xda
 #define DCS_GET_ID2		0xdb
 #define DCS_GET_ID3		0xdc
@@ -376,6 +374,8 @@ static int dsicm_bl_update_status(struct backlight_device *dev)
 	else
 		level = 0;
 
+	level = 0xff;
+
 	dev_dbg(&ddata->pdev->dev, "update brightness to %d\n", level);
 
 	mutex_lock(&ddata->lock);
@@ -385,7 +385,8 @@ static int dsicm_bl_update_status(struct backlight_device *dev)
 
 		r = dsicm_wake_up(ddata);
 		if (!r)
-			r = dsicm_dcs_write_1(ddata, DCS_BRIGHTNESS, 0xff /* level */);
+			r = dsicm_dcs_write_1(ddata, MIPI_DCS_SET_DISPLAY_BRIGHTNESS,
+					      level);
 
 		in->ops.dsi->bus_unlock(in);
 	}
@@ -667,11 +668,11 @@ static int dsicm_power_on(struct panel_drv_data *ddata)
 	if (r)
 		goto err;
 
-	r = dsicm_dcs_write_1(ddata, DCS_BRIGHTNESS, 0xff);
+	r = dsicm_dcs_write_1(ddata, MIPI_DCS_SET_DISPLAY_BRIGHTNESS, 0xff);
 	if (r)
 		goto err;
 
-	r = dsicm_dcs_write_1(ddata, DCS_CTRL_DISPLAY,
+	r = dsicm_dcs_write_1(ddata, MIPI_DCS_WRITE_CONTROL_DISPLAY,
 			(1<<2) | (1<<5));	/* BL | BCTRL */
 	if (r)
 		goto err;
@@ -1102,7 +1103,8 @@ static int dsicm_memory_read(struct omap_dss_device *dssdev,
 		goto err2;
 
 	while (buf_used < size) {
-		u8 dcs_cmd = first ? 0x2e : 0x3e;
+		u8 dcs_cmd = first ? MIPI_DCS_READ_MEMORY_START :
+								MIPI_DCS_READ_MEMORY_CONTINUE;
 		first = 0;
 
 		r = in->ops.dsi->dcs_read(in, ddata->channel, dcs_cmd,
