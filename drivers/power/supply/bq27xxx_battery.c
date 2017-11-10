@@ -581,6 +581,15 @@ static enum power_supply_property bq27520g4_props[] = {
 	POWER_SUPPLY_PROP_MANUFACTURER,
 };
 
+static enum power_supply_property bq27521_props[] = {
+	POWER_SUPPLY_PROP_STATUS,
+	POWER_SUPPLY_PROP_PRESENT,
+	POWER_SUPPLY_PROP_VOLTAGE_NOW,
+	POWER_SUPPLY_PROP_CURRENT_NOW,
+	POWER_SUPPLY_PROP_TEMP,
+	POWER_SUPPLY_PROP_TECHNOLOGY,
+};
+
 static enum power_supply_property bq27530_props[] = {
 	POWER_SUPPLY_PROP_STATUS,
 	POWER_SUPPLY_PROP_PRESENT,
@@ -665,33 +674,6 @@ struct bq27xxx_dm_reg {
 	u16 min, max;
 };
 
-static enum power_supply_property bq27521_battery_props[] = {
-	POWER_SUPPLY_PROP_STATUS,
-	POWER_SUPPLY_PROP_PRESENT,
-	POWER_SUPPLY_PROP_VOLTAGE_NOW,
-	POWER_SUPPLY_PROP_CURRENT_NOW,
-	POWER_SUPPLY_PROP_TEMP,
-	POWER_SUPPLY_PROP_TECHNOLOGY,
-};
-
-static enum power_supply_property bq27530_battery_props[] = {
-	POWER_SUPPLY_PROP_STATUS,
-	POWER_SUPPLY_PROP_PRESENT,
-	POWER_SUPPLY_PROP_VOLTAGE_NOW,
-	POWER_SUPPLY_PROP_CURRENT_NOW,
-	POWER_SUPPLY_PROP_CAPACITY,
-	POWER_SUPPLY_PROP_CAPACITY_LEVEL,
-	POWER_SUPPLY_PROP_TEMP,
-	POWER_SUPPLY_PROP_TIME_TO_EMPTY_NOW,
-	POWER_SUPPLY_PROP_TECHNOLOGY,
-	POWER_SUPPLY_PROP_CHARGE_FULL,
-	POWER_SUPPLY_PROP_CHARGE_NOW,
-	POWER_SUPPLY_PROP_POWER_AVG,
-	POWER_SUPPLY_PROP_HEALTH,
-	POWER_SUPPLY_PROP_CYCLE_COUNT,
-	POWER_SUPPLY_PROP_MANUFACTURER,
-};
-
 enum bq27xxx_dm_reg_id {
 	BQ27XXX_DM_DESIGN_CAPACITY = 0,
 	BQ27XXX_DM_DESIGN_ENERGY,
@@ -722,6 +704,7 @@ static struct bq27xxx_dm_reg bq27500_dm_regs[] = {
 #define bq27520g2_dm_regs 0
 #define bq27520g3_dm_regs 0
 #define bq27520g4_dm_regs 0
+#define bq27521_dm_regs 0
 #define bq27530_dm_regs 0
 #define bq27531_dm_regs 0
 #define bq27541_dm_regs 0
@@ -1898,7 +1881,7 @@ int bq27xxx_battery_setup(struct bq27xxx_device_info *di)
 		return PTR_ERR(di->bat);
 	}
 
-	dev_info(di->dev, "support ver. %s enabled\n", DRIVER_VERSION);
+	dev_info(di->dev, "support enabled\n");
 
 	if (di->chip == BQ27521) {
 		int val;
@@ -1906,13 +1889,13 @@ int bq27xxx_battery_setup(struct bq27xxx_device_info *di)
 		if (val == 0x2100) {
 			printk("rev. 13 chip detected; add support\n");
 			/* https://elinux.org/N950 has details */
-			return PTR_ERR(ENODEV);
+			return -ENODEV;
 		}
 
 		val = di->bus.read(di, 0x34, false);
 		if ((val & 0xff00) != 0x2100) {
 			printk("rev. 14 chip not detected?!\n");
-			return PTR_ERR(EINVAL);
+			return -EINVAL;
 		}
 		printk("verified chip rev. 14\n");
 	}

@@ -33,7 +33,7 @@
 #include <linux/usb/phy.h>
 #include <linux/regulator/consumer.h>
 #include <linux/ulpi/regs.h>
-#include <linux/i2c/twl.h>
+#include <linux/mfd/twl.h>
 
 #define dev_dbg dev_info
 

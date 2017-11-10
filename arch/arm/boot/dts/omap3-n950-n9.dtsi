@@ -293,6 +293,7 @@
 			reg = <0x1>;
 			led-max-microamp = <10000>;
 		};
+	};
 
 	bq27521: bq27521@55 {
 		compatible = "ti,bq27521";
