@@ -68,17 +68,14 @@ void __init omap2_set_globals_cm(void __iomem *cm, void __iomem *cm2)
 int cm_split_idlest_reg(struct clk_omap_reg *idlest_reg, s16 *prcm_inst,
 			u8 *idlest_reg_id)
 {
-	int ret;
 	if (!cm_ll_data->split_idlest_reg) {
 		WARN_ONCE(1, "cm: %s: no low-level function defined\n",
 			  __func__);
 		return -EINVAL;
 	}
 
-	ret = cm_ll_data->split_idlest_reg(idlest_reg, prcm_inst,
+	return cm_ll_data->split_idlest_reg(idlest_reg, prcm_inst,
 					   idlest_reg_id);
-	*prcm_inst -= cm_base.offset;
-	return ret;
 }
 
 /**
@@ -340,7 +337,6 @@ int __init omap2_cm_base_init(void)
 		if (mem) {
 			mem->pa = res.start + data->offset;
 			mem->va = data->mem + data->offset;
-			mem->offset = data->offset;
 		}
 
 		data->np = np;

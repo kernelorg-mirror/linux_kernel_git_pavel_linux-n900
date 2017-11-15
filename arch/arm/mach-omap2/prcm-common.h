@@ -529,7 +529,6 @@ struct omap_prcm_irq_setup {
 struct omap_domain_base {
 	u32 pa;
 	void __iomem *va;
-	s16 offset;
 };
 
 /**

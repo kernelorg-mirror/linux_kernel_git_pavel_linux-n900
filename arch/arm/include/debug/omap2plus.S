@@ -21,19 +21,13 @@
 
 #define UART_OFFSET(addr)	((addr) & 0x00ffffff)
 
-#if defined(ZIMAGE)
-		.align	2
-	omap_uart_phys:	.word	0
-	omap_uart_virt:	.word	0
-	omap_uart_lsr:	.word	0
-#else
 		.pushsection .data
 		.align	2
 omap_uart_phys:	.word	0
 omap_uart_virt:	.word	0
 omap_uart_lsr:	.word	0
 		.popsection
-#endif
+
 		.macro	addruart, rp, rv, tmp
 
 		/* Use omap_uart_phys/virt if already configured */
