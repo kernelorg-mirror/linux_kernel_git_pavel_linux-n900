@@ -1186,7 +1186,12 @@ static const struct attribute_group bh1770_attribute_group = {
 	.attrs = sysfs_attrs
 };
 
-struct bh1770_platform_data def = {};
+static struct bh1770_platform_data def = {
+//                .leds              = BH1770_LED1,
+//               .led_max_curr      = BH1770_LED_100mA,
+                .led_def_curr      = BH1770_LED_50mA,
+		.glass_attenuation = (16384 * 385) / 100, // ... about 3.85x filtering
+};
 
 static int bh1770_probe(struct i2c_client *client,
 				const struct i2c_device_id *id)
@@ -1416,7 +1421,7 @@ static const struct dev_pm_ops bh1770_pm_ops = {
 
 #ifdef CONFIG_OF
 static const struct of_device_id bh1770_of_match_table[] = {
-	{ .compatible = "bq27200" },
+	{ .compatible = "bh1770" },
 };
 MODULE_DEVICE_TABLE(of, bh1770_of_match_table);
 #endif	

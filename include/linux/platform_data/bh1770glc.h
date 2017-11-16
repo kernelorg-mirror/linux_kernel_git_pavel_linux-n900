@@ -36,6 +36,8 @@
  * of 3.85. i.e. light_above_sensor = light_above_cover_window / 3.85
  */
 
+/* FIXME: is this right? 200mA is _way_ too much for IR led. uA? */
+
 struct bh1770_platform_data {
 #define BH1770_LED_5mA	0
 #define BH1770_LED_10mA	1

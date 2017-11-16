@@ -57,6 +57,22 @@
 		};
 	};
 
+       apds990x@39 {
+       		 compatible = "apds990x";
+		 reg = <0x39>;
+
+		 vdd-supply = <&vaux1>;   /* FIXME: check */
+		 leds-supply = <&vaux1>; /* FIXME: really on vbat */
+
+		 /* GPIO 83 on n950.
+ 		 .leds              = BHSFH_LED1,
+ 		 .led_max_curr      = BHSFH_LED_100mA,
+ 		 .led_def_curr      = BHSFH_LED_50mA,
+ 		 .glass_attenuation = (16384 * 385) / 100, ... about 3.85x filtering
+ 		 */
+       };
+
+
 	touch@4b {
 		compatible = "atmel,maxtouch";
 		reg = <0x4b>;
