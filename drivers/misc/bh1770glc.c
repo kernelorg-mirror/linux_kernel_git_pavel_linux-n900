@@ -1299,10 +1299,11 @@ static int bh1770_probe(struct i2c_client *client,
 	if (err) {
 		dev_err(&client->dev, "could not get IRQ %d\n",
 			client->irq);
-		goto fail2;
+		//goto fail2;
 	}
 
 	printk("bh1770: irq ok, all done\n");
+	err = 0;
 	
 	regulator_bulk_disable(ARRAY_SIZE(chip->regs), chip->regs);
 	return err;

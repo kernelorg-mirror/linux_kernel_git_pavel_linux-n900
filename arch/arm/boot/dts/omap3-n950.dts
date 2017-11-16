@@ -154,8 +154,15 @@
        		 compatible = "bh1770glc";
 		 reg = <0x38>;
 
-		 vdd-supply = <&vio>; /* FIXME! */
-		 leds-supply = <&vaux1>;
+		 vdd-supply = <&vaux1>;
+		 leds-supply = <&vaux1>; /* FIXME: really on vbat */
+
+		 /* GPIO 83 on n950.
+ 		 .leds              = BHSFH_LED1,
+ 		 .led_max_curr      = BHSFH_LED_100mA,
+ 		 .led_def_curr      = BHSFH_LED_50mA,
+ 		 .glass_attenuation = (16384 * 385) / 100, ... about 3.85x filtering
+ 		 */
        };
 
        /* Also TLV320DAC33 and TPA6130A2 */
