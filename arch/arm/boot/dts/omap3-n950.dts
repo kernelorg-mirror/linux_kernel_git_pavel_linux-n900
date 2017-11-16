@@ -150,7 +150,12 @@
                };
        };
 
-       bh1770@19 {
+       bh1770@38 {
+       		 compatible = "bh1770glc";
+		 reg = <0x38>;
+
+		 vdd-supply = <&vio>; /* FIXME! */
+		 leds-supply = <&vaux1>;
        };
 
        /* Also TLV320DAC33 and TPA6130A2 */

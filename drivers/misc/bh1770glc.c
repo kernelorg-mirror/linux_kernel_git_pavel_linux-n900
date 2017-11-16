@@ -22,6 +22,7 @@
  *
  */
 
+#define DEBUG
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/i2c.h>
@@ -525,15 +526,21 @@ static int bh1770_detect(struct bh1770_chip *chip)
 	s32 ret;
 	u8 manu, part;
 
+	printk("Detect...\n");
+
 	ret = i2c_smbus_read_byte_data(client, BH1770_MANUFACT_ID);
 	if (ret < 0)
 		goto error;
 	manu = (u8)ret;
 
+	printk("Detect... manufact\n");
+
 	ret = i2c_smbus_read_byte_data(client, BH1770_PART_ID);
 	if (ret < 0)
 		goto error;
 	part = (u8)ret;
+
+	printk("Detect... part ... got %x %x\n", manu, part);
 
 	chip->revision = (part & BH1770_REV_MASK) >> BH1770_REV_SHIFT;
 	chip->prox_coef = BH1770_COEF_SCALER;
@@ -1179,6 +1186,8 @@ static const struct attribute_group bh1770_attribute_group = {
 	.attrs = sysfs_attrs
 };
 
+struct bh1770_platform_data def = {};
+
 static int bh1770_probe(struct i2c_client *client,
 				const struct i2c_device_id *id)
 {
@@ -1189,6 +1198,8 @@ static int bh1770_probe(struct i2c_client *client,
 	if (!chip)
 		return -ENOMEM;
 
+	printk("bh1770: probe\n");
+
 	i2c_set_clientdata(client, chip);
 	chip->client  = client;
 
@@ -1198,10 +1209,12 @@ static int bh1770_probe(struct i2c_client *client,
 
 	if (client->dev.platform_data == NULL) {
 		dev_err(&client->dev, "platform data is mandatory\n");
-		return -EINVAL;
+		//return -EINVAL;
 	}
 
 	chip->pdata		= client->dev.platform_data;
+	if (!chip->pdata)
+		chip->pdata = &def;
 	chip->lux_calib		= BH1770_LUX_NEUTRAL_CALIB_VALUE;
 	chip->lux_rate_index	= BH1770_LUX_DEFAULT_RATE;
 	chip->lux_threshold_lo	= BH1770_LUX_DEF_THRES;
@@ -1220,6 +1233,8 @@ static int bh1770_probe(struct i2c_client *client,
 	chip->prox_rate		= BH1770_PROX_DEFAULT_RATE;
 	chip->prox_data		= 0;
 
+	printk("bh1770: regulators\n");
+	
 	chip->regs[0].supply = reg_vcc;
 	chip->regs[1].supply = reg_vleds;
 
@@ -1227,20 +1242,20 @@ static int bh1770_probe(struct i2c_client *client,
 				      ARRAY_SIZE(chip->regs), chip->regs);
 	if (err < 0) {
 		dev_err(&client->dev, "Cannot get regulators\n");
-		return err;
 	}
 
 	err = regulator_bulk_enable(ARRAY_SIZE(chip->regs),
 				chip->regs);
 	if (err < 0) {
 		dev_err(&client->dev, "Cannot enable regulators\n");
-		return err;
 	}
 
 	usleep_range(BH1770_STARTUP_DELAY, BH1770_STARTUP_DELAY * 2);
 	err = bh1770_detect(chip);
 	if (err < 0)
 		goto fail0;
+
+	printk("bh1770: detected\n");
 
 	/* Start chip */
 	bh1770_chip_on(chip);
@@ -1269,6 +1284,8 @@ static int bh1770_probe(struct i2c_client *client,
 		goto fail1;
 	}
 
+	printk("bh1770: sysfs ok\n");
+	
 	/*
 	 * Chip needs level triggered interrupt to work. However,
 	 * level triggering doesn't work always correctly with power
@@ -1284,6 +1301,9 @@ static int bh1770_probe(struct i2c_client *client,
 			client->irq);
 		goto fail2;
 	}
+
+	printk("bh1770: irq ok, all done\n");
+	
 	regulator_bulk_disable(ARRAY_SIZE(chip->regs), chip->regs);
 	return err;
 fail2:
@@ -1393,10 +1413,18 @@ static const struct dev_pm_ops bh1770_pm_ops = {
 	SET_RUNTIME_PM_OPS(bh1770_runtime_suspend, bh1770_runtime_resume, NULL)
 };
 
+#ifdef CONFIG_OF
+static const struct of_device_id bh1770_of_match_table[] = {
+	{ .compatible = "bq27200" },
+};
+MODULE_DEVICE_TABLE(of, bh1770_of_match_table);
+#endif	
+
 static struct i2c_driver bh1770_driver = {
 	.driver	 = {
 		.name	= "bh1770glc",
 		.pm	= &bh1770_pm_ops,
+		.of_match_table = of_match_ptr(bh1770_of_match_table),
 	},
 	.probe	  = bh1770_probe,
 	.remove	  = bh1770_remove,
