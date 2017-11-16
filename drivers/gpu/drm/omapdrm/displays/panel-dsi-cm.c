@@ -374,8 +374,6 @@ static int dsicm_bl_update_status(struct backlight_device *dev)
 	else
 		level = 0;
 
-	level = 0xff;
-
 	dev_dbg(&ddata->pdev->dev, "update brightness to %d\n", level);
 
 	mutex_lock(&ddata->lock);
@@ -1382,6 +1380,7 @@ static int dsicm_probe(struct platform_device *pdev)
 	if (ddata->use_dsi_backlight) {
 		struct backlight_properties props = { 0 };
 		props.max_brightness = 255;
+		props.brightness = 128;
 		props.type = BACKLIGHT_RAW;
 
 		bldev = devm_backlight_device_register(dev, dev_name(dev),
