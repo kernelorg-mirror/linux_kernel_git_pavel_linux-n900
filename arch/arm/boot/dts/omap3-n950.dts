@@ -150,6 +150,11 @@
                };
        };
 
+       bh1770@19 {
+       };
+
+       /* Also TLV320DAC33 and TPA6130A2 */
+
 	touch@4b {
 		compatible = "atmel,maxtouch";
 		reg = <0x4b>;
