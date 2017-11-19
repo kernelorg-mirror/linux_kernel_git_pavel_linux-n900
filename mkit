@@ -16,3 +16,4 @@ ARCH=arm long make -j 5 zImage && \
 # Run is dangerous -- often needs to be done twice.
 #    ./run_nfsroot_950
 
+#    ../maemo/run_hw /data/l/linux-n900/arch/arm/boot/zImage-dtb

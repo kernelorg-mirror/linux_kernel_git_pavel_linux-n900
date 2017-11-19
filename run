@@ -1,0 +1,1 @@
+./mkit && ( cd ../maemo; ./run_nfsroot )

@@ -53,6 +53,7 @@
 #include <linux/delay.h>
 #include <linux/platform_device.h>
 #include <linux/power_supply.h>
+#include <linux/reboot.h>
 #include <linux/slab.h>
 #include <linux/of.h>
 
@@ -1315,11 +1316,9 @@ static void bq27xxx_battery_settings(struct bq27xxx_device_info *di)
 static int bq27xxx_battery_read_soc(struct bq27xxx_device_info *di)
 {
 	int soc;
+	bool single = di->opts & BQ27XXX_O_ZERO;
 
-	if (di->opts & BQ27XXX_O_ZERO)
-		soc = bq27xxx_read(di, BQ27XXX_REG_SOC, true);
-	else
-		soc = bq27xxx_read(di, BQ27XXX_REG_SOC, false);
+	soc = bq27xxx_read(di, BQ27XXX_REG_SOC, single);
 
 	if (soc < 0)
 		dev_dbg(di->dev, "error reading State-of-Charge\n");
@@ -1383,11 +1382,9 @@ static inline int bq27xxx_battery_read_fcc(struct bq27xxx_device_info *di)
 static int bq27xxx_battery_read_dcap(struct bq27xxx_device_info *di)
 {
 	int dcap;
+	bool single = di->opts & BQ27XXX_O_ZERO;
 
-	if (di->opts & BQ27XXX_O_ZERO)
-		dcap = bq27xxx_read(di, BQ27XXX_REG_DCAP, true);
-	else
-		dcap = bq27xxx_read(di, BQ27XXX_REG_DCAP, false);
+	dcap = bq27xxx_read(di, BQ27XXX_REG_DCAP, single);
 
 	if (dcap < 0) {
 		dev_dbg(di->dev, "error reading initial last measured discharge\n");
@@ -1554,10 +1551,10 @@ static int bq27xxx_battery_read_health(struct bq27xxx_device_info *di)
 	/* Unlikely but important to return first */
 	if (unlikely(bq27xxx_battery_overtemp(di, flags)))
 		return POWER_SUPPLY_HEALTH_OVERHEAT;
-	if (unlikely(bq27xxx_battery_undertemp(di, flags)))
-		return POWER_SUPPLY_HEALTH_COLD;
 	if (unlikely(bq27xxx_battery_dead(di, flags)))
 		return POWER_SUPPLY_HEALTH_DEAD;
+	if (unlikely(bq27xxx_battery_undertemp(di, flags)))
+		return POWER_SUPPLY_HEALTH_COLD;
 
 	return POWER_SUPPLY_HEALTH_GOOD;
 }
@@ -1615,6 +1612,56 @@ void bq27xxx_battery_update(struct bq27xxx_device_info *di)
 }
 EXPORT_SYMBOL_GPL(bq27xxx_battery_update);
 
+static void shutdown(char *reason)
+{
+	pr_alert("Forcing shutdown: %s\n", reason);
+	orderly_poweroff(true);
+}
+
+static int generic_protect(struct power_supply *psy)
+{
+	union power_supply_propval val;
+	int res;
+	int mV, mA, mVadj = 0;
+	const int mOhm = 430;
+	const int mV_limit = 2950;
+	const int mV_open_limit = 3150;
+
+	res = psy->desc->get_property(psy, POWER_SUPPLY_PROP_HEALTH, &val);
+	if (res)
+		return res;
+
+	if (val.intval == POWER_SUPPLY_HEALTH_OVERHEAT)
+		shutdown("Battery overheat.");
+	if (val.intval == POWER_SUPPLY_HEALTH_DEAD)
+		shutdown("Battery dead.");
+
+	res = psy->desc->get_property(psy, POWER_SUPPLY_PROP_VOLTAGE_NOW, &val);
+	if (res)
+		return res;
+	mV = val.intval / 1000;
+
+	if (mV < mV_limit) {
+		pr_alert("Battery below %d mV.", mV_limit);
+		orderly_poweroff(true);
+	}
+
+	res = psy->desc->get_property(psy, POWER_SUPPLY_PROP_CURRENT_NOW, &val);
+	if (res)
+		return res;
+	mA = val.intval / 1000;
+	mVadj = mV + (mA * mOhm) / 1000;
+
+	if (mVadj < mV_open_limit) {
+		pr_alert("Battery open circuit voltage below %d mV.", mV_open_limit);
+		orderly_poweroff(true);
+	}
+	
+	printk(KERN_INFO "Main battery %d mV, open circuit voltage %d mV\n",
+	       mV, mVadj);
+	return 0;
+}
+
 static void bq27xxx_battery_poll(struct work_struct *work)
 {
 	struct bq27xxx_device_info *di =
@@ -1625,6 +1672,16 @@ static void bq27xxx_battery_poll(struct work_struct *work)
 
 	if (poll_interval > 0)
 		schedule_delayed_work(&di->work, poll_interval * HZ);
+}
+
+static void bq27xxx_battery_poll_protect(struct work_struct *work)
+{
+	struct bq27xxx_device_info *di =
+			container_of(work, struct bq27xxx_device_info,
+				     work.work);
+
+	bq27xxx_battery_poll(work);
+	generic_protect(di->bat);
 }
 
 /*
@@ -1719,8 +1776,8 @@ static int bq27xxx_battery_capacity_level(struct bq27xxx_device_info *di,
 }
 
 /*
- * Return the battery Voltage in millivolts
- * Or < 0 if something fails.
+ * Set val->intval to the battery Voltage in millivolts.
+ * Return < 0 if something fails.
  */
 static int bq27xxx_battery_voltage(struct bq27xxx_device_info *di,
 				   union power_supply_propval *val)
@@ -1856,7 +1913,7 @@ int bq27xxx_battery_setup(struct bq27xxx_device_info *di)
 		.drv_data = di,
 	};
 
-	INIT_DELAYED_WORK(&di->work, bq27xxx_battery_poll);
+	INIT_DELAYED_WORK(&di->work, bq27xxx_battery_poll_protect);
 	mutex_init(&di->lock);
 
 	di->regs       = bq27xxx_chip_data[di->chip].regs;

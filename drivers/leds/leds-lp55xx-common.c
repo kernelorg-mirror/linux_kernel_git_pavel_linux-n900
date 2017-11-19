@@ -134,6 +134,8 @@ static struct attribute *lp55xx_led_attrs[] = {
 };
 ATTRIBUTE_GROUPS(lp55xx_led);
 
+extern int lp5523_rgb_brightness(struct lp55xx_led *led, struct led_rgb r);
+
 static int lp55xx_set_brightness(struct led_classdev *cdev,
 			     enum led_brightness brightness)
 {
@@ -141,6 +143,18 @@ static int lp55xx_set_brightness(struct led_classdev *cdev,
 	struct lp55xx_device_config *cfg = led->chip->cfg;
 
 	led->brightness = (u8)brightness;
+
+	if (led->chan_nr == 6) {
+		struct led_rgb r;
+		struct led_hsv hsv;
+
+		printk("RGB set request: %d %d %d\n", cdev->brightness, cdev->hue >> 24, cdev->saturation >> 24);
+		hsv.value = brightness << 24;
+		hsv.hue = cdev->hue;
+		hsv.saturation = cdev->saturation;
+		r = led_hsv_to_rgb(hsv);
+		return lp5523_rgb_brightness(led, r);
+	}
 	return cfg->brightness_fn(led);
 }
 
@@ -175,6 +189,8 @@ static int lp55xx_init_led(struct lp55xx_led *led,
 
 	led->cdev.brightness_set_blocking = lp55xx_set_brightness;
 	led->cdev.groups = lp55xx_led_groups;
+
+	printk("Led %d name %s\n", chan, pdata->led_config[chan].name);
 
 	if (pdata->led_config[chan].name) {
 		led->cdev.name = pdata->led_config[chan].name;

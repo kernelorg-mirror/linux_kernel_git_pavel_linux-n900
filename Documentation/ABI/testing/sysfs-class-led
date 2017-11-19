@@ -8,6 +8,10 @@ Description:
 		non-zero brightness settings. The value is between 0 and
 		/sys/class/leds/<led>/max_brightness.
 
+		If LED supports continuous brightness settings, 50% brightness
+		should correspond to 50% brightness perceived by human, in a similar
+		manner pixel brightness on monitor does (not 50% PWM).
+
 		Writing 0 to this file clears active trigger.
 
 		Writing non-zero to this file while trigger is active changes the

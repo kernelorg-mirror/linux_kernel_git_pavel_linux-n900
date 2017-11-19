@@ -1,0 +1,14 @@
+
+# Does not work, don't know why
+# Hmm. Install does not work on v4.1, because that one does not have vfat support.
+#N=10.0.0.105
+N=usb
+issh root@$N  "mount /dev/mmcblk1p1 /mnt/"
+iscp arch/arm/boot/uImage-dtb root@$N:/mnt/bootmenu.img.d/zImage-dtb
+issh root@$N  "umount /mnt/"
+
+
+# Boot maemo
+# Tohle zda-se funguje.
+iscp arch/arm/boot/zImage-dtb root@10.0.0.101:/boot/zImage-dtb-4.4
+issh root@10.0.0.101 "u-boot-update-bootmenu"

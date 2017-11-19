@@ -1,7 +1,9 @@
 # SPDX-License-Identifier: GPL-2.0
 
 # LED Core
-obj-$(CONFIG_NEW_LEDS)			+= led-core.o
+obj-$(CONFIG_NEW_LEDS)			+= led-core-objs.o
+led-core-objs-y				:= led-core.o
+led-core-objs-$(CONFIG_LEDS_CLASS_RGB)	+= led-rgb-core.o
 obj-$(CONFIG_LEDS_CLASS)		+= led-class.o
 obj-$(CONFIG_LEDS_CLASS_FLASH)		+= led-class-flash.o
 obj-$(CONFIG_LEDS_TRIGGERS)		+= led-triggers.o

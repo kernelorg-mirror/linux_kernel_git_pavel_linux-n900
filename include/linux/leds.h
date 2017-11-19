@@ -37,6 +37,8 @@ struct led_classdev {
 	const char		*name;
 	enum led_brightness	 brightness;
 	enum led_brightness	 max_brightness;
+	int			 hue;
+	int			 saturation;
 	int			 flags;
 
 	/* Lower 16 bits reflect status */
@@ -50,6 +52,7 @@ struct led_classdev {
 #define LED_PANIC_INDICATOR	(1 << 20)
 #define LED_BRIGHT_HW_CHANGED	(1 << 21)
 #define LED_RETAIN_AT_SHUTDOWN	(1 << 22)
+#define LED_DEV_CAP_RGB		(1 << 24)
 
 	/* set_brightness_work / blink_timer flags, atomic, private. */
 	unsigned long		work_flags;
@@ -238,6 +241,28 @@ static inline bool led_sysfs_is_disabled(struct led_classdev *led_cdev)
 {
 	return led_cdev->flags & LED_SYSFS_DISABLE;
 }
+
+/* 0.32 fixed point */
+struct led_hsv {
+	u32 hue;
+	u32 saturation;
+	u32 value;
+};
+
+/* 0.32 fixed point */
+struct led_rgb {
+	u32 red;
+	u32 green;
+	u32 blue;
+};
+
+/**
+ * led_hsv_to_rgb - convert a hsv color value to rgb color model
+ * @hsv: the hsv value to convert
+ *
+ * Returns: the resulting rgb value
+ */
+struct led_rgb led_hsv_to_rgb(struct led_hsv hsv);
 
 /*
  * LED Triggers

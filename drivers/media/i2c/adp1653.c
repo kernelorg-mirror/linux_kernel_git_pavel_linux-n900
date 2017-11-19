@@ -26,6 +26,9 @@
  *
  */
 
+/* FIXME: This should be converted to LEDs class, see for example
+   leds-max77693.c , so that we gain sysfs interface */
+
 #include <linux/delay.h>
 #include <linux/module.h>
 #include <linux/i2c.h>
