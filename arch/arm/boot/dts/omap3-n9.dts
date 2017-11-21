@@ -56,7 +56,7 @@
 			};
 		};
 	};
-
+#if 0
        apds990x@39 {
                compatible = "avago,apds990x";
                reg = <0x39>;
@@ -77,7 +77,7 @@
 	       pdrive  = /bits/ 8 <2>; /* APDS_IRLED_CURR_25mA */
 	       ppcount  = /bits/ 8 <5>;
 	};
-
+#endif
 	touch@4b {
 		compatible = "atmel,maxtouch";
 		reg = <0x4b>;
