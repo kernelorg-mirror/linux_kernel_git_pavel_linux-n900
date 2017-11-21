@@ -56,7 +56,7 @@
 			};
 		};
 	};
-#if 0
+#if 1
        apds990x@39 {
                compatible = "avago,apds990x";
                reg = <0x39>;

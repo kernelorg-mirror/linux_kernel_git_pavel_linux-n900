@@ -1366,8 +1366,9 @@ static int apds990x_suspend(struct device *dev)
 {
 	struct iio_dev *indio_dev = dev_to_iio_dev(dev);
 	struct apds990x_chip *chip = iio_priv(indio_dev);
-
+#if 0
 	apds990x_chip_off(chip);
+#endif
 	return 0;
 }
 
@@ -1394,8 +1395,9 @@ static int apds990x_runtime_suspend(struct device *dev)
 
 	if (!chip->client)
 		return -EAGAIN;
-
+#if 0
 	apds990x_chip_off(chip);
+#endif
 	return 0;
 }
 
