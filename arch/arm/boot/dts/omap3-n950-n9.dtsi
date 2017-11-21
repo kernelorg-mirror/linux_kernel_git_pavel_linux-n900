@@ -39,6 +39,14 @@
 		enable-active-high;
 	};
 
+	vbat: fixedregulator1 {
+     		      compatible = "regulator-fixed";
+		      regulator-name = "VBAT";
+		      regulator-min-microvolt = <3700000>;
+		      regulator-max-microvolt = <3700000>; 
+		       regulator-boot-on; 
+	};
+
 	vwlan_fixed: fixedregulator2 {
 		compatible = "regulator-fixed";
 		regulator-name = "VWLAN";
@@ -141,7 +149,15 @@
 			OMAP3_CORE1_IOPAD(0x217a, PIN_INPUT | MUX_MODE0)		/* uart2_rx */
 		>;
 	};
+
+	als_ps_gpio: pinmux_als_ps_gpio {
+		     pinctrl-single,pins = <
+		     			   OMAP3_CORE1_IOPAD(0x20f6, PIN_INPUT | MUX_MODE4)	/* dss_data13.gpio_83 -> APDS990X/BHSFH IRQ */
+		     >;
+ 	};
 };
+
+
 
 &omap3_pmx_core2 {
 	modem_pins2: pinmux_modem_core2_pins {

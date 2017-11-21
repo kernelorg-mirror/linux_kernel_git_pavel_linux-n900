@@ -58,20 +58,25 @@
 	};
 
        apds990x@39 {
-       		 compatible = "apds990x";
-		 reg = <0x39>;
+               compatible = "avago,apds990x";
+               reg = <0x39>;
 
-		 vdd-supply = <&vaux1>;   /* FIXME: check */
-		 leds-supply = <&vaux1>; /* FIXME: really on vbat */
+               interrupt-parent = <&gpio3>;
+               interrupts = <19 10>; /* gpio_83, IRQF_TRIGGER_FALLING | IRQF_TRIGGER_LOW */
 
-		 /* GPIO 83 on n950.
- 		 .leds              = BHSFH_LED1,
- 		 .led_max_curr      = BHSFH_LED_100mA,
- 		 .led_def_curr      = BHSFH_LED_50mA,
- 		 .glass_attenuation = (16384 * 385) / 100, ... about 3.85x filtering
- 		 */
-       };
+               Vdd-supply = <&vaux1>;
+               Vled-supply = <&vbat>;
 
+               ga      = <168834>;
+               cf1     = <4096>;
+               irf1    = <7824>;
+               cf2     = <877>;
+               irf2    = <1575>;
+               df      = <52>;
+
+	       pdrive  = /bits/ 8 <2>; /* APDS_IRLED_CURR_25mA */
+	       ppcount  = /bits/ 8 <5>;
+	};
 
 	touch@4b {
 		compatible = "atmel,maxtouch";
