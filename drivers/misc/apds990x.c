@@ -22,7 +22,6 @@
  *
  */
 
-#define DEBUG
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/i2c.h>
@@ -596,7 +595,6 @@ static int apds990x_detect(struct apds990x_chip *chip)
 		dev_err(&client->dev, "REV read failed\n");
 		return ret;
 	}
-	printk("Have apds990x id %d\n", id);
 
 	switch (id) {
 	case APDS990X_ID_0:
@@ -1057,16 +1055,6 @@ static const struct attribute_group apds990x_attribute_group[] = {
 	{.attrs = sysfs_attrs_ctrl },
 };
 
-static struct apds990x_platform_data def = {
-	.cf.ga   = 168834, /*  41.2194 * 4096 */
-	.cf.cf1  = 4096,
-	.cf.irf1 = 7824,  /* 1.9102 * 4096 */
-	.cf.cf2  = 877,  /* 0.2140 * 4096 */
-	.cf.irf2 = 1575,  /* 0.3846 * 4096 */
-	.cf.df   = 52,
-	.pdrive = APDS_IRLED_CURR_25mA,
-};
-
 static int apds990x_probe(struct i2c_client *client,
 				const struct i2c_device_id *id)
 {
@@ -1087,7 +1075,7 @@ static int apds990x_probe(struct i2c_client *client,
 	if (chip->pdata == NULL) {
 		dev_err(&client->dev, "platform data is mandatory\n");
 		err = -EINVAL;
-		chip->pdata = &def;
+		goto fail1;
 	}
 
 	if (chip->pdata->cf.ga == 0) {
@@ -1135,11 +1123,13 @@ static int apds990x_probe(struct i2c_client *client,
 				 ARRAY_SIZE(chip->regs), chip->regs);
 	if (err < 0) {
 		dev_err(&client->dev, "Cannot get regulators\n");
+		goto fail1;
 	}
 
 	err = regulator_bulk_enable(ARRAY_SIZE(chip->regs), chip->regs);
 	if (err < 0) {
 		dev_err(&client->dev, "Cannot enable regulators\n");
+		goto fail2;
 	}
 
 	usleep_range(APDS_STARTUP_DELAY, 2 * APDS_STARTUP_DELAY);
@@ -1181,9 +1171,8 @@ static int apds990x_probe(struct i2c_client *client,
 	if (err) {
 		dev_err(&client->dev, "could not get IRQ %d\n",
 			client->irq);
+		goto fail5;
 	}
-	printk("adps990x: detected\n");
-	err = 0;
 	return err;
 fail5:
 	sysfs_remove_group(&chip->client->dev.kobj,
@@ -1274,14 +1263,6 @@ static const struct i2c_device_id apds990x_id[] = {
 	{}
 };
 
-#ifdef CONFIG_OF
-static const struct of_device_id apds990x_of_match_table[] = {
-	{ .compatible = "apds990x" },
-};
-MODULE_DEVICE_TABLE(of, apds990x_of_match_table);
-#endif	
-
-
 MODULE_DEVICE_TABLE(i2c, apds990x_id);
 
 static const struct dev_pm_ops apds990x_pm_ops = {
@@ -1295,7 +1276,6 @@ static struct i2c_driver apds990x_driver = {
 	.driver	 = {
 		.name	= "apds990x",
 		.pm	= &apds990x_pm_ops,
-		.of_match_table = of_match_ptr(apds990x_of_match_table),
 	},
 	.probe	  = apds990x_probe,
 	.remove	  = apds990x_remove,
