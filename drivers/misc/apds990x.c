@@ -1208,9 +1208,12 @@ static int apds990x_probe(struct i2c_client *client,
 	struct iio_dev *indio_dev;
 	int err = 0;
 
+	printk("apds990x_probe: probing\n");
 	indio_dev = devm_iio_device_alloc(&client->dev, sizeof(*chip));
-	if (!indio_dev)
+	if (!indio_dev) {
+		printk("apds990x: iio_device_alloc failed\n");
 		return -ENOMEM;
+	}
 
 	indio_dev->info = &apds990x_info;
 	indio_dev->name = APDS990X_DRV_NAME;
@@ -1221,6 +1224,7 @@ static int apds990x_probe(struct i2c_client *client,
 	chip = iio_priv(indio_dev);
 	i2c_set_clientdata(client, indio_dev);
 
+	printk("clientdata\n");
 	chip->client = client;
 
 	init_waitqueue_head(&chip->wait);
@@ -1234,6 +1238,7 @@ static int apds990x_probe(struct i2c_client *client,
 			return -ENOMEM;
 		err = apds990x_parse_dt(&client->dev, chip->pdata);
 	}
+	printk("Parsing dt\n");
 	if (err < 0)
 		return err;
 
@@ -1284,10 +1289,13 @@ static int apds990x_probe(struct i2c_client *client,
 	chip->regs[0].supply = reg_vcc;
 	chip->regs[1].supply = reg_vled;
 
+	printk("bulk regulators\n");
 	err = devm_regulator_bulk_get(&client->dev,
 				 ARRAY_SIZE(chip->regs), chip->regs);
 	if (err < 0) {
 		dev_err(&client->dev, "Cannot get regulators\n");
+		printk("err %d\n", err);
+		err = -517;
 		goto fail1;
 	}
 
@@ -1299,6 +1307,8 @@ static int apds990x_probe(struct i2c_client *client,
 
 	usleep_range(APDS_STARTUP_DELAY, 2 * APDS_STARTUP_DELAY);
 
+	printk("detecting chip\n");
+
 	err = apds990x_detect(chip);
 	if (err < 0) {
 		dev_err(&client->dev, "APDS990X not found\n");
@@ -1306,6 +1316,8 @@ static int apds990x_probe(struct i2c_client *client,
 	}
 
 	pm_runtime_set_active(&client->dev);
+
+	printk("configure chip\n");	
 
 	apds990x_configure(chip);
 	apds990x_set_arate(chip, APDS_LUX_DEFAULT_RATE);
@@ -1321,18 +1333,25 @@ static int apds990x_probe(struct i2c_client *client,
 		}
 	}
 
+	printk("threaded irq\n");
+#if 0
 	err = devm_request_threaded_irq(&client->dev, client->irq, NULL,
 				apds990x_irq, IRQF_TRIGGER_FALLING | IRQF_TRIGGER_LOW |
 				IRQF_ONESHOT, "apds990x", indio_dev);
+#endif
+	err = 0; // FIXME
 	if (err) {
 		dev_err(&client->dev, "could not get IRQ %d\n",
 			client->irq);
 		goto fail3;
 	}
 
+	printk("iio register\n");		
 	err = iio_device_register(indio_dev);
 	if (err)
 		goto fail3;
+
+	printk("all good\n");
 
 	return err;
 fail3:
