@@ -1,0 +1,39 @@
+Texas Instruments - tlv320dac33 Codec module
+
+The tlv320dac33 serial control bus communicates through I2C protocols
+
+Required properties:
+
+- compatible - "ti,tlv320dac33"
+- reg - I2C slave address
+
+Optional properties:
+
+- power-gpio - gpio pin number used for codec reset
+
+- AVDD-supply, DVDD-supply, IOVDD-supply: power supplies for the device as covered
+  in Documentation/devicetree/bindings/regulator/regulator.txt
+
+- interrupts       - The interrupt output from the device.
+- interrupt-parent - The parent interrupt controller.
+
+- keep_bclk 	- Keep the BCLK running in FIFO modes
+- burst_bclkdiv - BCLK divider value in burst mode
+
+Example:
+
+tlv320dac33: tlv320dac33@19 {
+	compatible = "ti,tlv320dac33";
+	reg = <0x19>;
+
+	AVDD-supply = <&vaux4>;
+	DVDD-supply = <&vio>;
+	IOVDD-supply = <&vio>;
+
+	interrupt-parent = <&gpio2>;
+	interrupts = <21 1>; /* gpio_53, IRQF_TRIGGER_RISING*
+	power-gpio = <&gpio2 28 0>; /* gpio_60 */
+
+	keep_bclk;
+	burst_bclkdiv = /bits/ 8 <3>;
+};
