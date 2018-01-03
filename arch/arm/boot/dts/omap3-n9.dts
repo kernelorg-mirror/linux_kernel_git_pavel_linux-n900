@@ -36,6 +36,12 @@
 			OMAP3_CORE1_IOPAD(0x20fe, PIN_OUTPUT | MUX_MODE4) /* gpio 87 - display reset */
 		>;
 	};
+
+	vibra_gpio: pinmux_vibra_gpio {
+		pinctrl-single,pins = <
+			OMAP3_CORE1_IOPAD(0x21de, PIN_OUTPUT | MUX_MODE4)	/* mcspi2_cs1 -> gpio_182 */
+		>;
+	};
 };
 
 &i2c2 {
@@ -220,5 +226,16 @@
 				remote-endpoint = <&dsi_out_ep>;
 			};
 		};
+	};
+};
+
+&mcspi2 {
+	vibra@0 {
+		compatible = "nokia,vibra-spi";
+		spi-max-frequency = <750000>;
+		reg = <0>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&vibra_gpio>;
+		enable-gpio = <&gpio6 22 GPIO_ACTIVE_HIGH>; /* gpio_182 */
 	};
 };

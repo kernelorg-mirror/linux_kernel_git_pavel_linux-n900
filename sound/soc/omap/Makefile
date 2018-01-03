@@ -15,6 +15,7 @@ obj-$(CONFIG_SND_OMAP_SOC_HDMI_AUDIO) += snd-soc-omap-hdmi-audio.o
 # OMAP Machine Support
 snd-soc-n810-objs := n810.o
 snd-soc-rx51-objs := rx51.o
+snd-soc-n9-objs := n9.o
 snd-soc-ams-delta-objs := ams-delta.o
 snd-soc-osk5912-objs := osk5912.o
 snd-soc-am3517evm-objs := am3517evm.o
@@ -24,6 +25,7 @@ snd-soc-omap3pandora-objs := omap3pandora.o
 
 obj-$(CONFIG_SND_OMAP_SOC_N810) += snd-soc-n810.o
 obj-$(CONFIG_SND_OMAP_SOC_RX51) += snd-soc-rx51.o
+obj-$(CONFIG_SND_OMAP_SOC_N9) += snd-soc-n9.o
 obj-$(CONFIG_SND_OMAP_SOC_AMS_DELTA) += snd-soc-ams-delta.o
 obj-$(CONFIG_SND_OMAP_SOC_OSK5912) += snd-soc-osk5912.o
 obj-$(CONFIG_SND_OMAP_SOC_AM3517EVM) += snd-soc-am3517evm.o

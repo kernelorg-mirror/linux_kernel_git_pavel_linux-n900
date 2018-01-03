@@ -974,6 +974,14 @@ add_children(struct twl4030_platform_data *pdata, unsigned irq_base,
 			return PTR_ERR(child);
 	}
 
+	if (IS_ENABLED(CONFIG_TWL5031_ACI) && (features & TWL5031)) {
+		child = add_child(TWL5031_MODULE_ACCESSORY, "twl5031_aci",
+				pdata->aci, 0, false,
+				irq_base + ACI_INTR_OFFSET, 0);
+		if (IS_ERR(child))
+			return PTR_ERR(child);
+	}
+
 	if (IS_ENABLED(CONFIG_TWL4030_POWER) && pdata->power) {
 		child = add_child(TWL_MODULE_PM_MASTER, "twl4030_power",
 				  pdata->power, sizeof(*pdata->power), false,
