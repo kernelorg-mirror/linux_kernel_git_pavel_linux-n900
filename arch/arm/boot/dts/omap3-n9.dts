@@ -90,6 +90,22 @@
 		atmel,suspend-mode = <2>; /* MXT_SUSPEND_REGULATOR */
 		atmel,cfg_name = "RM-696_Pyrenees_SMD_V1_6.raw";
 	};
+
+#if 1
+	lp5521@32 {
+		compatible = "national,lp5521";
+		reg = <0x32>;
+		label = "lp5521";
+		enable-gpio = <&gpio2 9 GPIO_ACTIVE_HIGH>; /* 41 */
+
+		clock-mode = /bits/ 8 <2>;
+		chan0 {
+			led-cur = /bits/ 8 <0x2f>;
+			max-cur = /bits/ 8 <0x5f>;
+			linux,default-trigger = "heartbeat";
+		};
+	};
+#endif
 };
 
 &i2c3 {
