@@ -33,14 +33,13 @@
 #include <linux/debugfs.h>
 #include <linux/uaccess.h>
 #include <linux/err.h>
-#include <linux/i2c/twl.h>
+#include <linux/mfd/twl.h>
 #include <linux/mfd/twl4030-audio.h>
 #include <linux/mfd/twl5031-aci.h>
 #include <linux/input/eci.h>
 #include <linux/regulator/consumer.h>
 #include <linux/of_gpio.h>
 #include <sound/jack.h>
-#include <linux/i2c/twl4030-madc.h>
 #include <linux/delay.h>
 #include <linux/string.h>
 #include <linux/pm_qos.h>
