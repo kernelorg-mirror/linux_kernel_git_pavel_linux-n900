@@ -152,7 +152,7 @@
        };
 
        bh1770@38 {
-       		 compatible = "bh1770glc";
+       		 compatible = "rohm,bh1770glc";
 		 reg = <0x38>;
 
 		 vdd-supply = <&vaux1>;
@@ -168,7 +168,7 @@
 
        /* Also TLV320DAC33 and TPA6130A2 */
 
-	touch@4b {
+	touchscreen@4b { /* FIXME: take N9 version */
 		compatible = "atmel,maxtouch";
 		reg = <0x4b>;
 		interrupt-parent = <&gpio2>;

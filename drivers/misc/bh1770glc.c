@@ -1421,7 +1421,7 @@ static const struct dev_pm_ops bh1770_pm_ops = {
 
 #ifdef CONFIG_OF
 static const struct of_device_id bh1770_of_match_table[] = {
-	{ .compatible = "bh1770" },
+	{ .compatible = "rohm,bh1770glc" },
 };
 MODULE_DEVICE_TABLE(of, bh1770_of_match_table);
 #endif	
