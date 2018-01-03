@@ -329,6 +329,19 @@
 		ti,resistor-sense = <68>;
  		ti,usb-charger-detection = <&usb_otg_hs>; /* Hmm, probably wrong? */
 	};
+
+	touchscreen@4b {
+		compatible = "atmel,maxtouch";
+		reg = <0x4b>;
+		interrupt-parent = <&gpio2>;
+		interrupts = <29 2>; /* gpio_61, IRQF_TRIGGER_FALLING*/
+		reset-gpios = <&gpio3 17 0>; /* gpio 81 */
+		vdd-supply = <&vio>; /* unused, fixme */
+		avdd-supply = <&vaux1>; /* unused */
+		atmel,suspend-mode = <2>; /* MXT_SUSPEND_REGULATOR */ /* unused */
+		atmel,cfg_name = "RM-696_Pyrenees_SMD_V1_6.raw"; /* unused */
+		// atmel,cfg_name = "RM-680_Himalaya_AUO_V1_1.raw";
+	};
 };
 
 &i2c3 {

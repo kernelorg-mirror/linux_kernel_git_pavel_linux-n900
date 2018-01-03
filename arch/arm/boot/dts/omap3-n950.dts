@@ -165,20 +165,6 @@
  		 .glass_attenuation = (16384 * 385) / 100, ... about 3.85x filtering
  		 */
        };
-
-       /* Also TLV320DAC33 and TPA6130A2 */
-
-	touchscreen@4b { /* FIXME: take N9 version */
-		compatible = "atmel,maxtouch";
-		reg = <0x4b>;
-		interrupt-parent = <&gpio2>;
-		interrupts = <29 2>; /* gpio_61, IRQF_TRIGGER_FALLING*/
-		atmel,reset-gpio = <&gpio3 17 0>; /* gpio_81 */
-		vdd-supply = <&vio>;
-		avdd-supply = <&vaux1>;
-		atmel,suspend-mode = <2>; /* MXT_SUSPEND_REGULATOR */
-		atmel,cfg_name = "RM-680_Himalaya_AUO_V1_1.raw";
-	};
 };
 
 &i2c3 {
