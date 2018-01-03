@@ -62,7 +62,7 @@
 			label = "debug::sleep";
 			gpios = <&gpio3 28 GPIO_ACTIVE_HIGH>;  /* gpio92 */
 			pinctrl-names = "default";
-			pinctrl-0 = <&debug_leds>;
+			pinctrl-0 = <&led_pins>;
 		};
 	};
 
@@ -82,9 +82,10 @@
 		>;
 	};
 
-	debug_leds: pinmux_debug_led_pins {
+	led_pins: pinmux_led_pins {
 		pinctrl-single,pins = <
 			OMAP3_CORE1_IOPAD(0x2108, PIN_OUTPUT | MUX_MODE4)       /* dss_data22.gpio_92 */
+			OMAP3_CORE1_IOPAD(0x2088, PIN_OUTPUT | MUX_MODE4)       /* gpmc_a8.gpio_41 -> RGB_EN */
 		>;
 	};
 
@@ -334,9 +335,9 @@
 		compatible = "atmel,maxtouch";
 		reg = <0x4b>;
 		interrupt-parent = <&gpio2>;
-		interrupts = <29 2>; /* gpio_61, IRQF_TRIGGER_FALLING*/
+		interrupts = <29 2>; /* gpio_61, IRQF_TRIGGER_FALLING */
 		reset-gpios = <&gpio3 17 0>; /* gpio 81 */
-		vdd-supply = <&vio>; /* unused, fixme */
+		vdd-supply = <&vio>; /* unused, fixme: needs to be on for operation, and driver does not support it */
 		avdd-supply = <&vaux1>; /* unused */
 		atmel,suspend-mode = <2>; /* MXT_SUSPEND_REGULATOR */ /* unused */
 		atmel,cfg_name = "RM-696_Pyrenees_SMD_V1_6.raw"; /* unused */
