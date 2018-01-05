@@ -311,7 +311,6 @@ static int lp5521_post_init_device(struct lp55xx_chip *chip)
 			"unexpected data in register (expected 0x%x got 0x%x)\n",
 			LP5521_REG_R_CURR_DEFAULT, val);
 		ret = -EINVAL;
-		return ret;
 	}
 	usleep_range(10000, 20000);
 
