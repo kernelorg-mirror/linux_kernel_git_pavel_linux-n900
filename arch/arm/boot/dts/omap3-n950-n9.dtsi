@@ -72,6 +72,29 @@
 		#clock-cells = <0>;
 		clock-frequency = <38400000>;
 	};
+
+	eci: eci {
+		compatible = "nokia,eci";
+	};
+
+	sound: n9-audio {
+		compatible = "nokia,n9-audio";
+
+		pinctrl-names="default";
+		pinctrl-0 = <&wl1273_fm_en_gpio>;
+
+		nokia,twl4030-cpu-dai = <&mcbsp3>;
+		nokia,tlv320dac33-cpu-dai = <&mcbsp2>;
+		nokia,wl1273-cpu-dai = <&mcbsp4>;
+
+		nokia,twl4030-codec = <&twl4030_audio>;
+		nokia,tlv320dac33-codec = <&tlv320dac33>;
+		nokia,wl1273-codec = <&wl1273codec>;
+		nokia,headphone-amplifier = <&tpa6140a2>;
+
+		wl1273-power-gpios = <&gpio6 18 GPIO_ACTIVE_HIGH>;
+		speaker-amplifier-gpios = <&twl_gpio 7 GPIO_ACTIVE_HIGH>;
+	};
 };
 
 &omap3_pmx_core {
