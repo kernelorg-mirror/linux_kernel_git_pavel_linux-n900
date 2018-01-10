@@ -12,8 +12,7 @@ Required properties:
 - nokia,wl1273-codec: phandle for the WL1273 codec
 - nokia,headphone-amplifier: phandle for the TPA6130A2 node
 
-- wl1273-power-gpios: GPIO for WL1273 power
-- speaker-amplifier-gpios: GPIO for speaker amplifier
+- nokia,speaker-amplifier-gpios: GPIO for speaker amplifier
 
 Example:
 
@@ -29,6 +28,5 @@ sound: n9-audio {
 	nokia,wl1273-codec = <&wl1273codec>;
 	nokia,headphone-amplifier = <&tpa6140a2>;
 
-	wl1273-power-gpios = <&gpio6 18 GPIO_ACTIVE_HIGH>;
-	speaker-amplifier-gpios = <&twl_gpio 7 GPIO_ACTIVE_HIGH>;
+	nokia,speaker-amplifier-gpios = <&twl_gpio 7 GPIO_ACTIVE_HIGH>;
 };

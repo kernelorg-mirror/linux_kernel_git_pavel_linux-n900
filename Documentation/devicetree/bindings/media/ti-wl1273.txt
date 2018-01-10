@@ -6,6 +6,8 @@ Required properties:
 - reg - I2C slave address
 - interrupts       - The interrupt output from the device.
 - interrupt-parent - The parent interrupt controller.
+- power-gpio       - gpio pin to power the device.
+
 - wl1273radio child - compatible = "ti,wl1273-fm-radio";
 
 Optional properties:
