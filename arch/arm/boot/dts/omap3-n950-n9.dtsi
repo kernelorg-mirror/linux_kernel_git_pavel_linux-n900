@@ -381,8 +381,8 @@
 		interrupts = <21 0>; /* gpio_53, IRQF_TRIGGER_RISING*/
 		power-gpio = <&gpio2 28 0>; /* gpio_60 */
 
-		keep_bclk;
-		burst_bclkdiv = /bits/ 8 <3>;
+		keep-bclk;
+		burst-bclkdiv = /bits/ 8 <3>;
 	};
 
 	tpa6140a2: tpa6140a2@60 {
