@@ -2,17 +2,19 @@ Texas Instruments - wl1273 radio/bluetooth module
 
 Required properties:
 
-- compatible - "ti,wl1273-core"
-- reg - I2C slave address
-- interrupts       - The interrupt output from the device.
-- interrupt-parent - The parent interrupt controller.
-- power-gpio       - gpio pin to power the device.
+- compatible: "ti,wl1273-core"
+- reg: I2C slave address
+- interrupts: The interrupt output from the device.
+- interrupt-parent: The parent interrupt controller.
+- power-gpio: gpio pin to power the device.
 
-- wl1273radio child - compatible = "ti,wl1273-fm-radio";
+Mandatory subnode:
 
-Optional properties:
+- wl1273radio child: compatible = "ti,wl1273-fm-radio";
 
-- wl1273codec child - compatible = "ti,wl1273codec";
+Optional subnode:
+
+- wl1273codec child:compatible = "ti,wl1273-codec";
 
 Example:
 
