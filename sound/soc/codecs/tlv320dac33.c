@@ -21,6 +21,8 @@
  *
  */
 
+#warning update driver to new dts api
+
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 #include <linux/init.h>
@@ -1513,10 +1515,10 @@ static int dac33_i2c_probe(struct i2c_client *client,
 		else
 			dac33->power_gpio = -1;
 
-		if (of_property_read_bool(np, "keep_bclk"))
+		if (of_property_read_bool(np, "keep-bclk"))
 			dac33->keep_bclk = true;
 
-		of_property_read_u8(np, "burst_bclkdiv", &dac33->burst_bclkdiv);
+		of_property_read_u8(np, "burst-bclkdiv", &dac33->burst_bclkdiv);
 	} else {
 		dev_err(&client->dev, "Platform data not set\n");
 		return -ENODEV;

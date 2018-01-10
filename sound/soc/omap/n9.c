@@ -1,27 +1,13 @@
-/*
- * n9.c  --  SoC audio for Nokia N9/N950
- *
- * Copyright (C) 2008 - 2009 Nokia Corporation
- *
- * Contact: Peter Ujfalusi <peter.ujfalusi@ti.com>
- *          Eduardo Valentin <eduardo.valentin@nokia.com>
- *          Jarkko Nikula <jarkko.nikula@bitmer.com>
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * version 2 as published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
- * 02110-1301 USA
- *
- */
+// SPDX-License-Identifier: GPL-2.0
+//
+// n9.c  --  SoC audio for Nokia N9/N950
+//
+// Copyright (C) 2008 - 2009 Nokia Corporation
+//
+// Contact: Peter Ujfalusi <peter.ujfalusi@ti.com>
+//          Eduardo Valentin <eduardo.valentin@nokia.com>
+//          Jarkko Nikula <jarkko.nikula@bitmer.com>
+//
 
 #include <linux/delay.h>
 #include <linux/gpio.h>
@@ -69,9 +55,8 @@ static struct snd_soc_component *find_component(struct snd_soc_card *card) {
 		return NULL;
 	}
 
-	component = list_entry(card->component_dev_list.next
-						, struct snd_soc_component,
-						card_list);
+	component = list_entry(card->component_dev_list.next,
+			       struct snd_soc_component, card_list);
 
 	return component;
 }
@@ -84,7 +69,7 @@ void dfl61_jack_report(int status)
 	else
 		pr_err("twl4030: Cannot report jack status");
 }
-EXPORT_SYMBOL(dfl61_jack_report);
+EXPORT_SYMBOL_GPL(dfl61_jack_report);
 
 int dfl61_request_hsmicbias(bool enable)
 {
@@ -93,7 +78,7 @@ int dfl61_request_hsmicbias(bool enable)
 	bool lock = false;
 	int ret;
 
-	if (!dfl61twl_sound_card.instantiated){
+	if (!dfl61twl_sound_card.instantiated) {
 		pr_warn("twl4030: sound card not instantiated yet");
 		return -EPROBE_DEFER;
 	}
@@ -108,7 +93,7 @@ int dfl61_request_hsmicbias(bool enable)
 		return -ENODEV;
 	}
 
-	/*HACK: we might already be locked by snd_soc_dapm_put_volsw */
+	/* HACK: we might already be locked by snd_soc_dapm_put_volsw */
 	if (mutex_trylock(&dfl61twl_sound_card.dapm_mutex))
 		lock = true;
 
@@ -348,7 +333,7 @@ static int dfl61dac33_hw_params(struct snd_pcm_substream *substream,
 static int dfl61dac33_interconnect_enable(int enable)
 {
 	struct snd_soc_component *component =
-								find_component(&dfl61dac33_sound_card);
+		find_component(&dfl61dac33_sound_card);
 	struct snd_soc_dapm_context *dapm;
 	bool lock = false;
 
@@ -357,7 +342,7 @@ static int dfl61dac33_interconnect_enable(int enable)
 
 	dapm = snd_soc_component_get_dapm(component);
 
-	/*HACK: we might already be locked by snd_soc_dapm_put_volsw */
+	/* HACK: we might already be locked by snd_soc_dapm_put_volsw */
 	if (mutex_trylock(&dapm->card->dapm_mutex))
 		lock = true;
 
@@ -374,11 +359,10 @@ static int dfl61dac33_interconnect_enable(int enable)
 	return 0;
 }
 
-static void dfl61dac33_hp_enable(struct snd_soc_component *component
-								, int enable)
+static void dfl61dac33_hp_enable(struct snd_soc_component *component, int enable)
 {
 	struct snd_soc_dapm_context *dapm =
-								snd_soc_component_get_dapm(component);
+		snd_soc_component_get_dapm(component);
 
 	snd_soc_dapm_mutex_lock(dapm);
 
@@ -396,7 +380,7 @@ static void dfl61dac33_hp_enable(struct snd_soc_component *component
 int dfl61_request_hp_enable(bool enable)
 {
 	struct snd_soc_component *component =
-								find_component(&dfl61dac33_sound_card);
+		find_component(&dfl61dac33_sound_card);
 
 	if (!component) {
 		pr_err("dfl61-request_hp_enable");
@@ -493,8 +477,8 @@ static struct snd_soc_ops dfl61wl1273_ops = {
 static int dfl61wl1273_card_probe(struct snd_soc_card *card)
 {
 	struct dfl61wl1273_audio_pdata *pdata = snd_soc_card_get_drvdata(card);
-	gpiod_set_value(pdata->power_gpio, 1);
 
+	gpiod_set_value(pdata->power_gpio, 1);
 	return 0;
 }
 
@@ -502,8 +486,8 @@ static int dfl61wl1273_card_probe(struct snd_soc_card *card)
 static int dfl61wl1273_card_remove(struct snd_soc_card *card)
 {
 	struct dfl61wl1273_audio_pdata *pdata = snd_soc_card_get_drvdata(card);
-	gpiod_set_value(pdata->power_gpio, 0);
 
+	gpiod_set_value(pdata->power_gpio, 0);
 	return 0;
 }
 
@@ -699,8 +683,8 @@ static int n9_soc_probe(struct platform_device *pdev)
 	snd_soc_card_set_drvdata(card_twl, pdata_twl);
 
 	pdata_twl->speaker_amp_gpio = devm_gpiod_get(card_twl->dev,
-													"speaker-amplifier",
-													GPIOD_OUT_LOW);
+						     "speaker-amplifier",
+						     GPIOD_OUT_LOW);
 	if (IS_ERR(pdata_twl->speaker_amp_gpio)) {
 		dev_err(card_twl->dev, "could not get speaker enable gpio\n");
 		return PTR_ERR(pdata_twl->speaker_amp_gpio);
@@ -714,8 +698,8 @@ static int n9_soc_probe(struct platform_device *pdev)
 	snd_soc_card_set_drvdata(card_wl1273, pdata_wl1273);
 
 	pdata_wl1273->power_gpio = devm_gpiod_get(card_wl1273->dev,
-												"wl1273-power",
-												GPIOD_OUT_LOW);
+						  "wl1273-power",
+						  GPIOD_OUT_LOW);
 	if (IS_ERR(pdata_wl1273->power_gpio)) {
 		dev_err(card_wl1273->dev, "could not get wl1273 enable gpio\n");
 		return PTR_ERR(pdata_wl1273->power_gpio);
