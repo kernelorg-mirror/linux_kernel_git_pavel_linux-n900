@@ -17,8 +17,8 @@ Optional properties:
 - interrupts       - The interrupt output from the device.
 - interrupt-parent - The parent interrupt controller.
 
-- keep-bclk 	- Keep the BCLK running in FIFO modes
-- burst-bclkdiv - BCLK divider value in burst mode
+- ti,keep-bclk 	- Keep the BCLK running in FIFO modes
+- ti,burst-bclkdiv - BCLK divider value in burst mode
 
 Example:
 
@@ -34,6 +34,6 @@ tlv320dac33: tlv320dac33@19 {
 	interrupts = <21 1>; /* gpio_53, IRQF_TRIGGER_RISING */
 	power-gpio = <&gpio2 28 0>; /* gpio_60 */
 
-	keep-bclk;
-	burst-bclkdiv = /bits/ 8 <3>;
+	ti,keep-bclk;
+	ti,burst-bclkdiv = /bits/ 8 <3>;
 };
