@@ -1,4 +1,4 @@
-Avago APDS990X driver
+Avago APDS990X light sensor
 
 https://docs.broadcom.com/docs/AV02-2867EN
 
@@ -8,18 +8,18 @@ Required properties:
 - interrupts: external interrupt line number
 - vdd-supply: power supply for VDD
 - vled-supply: power supply for LEDA
-- avago,ga: Glass attenuation
-- avago,cf1: Clear channel factor 1
-- avago,irf1: IR channel factor 1
-- avago,cf2: Clear channel factor 2
-- avago,irf2: IR channel factor 2
-- avago,df: Device factor
+- avago,glass-coef: Glass attenuation coefficient. Fixed point, 4096 == 1.00.
+- avago,cf1: Clear channel factor 1. Fixed point, 4096 == 1.00.
+- avago,irf1: IR channel factor 1. Fixed point, 4096 == 1.00.
+- avago,cf2: Clear channel factor 2. Fixed point, 4096 == 1.00.
+- avago,irf2: IR channel factor 2. Fixed point, 4096 == 1.00.
+- avago,df: Device factor. Fixed point, 4096 == 1.00.
 - avago,pdrive: IR current, one of APDS_IRLED_CURR_XXXmA values
 - avago,ppcount: Proximity pulse count
 
 Example (Nokia N9):
 
-	als_ps@39 {
+	light-sensor@39 {
 		compatible = "avago,apds990x";
 		reg = <0x39>;
 
