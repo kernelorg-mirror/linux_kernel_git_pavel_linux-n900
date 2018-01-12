@@ -93,9 +93,8 @@ int dfl61_request_hsmicbias(bool enable)
 		return -ENODEV;
 	}
 
-	/* HACK: we might already be locked by snd_soc_dapm_put_volsw */
-	if (mutex_trylock(&dfl61twl_sound_card.dapm_mutex))
-		lock = true;
+	mutex_lock(&dfl61twl_sound_card.dapm_mutex);
+	lock = true;
 
 	if (enable)
 		snd_soc_dapm_force_enable_pin_unlocked(dapm, "Headset Mic Bias");
@@ -342,8 +341,7 @@ static int dfl61dac33_interconnect_enable(int enable)
 
 	dapm = snd_soc_component_get_dapm(component);
 
-	/* HACK: we might already be locked by snd_soc_dapm_put_volsw */
-	if (mutex_trylock(&dapm->card->dapm_mutex))
+	mutex_lock(&dapm->card->dapm_mutex);
 		lock = true;
 
 	if (enable)
