@@ -75,7 +75,6 @@ int dfl61_request_hsmicbias(bool enable)
 {
 	struct snd_soc_component *component;
 	struct snd_soc_dapm_context *dapm;
-	bool lock = false;
 	int ret;
 
 	if (!dfl61twl_sound_card.instantiated) {
@@ -94,17 +93,12 @@ int dfl61_request_hsmicbias(bool enable)
 	}
 
 	mutex_lock(&dfl61twl_sound_card.dapm_mutex);
-	lock = true;
-
 	if (enable)
 		snd_soc_dapm_force_enable_pin_unlocked(dapm, "Headset Mic Bias");
 	else
 		snd_soc_dapm_disable_pin_unlocked(dapm, "Headset Mic Bias");
-
 	ret = snd_soc_dapm_sync_unlocked(dapm);
-
-	if (lock)
-		mutex_unlock(&dfl61twl_sound_card.dapm_mutex);
+	mutex_unlock(&dfl61twl_sound_card.dapm_mutex);
 
 	return ret;
 }
@@ -334,7 +328,6 @@ static int dfl61dac33_interconnect_enable(int enable)
 	struct snd_soc_component *component =
 		find_component(&dfl61dac33_sound_card);
 	struct snd_soc_dapm_context *dapm;
-	bool lock = false;
 
 	if (!component)
 		return -ENODEV;
@@ -342,17 +335,12 @@ static int dfl61dac33_interconnect_enable(int enable)
 	dapm = snd_soc_component_get_dapm(component);
 
 	mutex_lock(&dapm->card->dapm_mutex);
-		lock = true;
-
 	if (enable)
 		snd_soc_dapm_enable_pin_unlocked(dapm, "twl4030 interconnect");
 	else
 		snd_soc_dapm_disable_pin_unlocked(dapm, "twl4030 interconnect");
-
 	snd_soc_dapm_sync_unlocked(dapm);
-
-	if (lock)
-		mutex_unlock(&dapm->card->dapm_mutex);
+	mutex_unlock(&dapm->card->dapm_mutex);
 
 	return 0;
 }
@@ -715,8 +703,6 @@ static int n9_soc_probe(struct platform_device *pdev)
 		return err;
 	}
 
-	/*HACK ALSA makes kernel explode when EPORBE_DEFER is reported
-	 *due to NULL pointer expection*/
 	err = devm_snd_soc_register_card(&pdev->dev, card_wl1273);
 	if (err < 0) {
 		dev_err(card_wl1273->dev, "failed to register wl1273 card\n");
