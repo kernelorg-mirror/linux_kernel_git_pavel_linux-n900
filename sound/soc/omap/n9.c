@@ -707,21 +707,21 @@ static int n9_soc_probe(struct platform_device *pdev)
 	if (err < 0) {
 		dev_err(card_twl->dev, "failed to register twl4030 card: %d\n", err);
 		return err;
-	};
+	}
 
 	err = devm_snd_soc_register_card(&pdev->dev, card_dac33);
 	if (err < 0) {
 		dev_err(card_dac33->dev, "failed to register tlv320dac33 card: %d\n", err);
 		return err;
-	};
+	}
 
 	/*HACK ALSA makes kernel explode when EPORBE_DEFER is reported
 	 *due to NULL pointer expection*/
-	/* err = devm_snd_soc_register_card(&pdev->dev, card_wl1273);
+	err = devm_snd_soc_register_card(&pdev->dev, card_wl1273);
 	if (err < 0) {
 		dev_err(card_wl1273->dev, "failed to register wl1273 card\n");
 		return err;
-	};*/
+	}
 
 	return 0;
 }
