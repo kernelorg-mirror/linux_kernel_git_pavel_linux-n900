@@ -1,3 +1,15 @@
+Rob:
+
+bluetooth chips have a binding location: bindings/net/bluetooth.
+
+And we already have a WL1273 binding. Plus there's the one for the Nokia
+BT which I think can be TI chips with a different firmware and protocol.
+Is this related?
+
+#
+# See: Rob Herring            Re: [PATCH] dt-bindings: Nokia N9 audio sup
+#
+
 Texas Instruments - wl1273 radio/bluetooth module
 
 Required properties:

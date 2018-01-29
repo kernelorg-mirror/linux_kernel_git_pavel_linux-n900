@@ -86,9 +86,9 @@ enum dac33_fifo_modes {
 
 #define DAC33_NUM_SUPPLIES 3
 static const char *dac33_supply_names[DAC33_NUM_SUPPLIES] = {
-	"AVDD",
-	"DVDD",
-	"IOVDD",
+	"avdd",
+	"dvdd",
+	"iovdd",
 };
 
 struct tlv320dac33_priv {
@@ -108,7 +108,7 @@ struct tlv320dac33_priv {
 	unsigned int nsample;		/* burst read amount from host */
 	int mode1_latency;		/* latency caused by the i2c writes in
 					 * us */
-	u8 burst_bclkdiv;		/* BCLK divider value in burst mode */
+	u32 burst_bclkdiv;		/* BCLK divider value in burst mode */
 	unsigned int burst_rate;	/* Interface speed in Burst modes */
 
 	int keep_bclk;			/* Keep the BCLK continuously running
@@ -1509,16 +1509,16 @@ static int dac33_i2c_probe(struct i2c_client *client,
 		dac33->keep_bclk = pdata->keep_bclk;
 		dac33->mode1_latency = pdata->mode1_latency;
 	} else if (np) {
-		ret = of_get_named_gpio(np, "power-gpio", 0);
+		ret = of_get_named_gpio(np, "power-gpios", 0);
 		if (ret >= 0)
 			dac33->power_gpio = ret;
 		else
 			dac33->power_gpio = -1;
 
-		if (of_property_read_bool(np, "keep-bclk"))
+		if (of_property_read_bool(np, "ti,keep-bclk"))
 			dac33->keep_bclk = true;
 
-		of_property_read_u8(np, "burst-bclkdiv", &dac33->burst_bclkdiv);
+		of_property_read_u32(np, "ti,burst-bclkdiv", &dac33->burst_bclkdiv);
 	} else {
 		dev_err(&client->dev, "Platform data not set\n");
 		return -ENODEV;

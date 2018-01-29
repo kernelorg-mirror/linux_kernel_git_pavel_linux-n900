@@ -77,6 +77,46 @@
 		compatible = "nokia,eci";
 	};
 
+	sound2: n9-audio {
+		compatible = "simple-audio-card";
+		simple-audio-card,name = "N9 Audio";
+
+		simple-audio-card,dai-link@0 {
+			cpu {
+	                          sound-dai = <&mcbsp2>;
+			};
+			codec {
+	          	         sound-dai = <&tlv320dac33>;
+		        };
+  	        };
+
+		simple-audio-card,dai-link@1 {
+			cpu {
+	                          sound-dai = <&mcbsp3>;
+			};
+			codec {
+	          	         sound-dai = <&twl4030_audio>;
+		        };
+  	        };
+		simple-audio-card,dai-link@2 {
+			cpu {
+	                          sound-dai = <&mcbsp4>;
+			};
+			codec {
+	          	         sound-dai = <&wl1273codec>;
+		        };
+  	        };
+
+	/* Need to port:
+		pinctrl-names="default";
+		pinctrl-0 = <&wl1273_fm_en_gpio>;
+
+		nokia,headphone-amplifier = <&tpa6140a2>;
+		wl1273-power-gpios = <&gpio6 18 GPIO_ACTIVE_HIGH>;
+		speaker-amplifier-gpios = <&twl_gpio 7 GPIO_ACTIVE_HIGH>;
+	*/	
+	};
+
 	sound: n9-audio {
 		compatible = "nokia,n9-audio";
 
@@ -366,23 +406,23 @@
 &i2c2 {
 	clock-frequency = <400000>;
 
-	tlv320dac33: tlv320dac33@19 {
+	tlv320dac33: audio-codec@19 {
 		compatible = "ti,tlv320dac33";
 		reg = <0x19>;
 
-		AVDD-supply = <&vaux4>;
-		DVDD-supply = <&vio>;
-		IOVDD-supply = <&vio>;
+		avdd-supply = <&vaux4>;
+		dvdd-supply = <&vio>;
+		iovdd-supply = <&vio>;
 
 		pinctrl-names = "default";
 		pinctrl-0 = <&audio_gpio>;
 
 		interrupt-parent = <&gpio2>;
-		interrupts = <21 0>; /* gpio_53, IRQF_TRIGGER_RISING*/
-		power-gpio = <&gpio2 28 0>; /* gpio_60 */
+		interrupts = <21 0>; /* gpio_53, IRQF_TRIGGER_RISING */
+		power-gpios = <&gpio2 28 0>; /* gpio_60 */
 
-		keep-bclk;
-		burst-bclkdiv = /bits/ 8 <3>;
+		ti,keep-bclk;
+		ti,burst-bclkdiv = <3>;
 	};
 
 	tpa6140a2: tpa6140a2@60 {

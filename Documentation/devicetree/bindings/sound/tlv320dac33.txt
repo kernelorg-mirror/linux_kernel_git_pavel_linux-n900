@@ -9,7 +9,7 @@ Required properties:
 
 Optional properties:
 
-- power-gpio - gpio pin to power the device
+- power-gpios - gpio pin to power the device, active high
 
 - avdd-supply, dvdd-supply, iovdd-supply: power supplies for the device as covered
   in Documentation/devicetree/bindings/regulator/regulator.txt
@@ -22,7 +22,7 @@ Optional properties:
 
 Example:
 
-tlv320dac33: tlv320dac33@19 {
+tlv320dac33: audio-codec@19 {
 	compatible = "ti,tlv320dac33";
 	reg = <0x19>;
 
@@ -35,5 +35,5 @@ tlv320dac33: tlv320dac33@19 {
 	power-gpio = <&gpio2 28 0>; /* gpio_60 */
 
 	ti,keep-bclk;
-	ti,burst-bclkdiv = /bits/ 8 <3>;
+	ti,burst-bclkdiv = <3>;
 };
