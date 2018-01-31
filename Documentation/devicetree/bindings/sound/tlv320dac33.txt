@@ -9,8 +9,9 @@ Required properties:
 
 Optional properties:
 
-- power-gpios - gpio pin to power the device, active high
+- reset-gpios - gpio pin to power the device, active high
 
+# FIXME: not used so not submitted.
 - avdd-supply, dvdd-supply, iovdd-supply: power supplies for the device as covered
   in Documentation/devicetree/bindings/regulator/regulator.txt
 
