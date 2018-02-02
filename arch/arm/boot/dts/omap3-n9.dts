@@ -151,12 +151,6 @@
 	vdda_video-supply = <&vdac>;
 };
 
-&dss {
-	status = "ok";
-
-	vdda_video-supply = <&vdac>;
-};
-
 &twl {
 	twl_audio: audio {
 		compatible = "ti,twl4030-audio";
