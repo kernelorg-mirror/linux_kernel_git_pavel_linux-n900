@@ -27,13 +27,14 @@ tlv320dac33: audio-codec@19 {
 	compatible = "ti,tlv320dac33";
 	reg = <0x19>;
 
+#FIXME:
 	avdd-supply = <&vaux4>;
 	dvdd-supply = <&vio>;
 	iovdd-supply = <&vio>;
 
 	interrupt-parent = <&gpio2>;
 	interrupts = <21 1>; /* gpio_53, IRQF_TRIGGER_RISING */
-	power-gpio = <&gpio2 28 0>; /* gpio_60 */
+	reset-gpios = <&gpio2 28 0>; /* gpio_60 */
 
 	ti,keep-bclk;
 	ti,burst-bclkdiv = <3>;
