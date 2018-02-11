@@ -6,31 +6,22 @@ Required properties:
 
 - compatible - "ti,tlv320dac33"
 - reg - I2C slave address
+- ti,burst-bclkdiv - BCLK divider value in burst mode. Valid range is 1..255.
 
 Optional properties:
 
-- reset-gpios - gpio pin to power the device, active high
-
-# FIXME: not used so not submitted.
-- avdd-supply, dvdd-supply, iovdd-supply: power supplies for the device as covered
-  in Documentation/devicetree/bindings/regulator/regulator.txt
+- reset-gpios      - gpio pin to power the device, active high.
 
 - interrupts       - The interrupt output from the device.
 - interrupt-parent - The parent interrupt controller.
 
-- ti,keep-bclk 	- Keep the BCLK running in FIFO modes
-- ti,burst-bclkdiv - BCLK divider value in burst mode
+- ti,keep-bclk     - Keep the BCLK running in FIFO modes.
 
 Example:
 
 tlv320dac33: audio-codec@19 {
 	compatible = "ti,tlv320dac33";
 	reg = <0x19>;
-
-#FIXME:
-	avdd-supply = <&vaux4>;
-	dvdd-supply = <&vio>;
-	iovdd-supply = <&vio>;
 
 	interrupt-parent = <&gpio2>;
 	interrupts = <21 1>; /* gpio_53, IRQF_TRIGGER_RISING */
