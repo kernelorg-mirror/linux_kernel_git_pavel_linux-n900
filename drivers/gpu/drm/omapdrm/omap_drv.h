@@ -90,4 +90,9 @@ struct omap_drm_private {
 
 int omap_debugfs_init(struct drm_minor *minor);
 
+int omap_irq_enable_framedone(struct drm_crtc *crtc, bool enable);
+void omap_crtc_framedone_irq(struct drm_crtc *crtc, uint32_t irqstatus);
+void omap_crtc_flush(struct drm_crtc *crtc);
+bool omap_connector_get_manually_updated(struct drm_connector *connector);
+
 #endif /* __OMAPDRM_DRV_H__ */
