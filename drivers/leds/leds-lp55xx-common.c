@@ -148,7 +148,7 @@ static int lp55xx_set_brightness(struct led_classdev *cdev,
 		struct led_rgb r;
 		struct led_hsv hsv;
 
-		printk("RGB set request: %d %d %d\n", cdev->brightness, cdev->hue >> 24, cdev->saturation >> 24);
+		//printk("RGB set request: %d %d %d\n", cdev->brightness, cdev->hue >> 24, cdev->saturation >> 24);
 		hsv.value = brightness << 24;
 		hsv.hue = cdev->hue;
 		hsv.saturation = cdev->saturation;

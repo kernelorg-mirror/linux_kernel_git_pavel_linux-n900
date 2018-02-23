@@ -811,7 +811,7 @@ int lp5523_rgb_brightness(struct lp55xx_led *led, struct led_rgb r)
 	r.red >>= 24;
 	r.green >>= 24;
 	r.blue >>= 24;	
-	printk("RGB brightness %d %d %d\n", r.red, r.green, r.blue);
+	//printk("RGB brightness %d %d %d\n", r.red, r.green, r.blue);
 	ret = lp55xx_write(chip, LP5523_REG_LED_PWM_BASE + led->chan_nr, r.red);
 	if (!ret)
 		lp55xx_write(chip, LP5523_REG_LED_PWM_BASE + led->chan_nr - 1, r.green);
