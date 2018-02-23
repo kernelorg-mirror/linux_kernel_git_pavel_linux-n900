@@ -659,11 +659,11 @@ struct et8ek8_meta_reglist meta_reglist = {
 #endif
 		/* "normal" modes */
 #if 1
-		{ .ptr = &mode2_16vga_2592x1968_12_07fps }, /* My hacks. */
+//		{ .ptr = &mode2_16vga_2592x1968_12_07fps }, /* My hacks. */
 		{ .ptr = &mode4_svga_864x656_29_88fps }, /* Works, AFAICT */
-		{ .ptr = &mode5_vga_648x492_29_93fps }, /* Does not seem to work ? */
-//		{ .ptr = &mode2_16vga_2592x1968_3_99fps }, /* Does not seem to work: scrolling */
-		{ .ptr = &mode_648x492_5fps }, /* Does not seem to work ? */
+		{ .ptr = &mode5_vga_648x492_29_93fps }, /* Seems to work with camera.py 640 */
+		{ .ptr = &mode2_16vga_2592x1968_3_99fps }, /* Does not seem to work: scrolling */
+//		{ .ptr = &mode_648x492_5fps }, /* Seems to work with /my/v4l-utils/camera.py 640 ; can't get it to work in raw mode */
 		{ .ptr = &mode3_4vga_1296x984_5fps }, /* Works, AFAICT */
 #endif
 		{ .ptr = NULL }
