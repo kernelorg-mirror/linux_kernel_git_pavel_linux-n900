@@ -609,16 +609,21 @@
 	};
 
 	adp1653: led-controller@30 {
+		#address-cells = <1>;
+		#size-cells = <0>;
+	
 		compatible = "adi,adp1653";
 		reg = <0x30>;
 		enable-gpios = <&gpio3 24 GPIO_ACTIVE_HIGH>; /* 88 */
 
-		flash {
+		adp_flash: flash@0 {
+		        reg = <0x0>;
 			flash-timeout-us = <500000>;
 			flash-max-microamp = <320000>;
 			led-max-microamp = <50000>;
 		};
-		indicator {
+		adp_indicator: indicator@1 {
+		        reg = <0x1>;
 			led-max-microamp = <17500>;
 		};
 	};

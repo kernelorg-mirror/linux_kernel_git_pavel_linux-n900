@@ -38,6 +38,8 @@
 #include <media/i2c/adp1653.h>
 #include <media/v4l2-device.h>
 
+#error Foo.
+
 #define TIMEOUT_MAX		820000
 #define TIMEOUT_STEP		54600
 #define TIMEOUT_MIN		(TIMEOUT_MAX - ADP1653_REG_CONFIG_TMR_SET_MAX \
