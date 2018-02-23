@@ -874,6 +874,7 @@ static void ssip_swbreak_complete(struct hsi_msg *msg)
 		if (atomic_read(&ssi->tx_usecnt)) {
 			ssip_set_txstate(ssi, SEND_READY);
 		} else {
+			WARN_ON(ssi->send_state == SEND_IDLE);
 			ssip_set_txstate(ssi, SEND_IDLE);
 			hsi_stop_tx(cl);
 		}
