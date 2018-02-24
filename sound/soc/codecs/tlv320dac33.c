@@ -1515,7 +1515,7 @@ static int dac33_i2c_probe(struct i2c_client *client,
 		dac33->keep_bclk = pdata->keep_bclk;
 		dac33->mode1_latency = pdata->mode1_latency;
 	} else if (np) {
-		ret = of_get_named_gpio(np, "power-gpios", 0);
+		ret = of_get_named_gpio(np, "reset-gpios", 0);
 		if (ret >= 0)
 			dac33->power_gpio = ret;
 		else
