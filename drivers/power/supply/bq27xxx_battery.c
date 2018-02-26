@@ -1634,7 +1634,8 @@ static int generic_protect(struct power_supply *psy)
 	if (val.intval == POWER_SUPPLY_HEALTH_OVERHEAT)
 		shutdown("Battery overheat.");
 	if (val.intval == POWER_SUPPLY_HEALTH_DEAD)
-		shutdown("Battery dead.");
+//		shutdown("Battery dead.");
+		pr_alert("Battery dead?!\n");
 
 	res = psy->desc->get_property(psy, POWER_SUPPLY_PROP_VOLTAGE_NOW, &val);
 	if (res)
