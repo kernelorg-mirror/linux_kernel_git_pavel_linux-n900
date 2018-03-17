@@ -6,12 +6,13 @@ D=`git describe`
 TFTP=/srv/tftp
 #CROSS_COMPILE="ccache $CROSS_COMPILE"
 # uImage LOADADDR=0x80008000
-ARCH=arm long make -j 5 zImage && \
-    ARCH=arm make omap3-n950.dtb omap3-n9.dtb omap3-n900.dtb && \
-    cat arch/arm/boot/zImage arch/arm/boot/dts/omap3-n950.dtb > arch/arm/boot/zImage-n950 && \
-    cat arch/arm/boot/zImage arch/arm/boot/dts/omap3-n900.dtb > arch/arm/boot/zImage-n900 && \
-    cat arch/arm/boot/zImage arch/arm/boot/dts/omap3-n9.dtb   > arch/arm/boot/zImage-n9 && \
-    echo done
+ARCH=arm long make -j 5 zImage
+ARCH=arm make omap3-n950.dtb omap3-n9.dtb omap3-n900.dtb omap4-droid4-xt894.dtb
+cat arch/arm/boot/zImage arch/arm/boot/dts/omap3-n950.dtb > arch/arm/boot/zImage-n950
+cat arch/arm/boot/zImage arch/arm/boot/dts/omap3-n900.dtb > arch/arm/boot/zImage-n900
+cat arch/arm/boot/zImage arch/arm/boot/dts/omap3-n9.dtb   > arch/arm/boot/zImage-n9
+cat arch/arm/boot/zImage arch/arm/boot/dts/omap4-droid4-xt894.dtb > arch/arm/boot/zImage-d4
+echo done
 
 # Run is dangerous -- often needs to be done twice.
 #    ./run_nfsroot_950
