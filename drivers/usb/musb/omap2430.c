@@ -171,7 +171,7 @@ static void omap_musb_set_mailbox(struct omap2430_glue *glue)
 		break;
 
 	case MUSB_VBUS_VALID:
-		dev_dbg(musb->controller, "VBUS Connect\n");
+		//dev_dbg(musb->controller, "VBUS Connect\n");
 
 		otg->default_a = false;
 		musb->xceiv->otg->state = OTG_STATE_B_IDLE;
