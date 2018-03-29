@@ -251,6 +251,8 @@ struct cpcap_audio {
 	int codec_clk_id;
 	int codec_freq;
 	int codec_format;
+
+	struct delayed_work work;
 };
 
 static int cpcap_st_workaround(struct snd_soc_dapm_widget *w,
@@ -1544,6 +1546,57 @@ static int cpcap_dai_mux(struct cpcap_audio *cpcap, bool swap_dai_configuration)
 	return 0;
 }
 
+static void cpcap_soc_work(struct work_struct *work)
+{
+	struct cpcap_audio *cpcap = container_of(work,
+						 struct cpcap_audio,
+						 work.work);
+//	struct device *dev = cpcap->component->dev;
+	int error;
+
+	printk("Somebody do a proper driver please %s\n", __func__);
+
+	error = regmap_update_bits(cpcap->regmap, CPCAP_REG_VAUDIOC,
+				   0xffff, 0x0025);
+	if (error)
+		goto out;
+	error = regmap_update_bits(cpcap->regmap, CPCAP_REG_CC,
+				   0xffff, 0x60cf);
+	if (error)
+		goto out;
+	error = regmap_update_bits(cpcap->regmap, CPCAP_REG_CDI,
+				   0xffff, 0xae0a);
+	if (error)
+		goto out;
+	error = regmap_update_bits(cpcap->regmap, CPCAP_REG_TXI,
+				   0xffff, 0x0cc0);
+	if (error)
+		goto out;
+	error = regmap_update_bits(cpcap->regmap, CPCAP_REG_TXMP,
+				   0xffff, 0x0610);
+	if (error)
+		goto out;
+	error = regmap_update_bits(cpcap->regmap, CPCAP_REG_RXOA,
+				   0xffff, 0x0006);
+	if (error)
+		goto out;
+	error = regmap_update_bits(cpcap->regmap, CPCAP_REG_RXVC,
+				   0xffff, 0x0b2c);
+	if (error)
+		goto out;
+	error = regmap_update_bits(cpcap->regmap, CPCAP_REG_RXCOA,
+				   0xffff, 0x0606);
+	if (error)
+		goto out;
+	error = regmap_update_bits(cpcap->regmap, CPCAP_REG_RXSDOA,
+				   0xffff, 0x0600);
+	if (error)
+		goto out;
+
+out:
+	schedule_delayed_work(&cpcap->work, msecs_to_jiffies(1000));
+}
+
 static int cpcap_audio_reset(struct snd_soc_codec *codec,
 			     bool swap_dai_configuration)
 {
@@ -1604,7 +1657,14 @@ static int cpcap_soc_probe(struct snd_soc_codec *codec)
 	if (err)
 		return err;
 
-	return cpcap_audio_reset(codec, false);
+	err = cpcap_audio_reset(codec, false);
+	if (err)
+		return err;
+
+	INIT_DELAYED_WORK(&cpcap->work, cpcap_soc_work);
+	schedule_delayed_work(&cpcap->work, msecs_to_jiffies(1000));
+
+	return 0;
 }
 
 static struct snd_soc_codec_driver soc_codec_dev_cpcap = {
