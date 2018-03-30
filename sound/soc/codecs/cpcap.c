@@ -1568,6 +1568,7 @@ static void cpcap_soc_work(struct work_struct *work)
 				   0xffff, 0xae0a);
 	if (error)
 		goto out;
+#if 1
 	error = regmap_update_bits(cpcap->regmap, CPCAP_REG_TXI,
 				   0xffff, 0x0cc0);
 	if (error)
@@ -1590,11 +1591,12 @@ static void cpcap_soc_work(struct work_struct *work)
 		goto out;
 	error = regmap_update_bits(cpcap->regmap, CPCAP_REG_RXSDOA,
 				   0xffff, 0x0600);
+#endif
 	if (error)
 		goto out;
 
 out:
-	schedule_delayed_work(&cpcap->work, msecs_to_jiffies(1000));
+	schedule_delayed_work(&cpcap->work, msecs_to_jiffies(60000));
 }
 
 static int cpcap_audio_reset(struct snd_soc_codec *codec,
