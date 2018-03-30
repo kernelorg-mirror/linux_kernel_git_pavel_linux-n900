@@ -12,6 +12,7 @@ cat arch/arm/boot/zImage arch/arm/boot/dts/omap3-n950.dtb > arch/arm/boot/zImage
 cat arch/arm/boot/zImage arch/arm/boot/dts/omap3-n900.dtb > arch/arm/boot/zImage-n900
 cat arch/arm/boot/zImage arch/arm/boot/dts/omap3-n9.dtb   > arch/arm/boot/zImage-n9
 cat arch/arm/boot/zImage arch/arm/boot/dts/omap4-droid4-xt894.dtb > arch/arm/boot/zImage-d4
+ARCH=arm make modules
 echo done
 
 # Run is dangerous -- often needs to be done twice.
