@@ -488,7 +488,26 @@ static int cpcap_mode_put_enum(struct snd_kcontrol *kcontrol,
 
 	switch (muxval) {
 	case 1:
-		mask = 1 << CPCAP_BIT_PGA_CDC_EN,
+
+
+	err = regmap_update_bits(cpcap->regmap, CPCAP_REG_VAUDIOC,
+				   0xffff, 0x0025);	// OK
+	if (err)
+		goto out;
+	err = regmap_update_bits(cpcap->regmap, CPCAP_REG_CC,
+				   0xffff, 0x60cf);	// OK
+	if (err)
+		goto out;
+	err = regmap_update_bits(cpcap->regmap, CPCAP_REG_CDI,
+				   0xffff, 0xae0a);	// OK
+	if (err)
+		goto out;
+	err = regmap_update_bits(cpcap->regmap, CPCAP_REG_TXI,
+				   0xffff, 0x0cc0);
+	if (err)
+		goto out;
+		
+	mask = 1 << CPCAP_BIT_PGA_CDC_EN | 0x200;
 		err = regmap_update_bits(cpcap->regmap, CPCAP_REG_RXCOA,
 				   mask, mask);
 		if (err)
@@ -513,6 +532,8 @@ static int cpcap_mode_put_enum(struct snd_kcontrol *kcontrol,
 //	snd_soc_dapm_mux_update_power(dapm, kcontrol, muxval, e, NULL);
 
 	return 0;
+out: printk("Something failed\n");
+	return -EINVAL;
 }
 
 static int cpcap_input_right_mux_get_enum(struct snd_kcontrol *kcontrol,
@@ -1630,59 +1651,6 @@ static int cpcap_dai_mux(struct cpcap_audio *cpcap, bool swap_dai_configuration)
 	return 0;
 }
 
-static void cpcap_soc_work(struct work_struct *work)
-{
-	struct cpcap_audio *cpcap = container_of(work,
-						 struct cpcap_audio,
-						 work.work);
-//	struct device *dev = cpcap->component->dev;
-	int error;
-
-	printk("Somebody do a proper driver please %s\n", __func__);
-
-	error = regmap_update_bits(cpcap->regmap, CPCAP_REG_VAUDIOC,
-				   0xffff, 0x0025);	// OK
-	if (error)
-		goto out;
-	error = regmap_update_bits(cpcap->regmap, CPCAP_REG_CC,
-				   0xffff, 0x60cf);	// OK
-	if (error)
-		goto out;
-	error = regmap_update_bits(cpcap->regmap, CPCAP_REG_CDI,
-				   0xffff, 0xae0a);	// OK
-	if (error)
-		goto out;
-	error = regmap_update_bits(cpcap->regmap, CPCAP_REG_TXI,
-				   0xffff, 0x0cc0);
-	if (error)
-		goto out;
-#if 0
-	error = regmap_update_bits(cpcap->regmap, CPCAP_REG_TXMP,
-				   0xffff, 0x0610);
-	if (error)
-		goto out;
-	error = regmap_update_bits(cpcap->regmap, CPCAP_REG_RXOA,
-				   0xffff, 0x0006);
-	if (error)
-		goto out;
-	error = regmap_update_bits(cpcap->regmap, CPCAP_REG_RXVC,
-				   0xffff, 0x0b2c);
-	if (error)
-		goto out;
-	error = regmap_update_bits(cpcap->regmap, CPCAP_REG_RXCOA,
-				   0xffff, 0x0606);
-	if (error)
-		goto out;
-	error = regmap_update_bits(cpcap->regmap, CPCAP_REG_RXSDOA,
-				   0xffff, 0x0600);
-#endif
-	if (error)
-		goto out;
-
-out:
-	schedule_delayed_work(&cpcap->work, msecs_to_jiffies(60000));
-}
-
 static int cpcap_audio_reset(struct snd_soc_codec *codec,
 			     bool swap_dai_configuration)
 {
@@ -1744,13 +1712,7 @@ static int cpcap_soc_probe(struct snd_soc_codec *codec)
 		return err;
 
 	err = cpcap_audio_reset(codec, false);
-	if (err)
-		return err;
-
-	INIT_DELAYED_WORK(&cpcap->work, cpcap_soc_work);
-	schedule_delayed_work(&cpcap->work, msecs_to_jiffies(1000));
-
-	return 0;
+	return err;
 }
 
 static struct snd_soc_codec_driver soc_codec_dev_cpcap = {
