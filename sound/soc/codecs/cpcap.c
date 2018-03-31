@@ -221,18 +221,18 @@ struct cpcap_reg_info {
 };
 
 static const struct cpcap_reg_info cpcap_default_regs[] = {
-	{ CPCAP_REG_CC, 0xFFFF, 0x0000 },
-	{ CPCAP_REG_CC, 0xFFFF, 0x0000 },
-	{ CPCAP_REG_CDI, 0xBFFF, 0x0000 },
+	{ CPCAP_REG_CC, 0xFFFF, 0x60cf },
+	{ CPCAP_REG_CDI, 0xBFFF, 0xae0a },
 	{ CPCAP_REG_SDAC, 0x0FFF, 0x0000 },
 	{ CPCAP_REG_SDACDI, 0x3FFF, 0x0000 },
-	{ CPCAP_REG_TXI, 0x0FDF, 0x0000 },
-	{ CPCAP_REG_TXMP, 0x0FFF, 0x0400 },
-	{ CPCAP_REG_RXOA, 0x01FF, 0x0000 },
-	{ CPCAP_REG_RXVC, 0xFF3C, 0x0000 },
-	{ CPCAP_REG_RXCOA, 0x07FF, 0x0000 },
-	{ CPCAP_REG_RXSDOA, 0x1FFF, 0x0000 },
+	{ CPCAP_REG_TXI, 0x0FFF, 0x0CC0 },
+	{ CPCAP_REG_TXMP, 0x0FFF, 0x0610 },
+	{ CPCAP_REG_RXOA, 0x01FF, 0x0006 },
+	{ CPCAP_REG_RXVC, 0xFF3C, 0x0B2C },
+	{ CPCAP_REG_RXCOA, 0x07FF, 0x0606 },
+	{ CPCAP_REG_RXSDOA, 0x1FFF, 0x0600 },
 	{ CPCAP_REG_RXEPOA, 0x7FFF, 0x0000 },
+	{ CPCAP_REG_VAUDIOC, 0xFFFF, 0x0025 },
 	{ CPCAP_REG_A2LA, BIT(CPCAP_BIT_A2_FREE_RUN),
 	  BIT(CPCAP_BIT_A2_FREE_RUN) },
 };
@@ -332,6 +332,11 @@ static const char * const cpcap_in_left_mux_texts[] = {
 	"Off", "Mic 2", "Ext Left"
 };
 
+static const char * const cpcap_mode_texts[] = {
+	"Normal", "Call", "BT Call", "BT Playback"
+};
+
+
 /*
  * input muxes use unusual register layout, so that we need to use custom
  * getter/setter methods
@@ -355,6 +360,8 @@ static SOC_ENUM_SINGLE_DECL(cpcap_hs_r_mux_enum, 0, 5, cpcap_out_mux_texts);
 static SOC_ENUM_SINGLE_DECL(cpcap_hs_l_mux_enum, 0, 6, cpcap_out_mux_texts);
 static SOC_ENUM_SINGLE_DECL(cpcap_emu_l_mux_enum, 0, 7, cpcap_out_mux_texts);
 static SOC_ENUM_SINGLE_DECL(cpcap_emu_r_mux_enum, 0, 8, cpcap_out_mux_texts);
+
+static SOC_ENUM_SINGLE_DECL(cpcap_mode_enum, 0, 9, cpcap_mode_texts);
 
 static int cpcap_output_mux_get_enum(struct snd_kcontrol *kcontrol,
 				     struct snd_ctl_elem_value *ucontrol)
@@ -440,6 +447,70 @@ static int cpcap_output_mux_put_enum(struct snd_kcontrol *kcontrol,
 		return err;
 
 	snd_soc_dapm_mux_update_power(dapm, kcontrol, muxval, e, NULL);
+
+	return 0;
+}
+
+static int mode;
+
+static int cpcap_mode_get_enum(struct snd_kcontrol *kcontrol,
+				     struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_codec *codec = snd_soc_dapm_kcontrol_codec(kcontrol);
+	struct cpcap_audio *cpcap = snd_soc_codec_get_drvdata(codec);
+	struct soc_enum *e = (struct soc_enum *)kcontrol->private_value;
+	unsigned int shift = e->shift_l;
+	int reg_voice, reg_hifi, reg_ext, status;
+	int err;
+
+	/* FIXME */
+	ucontrol->value.enumerated.item[0] = mode;
+
+	return 0;
+}
+
+static int cpcap_mode_put_enum(struct snd_kcontrol *kcontrol,
+				     struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_codec *codec = snd_soc_dapm_kcontrol_codec(kcontrol);
+	struct cpcap_audio *cpcap = snd_soc_codec_get_drvdata(codec);
+	struct snd_soc_dapm_context *dapm =
+		snd_soc_dapm_kcontrol_dapm(kcontrol);
+	struct soc_enum *e = (struct soc_enum *)kcontrol->private_value;
+	unsigned int muxval = ucontrol->value.enumerated.item[0];
+	unsigned int mask = BIT(e->shift_l);
+	u16 reg_voice = 0x00, reg_hifi = 0x00, reg_ext = 0x00;
+	int err;
+
+	printk("Requested mode %d\n", muxval);
+
+	mode = muxval;
+
+	switch (muxval) {
+	case 1:
+		mask = 1 << CPCAP_BIT_PGA_CDC_EN,
+		err = regmap_update_bits(cpcap->regmap, CPCAP_REG_RXCOA,
+				   mask, mask);
+		if (err)
+			printk("error #3\n");
+
+		mask = 1 << CPCAP_BIT_A2_LDSP_L_EN | 1 << CPCAP_BIT_A2_LDSP_R_EN;
+		err = regmap_update_bits(cpcap->regmap, CPCAP_REG_RXOA,
+				   mask, mask);
+		if (err)
+			printk("error #2\n");
+		
+		err = regmap_update_bits(cpcap->regmap, 0x814,
+				   0x0400, 0x0400);
+		if (err)
+			printk("error #1\n");
+		
+	default:
+		break;
+	}
+
+	// FIXME
+//	snd_soc_dapm_mux_update_power(dapm, kcontrol, muxval, e, NULL);
 
 	return 0;
 }
@@ -632,6 +703,11 @@ static const struct snd_kcontrol_new cpcap_earpiece_mux =
 	SOC_DAPM_ENUM_EXT("Earpiece", cpcap_earpiece_mux_enum,
 			  cpcap_output_mux_get_enum, cpcap_output_mux_put_enum);
 
+static const struct snd_kcontrol_new cpcap_mode =
+	SOC_DAPM_ENUM_EXT("Mode", cpcap_mode_enum,
+			  cpcap_mode_get_enum, cpcap_mode_put_enum);
+
+
 static const struct snd_kcontrol_new cpcap_hifi_mono_mixer_controls[] = {
 	SOC_DAPM_SINGLE("HiFi Mono Playback Switch",
 		CPCAP_REG_RXSDOA, CPCAP_BIT_MONO_DAC1, 1, 0),
@@ -773,6 +849,10 @@ static const struct snd_soc_dapm_widget cpcap_dapm_widgets[] = {
 	SND_SOC_DAPM_MUX("EMU Left Playback Route", SND_SOC_NOPM, 0, 0,
 		&cpcap_emu_left_mux),
 
+
+	SND_SOC_DAPM_MUX("Mode", SND_SOC_NOPM, 0, 0,
+		&cpcap_mode),
+	
 	/* Output Amplifier */
 	SND_SOC_DAPM_PGA("Earpiece PGA",
 		CPCAP_REG_RXOA, CPCAP_BIT_A1_EAR_EN, 0, NULL, 0),
@@ -817,6 +897,9 @@ static const struct snd_soc_dapm_route intercon[] = {
 	{"Ext Left PGA", NULL, "VAUDIO"},
 	{"Microphone 1 PGA", NULL, "VAUDIO"},
 	{"Microphone 2 PGA", NULL, "VAUDIO"},
+
+	/* FIXME */
+	{"Mode", NULL, "Voice TX"},
 
 	/* Stream -> AIF */
 	{"HiFi RX", NULL, "HiFi Playback"},
@@ -996,6 +1079,7 @@ static int cpcap_set_sysclk(struct cpcap_audio *cpcap, enum cpcap_dai dai,
 	}
 
 	/* setup frequency */
+	printk("cpcap: Frequency: %d\n", freq);
 	clkfreqmask = 0x7 << clkfreqshift;
 	switch (freq) {
 	case 15360000:
@@ -1557,22 +1641,22 @@ static void cpcap_soc_work(struct work_struct *work)
 	printk("Somebody do a proper driver please %s\n", __func__);
 
 	error = regmap_update_bits(cpcap->regmap, CPCAP_REG_VAUDIOC,
-				   0xffff, 0x0025);
+				   0xffff, 0x0025);	// OK
 	if (error)
 		goto out;
 	error = regmap_update_bits(cpcap->regmap, CPCAP_REG_CC,
-				   0xffff, 0x60cf);
+				   0xffff, 0x60cf);	// OK
 	if (error)
 		goto out;
 	error = regmap_update_bits(cpcap->regmap, CPCAP_REG_CDI,
-				   0xffff, 0xae0a);
+				   0xffff, 0xae0a);	// OK
 	if (error)
 		goto out;
-#if 1
 	error = regmap_update_bits(cpcap->regmap, CPCAP_REG_TXI,
 				   0xffff, 0x0cc0);
 	if (error)
 		goto out;
+#if 0
 	error = regmap_update_bits(cpcap->regmap, CPCAP_REG_TXMP,
 				   0xffff, 0x0610);
 	if (error)
