@@ -251,8 +251,6 @@ struct cpcap_audio {
 	int codec_clk_id;
 	int codec_freq;
 	int codec_format;
-
-	struct delayed_work work;
 };
 
 static int cpcap_st_workaround(struct snd_soc_dapm_widget *w,
@@ -333,7 +331,7 @@ static const char * const cpcap_in_left_mux_texts[] = {
 };
 
 static const char * const cpcap_mode_texts[] = {
-	"Normal", "Call", "BT Call", "BT Playback"
+	"Normal", "Call"
 };
 
 
@@ -459,11 +457,8 @@ static int cpcap_mode_get_enum(struct snd_kcontrol *kcontrol,
 	struct snd_soc_codec *codec = snd_soc_dapm_kcontrol_codec(kcontrol);
 	struct cpcap_audio *cpcap = snd_soc_codec_get_drvdata(codec);
 	struct soc_enum *e = (struct soc_enum *)kcontrol->private_value;
-	unsigned int shift = e->shift_l;
-	int reg_voice, reg_hifi, reg_ext, status;
 	int err;
 
-	/* FIXME */
 	ucontrol->value.enumerated.item[0] = mode;
 
 	return 0;
@@ -479,7 +474,6 @@ static int cpcap_mode_put_enum(struct snd_kcontrol *kcontrol,
 	struct soc_enum *e = (struct soc_enum *)kcontrol->private_value;
 	unsigned int muxval = ucontrol->value.enumerated.item[0];
 	unsigned int mask = BIT(e->shift_l);
-	u16 reg_voice = 0x00, reg_hifi = 0x00, reg_ext = 0x00;
 	int err;
 
 	printk("Requested mode %d\n", muxval);
@@ -489,25 +483,24 @@ static int cpcap_mode_put_enum(struct snd_kcontrol *kcontrol,
 	switch (muxval) {
 	case 1:
 
-
-	err = regmap_update_bits(cpcap->regmap, CPCAP_REG_VAUDIOC,
-				   0xffff, 0x0025);	// OK
-	if (err)
-		goto out;
-	err = regmap_update_bits(cpcap->regmap, CPCAP_REG_CC,
-				   0xffff, 0x60cf);	// OK
-	if (err)
-		goto out;
-	err = regmap_update_bits(cpcap->regmap, CPCAP_REG_CDI,
-				   0xffff, 0xae0a);	// OK
-	if (err)
-		goto out;
-	err = regmap_update_bits(cpcap->regmap, CPCAP_REG_TXI,
-				   0xffff, 0x0cc0);
-	if (err)
-		goto out;
+		err = regmap_update_bits(cpcap->regmap, CPCAP_REG_VAUDIOC,
+					 0xffff, 0x0025);	// OK
+		if (err)
+			goto out;
+		err = regmap_update_bits(cpcap->regmap, CPCAP_REG_CC,
+					 0xffff, 0x60cf);	// OK
+		if (err)
+			goto out;
+		err = regmap_update_bits(cpcap->regmap, CPCAP_REG_CDI,
+					 0xffff, 0xae0a);	// OK
+		if (err)
+			goto out;
+		err = regmap_update_bits(cpcap->regmap, CPCAP_REG_TXI,
+					 0xffff, 0x0cc0);
+		if (err)
+			goto out;
 		
-	mask = 1 << CPCAP_BIT_PGA_CDC_EN | 0x200;
+		mask = 1 << CPCAP_BIT_PGA_CDC_EN | 0x200;
 		err = regmap_update_bits(cpcap->regmap, CPCAP_REG_RXCOA,
 				   mask, mask);
 		if (err)
@@ -1100,7 +1093,6 @@ static int cpcap_set_sysclk(struct cpcap_audio *cpcap, enum cpcap_dai dai,
 	}
 
 	/* setup frequency */
-	printk("cpcap: Frequency: %d\n", freq);
 	clkfreqmask = 0x7 << clkfreqshift;
 	switch (freq) {
 	case 15360000:
@@ -1711,8 +1703,7 @@ static int cpcap_soc_probe(struct snd_soc_codec *codec)
 	if (err)
 		return err;
 
-	err = cpcap_audio_reset(codec, false);
-	return err;
+	return cpcap_audio_reset(codec, false);
 }
 
 static struct snd_soc_codec_driver soc_codec_dev_cpcap = {
