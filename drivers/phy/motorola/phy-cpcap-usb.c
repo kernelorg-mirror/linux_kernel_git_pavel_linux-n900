@@ -16,6 +16,8 @@
  * GNU General Public License for more details.
  */
 
+#define DEBUG
+
 #include <linux/atomic.h>
 #include <linux/clk.h>
 #include <linux/delay.h>
@@ -207,6 +209,8 @@ static int cpcap_phy_get_ints_state(struct cpcap_phy_ddata *ddata,
 static int cpcap_usb_set_uart_mode(struct cpcap_phy_ddata *ddata);
 static int cpcap_usb_set_usb_mode(struct cpcap_phy_ddata *ddata);
 
+static bool force_host;
+
 static void cpcap_usb_detect(struct work_struct *work)
 {
 	struct cpcap_phy_ddata *ddata;
@@ -216,11 +220,13 @@ static void cpcap_usb_detect(struct work_struct *work)
 
 	ddata = container_of(work, struct cpcap_phy_ddata, detect_work.work);
 
+	schedule_delayed_work(&ddata->detect_work, msecs_to_jiffies(30000));
+
 	error = cpcap_phy_get_ints_state(ddata, &s);
 	if (error)
 		return;
 
-	if (s.id_ground) {
+	if (force_host || s.id_ground) {
 		dev_dbg(ddata->dev, "id ground, USB host mode\n");
 		error = cpcap_usb_set_usb_mode(ddata);
 		if (error)
@@ -248,7 +254,7 @@ static void cpcap_usb_detect(struct work_struct *work)
 
 	if (vbus) {
 		/* Are we connected to a docking station with vbus? */
-		if (s.id_ground) {
+		if (force_host || s.id_ground) {
 			dev_dbg(ddata->dev, "connected to a dock\n");
 
 			/* No VBUS needed with docks */
@@ -674,3 +680,6 @@ MODULE_ALIAS("platform:cpcap_usb");
 MODULE_AUTHOR("Tony Lindgren <tony@atomide.com>");
 MODULE_DESCRIPTION("CPCAP usb phy driver");
 MODULE_LICENSE("GPL v2");
+
+module_param(force_host, bool, S_IRUGO | S_IWUSR);
+MODULE_PARM_DESC(force_host, "Force USB host mode");
