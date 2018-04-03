@@ -331,7 +331,7 @@ static const char * const cpcap_in_left_mux_texts[] = {
 };
 
 static const char * const cpcap_mode_texts[] = {
-	"Normal", "Call"
+	"Normal", "Handsfree", "Call",
 };
 
 
@@ -464,25 +464,11 @@ static int cpcap_mode_get_enum(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
-static int cpcap_mode_put_enum(struct snd_kcontrol *kcontrol,
-				     struct snd_ctl_elem_value *ucontrol)
+static int enable_call(struct cpcap_audio *cpcap, int on)
 {
-	struct snd_soc_codec *codec = snd_soc_dapm_kcontrol_codec(kcontrol);
-	struct cpcap_audio *cpcap = snd_soc_codec_get_drvdata(codec);
-	struct snd_soc_dapm_context *dapm =
-		snd_soc_dapm_kcontrol_dapm(kcontrol);
-	struct soc_enum *e = (struct soc_enum *)kcontrol->private_value;
-	unsigned int muxval = ucontrol->value.enumerated.item[0];
-	unsigned int mask = BIT(e->shift_l);
 	int err;
-
-	printk("Requested mode %d\n", muxval);
-
-	mode = muxval;
-
-	switch (muxval) {
-	case 1:
-
+	unsigned long mask;
+	
 		err = regmap_update_bits(cpcap->regmap, CPCAP_REG_VAUDIOC,
 					 0xffff, 0x0025);	// OK
 		if (err)
@@ -516,6 +502,56 @@ static int cpcap_mode_put_enum(struct snd_kcontrol *kcontrol,
 				   0x0400, 0x0400);
 		if (err)
 			printk("error #1\n");
+
+		return 0;
+out:
+		printk("Error!\n");
+		return -EIO;
+}
+
+static int cpcap_mode_put_enum(struct snd_kcontrol *kcontrol,
+				     struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_codec *codec = snd_soc_dapm_kcontrol_codec(kcontrol);
+	struct cpcap_audio *cpcap = snd_soc_codec_get_drvdata(codec);
+	struct snd_soc_dapm_context *dapm =
+		snd_soc_dapm_kcontrol_dapm(kcontrol);
+	struct soc_enum *e = (struct soc_enum *)kcontrol->private_value;
+	unsigned int muxval = ucontrol->value.enumerated.item[0];
+	unsigned int mask = BIT(e->shift_l);
+	int err;
+
+	printk("Requested mode %d\n", muxval);
+
+	mode = muxval;
+
+	switch (muxval) {
+	case 1:
+		enable_call(cpcap, 1);
+		break;
+	case 2:
+		enable_call(cpcap, 1);
+
+		err = regmap_update_bits(cpcap->regmap, CPCAP_REG_TXI,
+					 0xffff, 0x0cc6);
+		if (err)
+			goto out;
+
+		err = regmap_update_bits(cpcap->regmap, CPCAP_REG_TXMP,
+					 0xffff, 0x0673);
+		if (err)
+			goto out;
+
+
+		err = regmap_update_bits(cpcap->regmap, CPCAP_REG_RXOA,
+					 0xffff, 0x0001);
+		if (err)
+			goto out;
+		
+		err = regmap_update_bits(cpcap->regmap, CPCAP_REG_RXCOA,
+					 0xffff, 0x0601);
+		if (err)
+			goto out;
 		
 	default:
 		break;
