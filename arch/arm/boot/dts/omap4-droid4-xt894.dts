@@ -166,13 +166,6 @@
 };
 
 &gpio6 {
-	touchscreen_reset {
-		gpio-hog;
-		gpios = <13 0>;
-		output-high;
-		line-name = "touchscreen-reset";
-	};
-
 	pwm8: dmtimer-pwm-8 {
 		pinctrl-names = "default";
 		pinctrl-0 = <&vibrator_direction_pin>;
@@ -404,22 +397,18 @@
 	};
 };
 
-/*
- * REVISIT: Add gpio173 reset pin handling to the driver, see gpio-hog above.
- * If the GPIO reset is used, we probably need to have /lib/firmware/maxtouch.fw
- * available. See "mxt-app" and "droid4-touchscreen-firmware" tools for more
- * information.
- */
 &i2c2 {
-	tsp@4a {
+	touchscreen@4a {
 		compatible = "atmel,maxtouch";
 		reg = <0x4a>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&touchscreen_pins>;
 
+		reset-gpios = <&gpio6 13 GPIO_ACTIVE_HIGH>; /* gpio173 */
+
 		/* gpio_183 with sys_nirq2 pad as wakeup */
-		interrupts-extended = <&gpio6 23 IRQ_TYPE_EDGE_FALLING
-				       &omap4_pmx_core 0x160>;
+		interrupts-extended = <&gpio6 23 IRQ_TYPE_EDGE_FALLING>,
+				      <&omap4_pmx_core 0x160>;
 		interrupt-names = "irq", "wakeup";
 		wakeup-source;
 	};
@@ -477,6 +466,7 @@
 
 	touchscreen_pins: pinmux_touchscreen_pins {
 		pinctrl-single,pins = <
+		OMAP4_IOPAD(0x180, PIN_OUTPUT | MUX_MODE3)
 		OMAP4_IOPAD(0x1a0, PIN_INPUT_PULLUP | MUX_MODE3)
 		>;
 	};
@@ -563,6 +553,28 @@
 		>;
 	};
 
+	/*
+	 * Note that the v3.0.8 stock userspace dynamically remuxes uart1
+	 * rts pin probably for PM purposes to PIN_INPUT_PULLUP | MUX_MODE7
+	 * when not used. If needed, we can add rts pin remux later based
+	 * on power measurements.
+	 */
+	uart1_pins: pinmux_uart1_pins {
+		pinctrl-single,pins = <
+		/* 0x4a10013c mcspi1_cs2.uart1_cts ag23 */
+		OMAP4_IOPAD(0x13c, PIN_INPUT_PULLUP | MUX_MODE1)
+
+		/* 0x4a10013e mcspi1_cs3.uart1_rts ah23 */
+		OMAP4_IOPAD(0x13e, MUX_MODE1)
+
+		/* 0x4a100140 uart3_cts_rctx.uart1_tx f27 */
+		OMAP4_IOPAD(0x140, PIN_OUTPUT | MUX_MODE1)
+
+		/* 0x4a1001ca dpm_emu14.uart1_rx aa3 */
+		OMAP4_IOPAD(0x1ca, PIN_INPUT_PULLUP | MUX_MODE2)
+		>;
+	};
+
 	/* uart3_tx_irtx and uart3_rx_irrx */
 	uart3_pins: pinmux_uart3_pins {
 		pinctrl-single,pins = <
@@ -630,6 +642,17 @@
 		OMAP4_IOPAD(0X1d0, PIN_OUTPUT | MUX_MODE1)	/* dmtimer9_pwm_evt (gpio_28) */
 		>;
 	};
+};
+
+/*
+ * As uart1 is wired to mdm6600 with rts and cts, we can use the cts pin for
+ * uart1 wakeirq.
+ */
+&uart1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart1_pins>;
+	interrupts-extended = <&wakeupgen GIC_SPI 72 IRQ_TYPE_LEVEL_HIGH
+			       &omap4_pmx_core 0xfc>;
 };
 
 &uart3 {

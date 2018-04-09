@@ -27,4 +27,3 @@ usb-phy {
 				<&gpio2 23 GPIO_ACTIVE_HIGH>;
 	#phy-cells = <0>;
 };
-
