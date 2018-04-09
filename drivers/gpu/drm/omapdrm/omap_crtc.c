@@ -148,9 +148,8 @@ static void omap_crtc_dss_start_update(struct omap_drm_private *priv,
 				       enum omap_channel channel)
 {
 	struct omap_crtc *omap_crtc = omap_crtcs[channel];
-	struct omap_drm_private *priv = omap_crtc->base.dev->dev_private;
 
-	priv->dispc_ops->mgr_enable(channel, true);
+	priv->dispc_ops->mgr_enable(priv->dispc, channel, true);
 }
 
 static bool omap_crtc_is_manually_updated(struct drm_crtc *crtc)

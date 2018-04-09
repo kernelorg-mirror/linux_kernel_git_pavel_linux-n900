@@ -1574,6 +1574,7 @@ void dispc_ovl_compute_fifo_thresholds(struct dispc_device *dispc,
 	}
 }
 
+#if 0
 void dispc_ovl_set_manual_fifo_threshold(enum omap_plane_id plane)
 {
 	u32 fifo_low, fifo_high;
@@ -1585,6 +1586,7 @@ void dispc_ovl_set_manual_fifo_threshold(enum omap_plane_id plane)
 
 	dispc_ovl_set_fifo_threshold(plane, fifo_low, fifo_high);
 }
+#endif
 
 static void dispc_ovl_set_mflag(struct dispc_device *dispc,
 				enum omap_plane_id plane, bool enable)
@@ -2809,10 +2811,11 @@ static int dispc_ovl_setup(struct dispc_device *dispc,
 		oi->zorder, oi->pre_mult_alpha, oi->global_alpha,
 		oi->rotation_type, replication, vm, mem_to_mem);
 
+#if 0
 	/* manual mode needs other fifo thresholds */
 	if (mgr_fld_read(channel, DISPC_MGR_FLD_STALLMODE))
 		dispc_ovl_set_manual_fifo_threshold(plane);
-
+#endif
 	return r;
 }
 

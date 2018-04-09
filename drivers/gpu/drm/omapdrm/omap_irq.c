@@ -91,7 +91,7 @@ int omap_irq_enable_framedone(struct drm_crtc *crtc, bool enable)
 	struct omap_drm_private *priv = dev->dev_private;
 	unsigned long flags;
 	enum omap_channel channel = omap_crtc_channel(crtc);
-	int framedone_irq = priv->dispc_ops->mgr_get_framedone_irq(channel);
+	int framedone_irq = priv->dispc_ops->mgr_get_framedone_irq(priv->dispc, channel);
 
 	DBG("dev=%p, crtc=%u, enable=%d", dev, channel, enable);
 
@@ -239,7 +239,7 @@ static irqreturn_t omap_irq_handler(int irq, void *arg)
 		if (irqstatus & priv->dispc_ops->mgr_get_sync_lost_irq(priv->dispc, channel))
 			omap_crtc_error_irq(crtc, irqstatus);
 
-		if (irqstatus & priv->dispc_ops->mgr_get_framedone_irq(channel))
+		if (irqstatus & priv->dispc_ops->mgr_get_framedone_irq(priv->dispc, channel))
 			omap_crtc_framedone_irq(crtc, irqstatus);
 	}
 
