@@ -130,6 +130,9 @@ static int voltage_to_register(int microvolt)
 static int current_to_register(int microamp)
 {
 	switch (microamp/1000) {
+	case 0:    return CPCAP_REG_CRM_ICHRG_0A000;
+	case 70:   return CPCAP_REG_CRM_ICHRG_0A070;
+	case 177:  return CPCAP_REG_CRM_ICHRG_0A177;
 	case 532:  return CPCAP_REG_CRM_ICHRG_0A532;
 	case 1596: return CPCAP_REG_CRM_ICHRG_1A596;
 	default: return -EINVAL;
