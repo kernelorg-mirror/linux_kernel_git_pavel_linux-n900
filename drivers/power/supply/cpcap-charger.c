@@ -93,9 +93,9 @@
 #define CPCAP_REG_CRM_VCHRG_4V42	CPCAP_REG_CRM_VCHRG(0xe)
 #define CPCAP_REG_CRM_VCHRG_4V44	CPCAP_REG_CRM_VCHRG(0xf)
 
-static int voltage_to_register(int milivolt)
+static int voltage_to_register(int microvolt)
 {
-	switch (milivolt) {
+	switch (microvolt/1000) {
 	case 3800: return CPCAP_REG_CRM_VCHRG_3V80;
 	case 4100: return CPCAP_REG_CRM_VCHRG_4V10;
 	case 4200: return CPCAP_REG_CRM_VCHRG_4V20;
@@ -127,9 +127,9 @@ static int voltage_to_register(int milivolt)
 #define CPCAP_REG_CRM_ICHRG_1A596	CPCAP_REG_CRM_ICHRG(0xe)
 #define CPCAP_REG_CRM_ICHRG_NO_LIMIT	CPCAP_REG_CRM_ICHRG(0xf)
 
-static int current_to_register(int miliamp)
+static int current_to_register(int microamp)
 {
-	switch (miliamp) {
+	switch (microamp/1000) {
 	case 532:  return CPCAP_REG_CRM_ICHRG_0A532;
 	case 1596: return CPCAP_REG_CRM_ICHRG_1A596;
 	default: return -EINVAL;
@@ -275,6 +275,17 @@ static int cpcap_charger_get_property(struct power_supply *psy,
 		break;
 	case POWER_SUPPLY_PROP_ONLINE:
 		val->intval = ddata->status == POWER_SUPPLY_STATUS_CHARGING;
+		break;
+		
+	case POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT:
+		// -> charger -- current limit
+		val->intval = ddata->limit_current;
+		break;
+	case POWER_SUPPLY_PROP_CONSTANT_CHARGE_VOLTAGE:
+		val->intval = ddata->limit_voltage;
+		break;
+	case POWER_SUPPLY_PROP_INDICATION:
+		val->intval = ddata->led_enabled;
 		break;
 	default:
 		return -EINVAL;
@@ -508,18 +519,18 @@ static void cpcap_usb_detect(struct work_struct *work)
 		int reg_current, reg_voltage;
 
 		if (cpcap_charger_battery_found(ddata))
-			m_current = 1596;
+			m_current = 1596000;
 		else
-			m_current = 532;
+			m_current = 532000;
 
 		if (m_current > ddata->limit_current)
 			m_current = ddata->limit_current;
 		
-		m_voltage = 4350;
+		m_voltage = 4350000;
 		if (m_voltage > ddata->limit_voltage)
 			m_voltage = ddata->limit_voltage;
 
-		printk("Charging, %d mV, %d mA\n", m_voltage, m_current);
+		printk("Charging, %d uV, %d uA\n", m_voltage, m_current);
 		
 		reg_voltage = voltage_to_register(m_voltage);
 		if (reg_voltage < 0) {
@@ -720,8 +731,8 @@ static int cpcap_charger_probe(struct platform_device *pdev)
 	if (!ddata->reg)
 		return -ENODEV;
 
-	ddata->limit_current = 1596;
-	ddata->limit_voltage = 4350;
+	ddata->limit_current = 1596000;
+	ddata->limit_voltage = 4350000;
 	ddata->led_enabled = 1;
 
 	INIT_LIST_HEAD(&ddata->irq_list);
