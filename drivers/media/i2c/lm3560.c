@@ -397,6 +397,22 @@ static int lm3560_init_device(struct lm3560_flash *flash)
 		return rval;
 	/* reset faults */
 	rval = regmap_read(flash->regmap, REG_FLAG, &reg_val);
+
+	printk("lm3560: Device initialized\n");
+
+	flash->led_mode = V4L2_FLASH_LED_MODE_TORCH;
+	rval = lm3560_mode_ctrl(flash);
+	rval = lm3560_torch_brt_ctrl(flash, 0, LM3560_TORCH_BRT_MIN);
+	rval = lm3560_torch_brt_ctrl(flash, 1, LM3560_TORCH_BRT_MIN);		
+
+	mdelay(1000);
+
+	rval = lm3560_torch_brt_ctrl(flash, 0, 0);
+	rval = lm3560_torch_brt_ctrl(flash, 1, 0);		
+	
+	flash->led_mode = V4L2_FLASH_LED_MODE_NONE;
+	rval = lm3560_mode_ctrl(flash);
+	
 	return rval;
 }
 
