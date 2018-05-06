@@ -271,6 +271,34 @@
 	};
 };
 
+&i2c3 {
+      rearcam: camera@36 {
+            compatible = "micron,ov8820";
+	    reg = <0x36>;
+	    clocks = <&auxclk1_ck>;
+	    clock-names = "xvclk";
+	    clock-frequency = <24000000>;
+	    power-gpios = <&gpio2 16 GPIO_ACTIVE_HIGH>, // gpio48
+	    		  <&gpio3 19 GPIO_ACTIVE_HIGH>, // gpio83
+			  <&gpio5 23 GPIO_ACTIVE_HIGH>; // gpio151
+      };
+      frontcam: camera@48 {
+       		compatible = "ovti,mt9m114";
+		reg = <0x48>;
+		clocks = <&auxclk2_ck>;
+		clock-names = "extclk";
+		clock-frequency = <24000000>;
+		power-gpios = <&gpio6 11 GPIO_ACTIVE_HIGH>, // gpio171
+			      <&gpio2 5 GPIO_ACTIVE_HIGH>; // gpio37
+		};
+	flashlight: flash@53 {
+ 	    compatible = "ti,lm3559";
+	    reg = <0x53>;
+	};
+};
+
+
+
 &keypad {
 	keypad,num-rows = <8>;
 	keypad,num-columns = <8>;

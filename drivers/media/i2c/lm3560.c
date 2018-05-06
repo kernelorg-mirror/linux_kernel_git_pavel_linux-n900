@@ -17,6 +17,8 @@
  * General Public License for more details.
  */
 
+// Probably compatible with lm3559, too.
+
 #include <linux/delay.h>
 #include <linux/module.h>
 #include <linux/i2c.h>
@@ -405,6 +407,8 @@ static int lm3560_probe(struct i2c_client *client,
 	struct lm3560_platform_data *pdata = dev_get_platdata(&client->dev);
 	int rval;
 
+	printk("3560: probe\n");
+
 	flash = devm_kzalloc(&client->dev, sizeof(*flash), GFP_KERNEL);
 	if (flash == NULL)
 		return -ENOMEM;
@@ -417,17 +421,19 @@ static int lm3560_probe(struct i2c_client *client,
 
 	/* if there is no platform data, use chip default value */
 	if (pdata == NULL) {
+		printk("3560: no pdata\n");
+		
 		pdata = devm_kzalloc(&client->dev, sizeof(*pdata), GFP_KERNEL);
 		if (pdata == NULL)
 			return -ENODEV;
-		pdata->peak = LM3560_PEAK_3600mA;
-		pdata->max_flash_timeout = LM3560_FLASH_TOUT_MAX;
+		pdata->peak = LM3560_PEAK_1600mA;
+		pdata->max_flash_timeout = LM3560_FLASH_TOUT_MIN;
 		/* led 1 */
-		pdata->max_flash_brt[LM3560_LED0] = LM3560_FLASH_BRT_MAX;
-		pdata->max_torch_brt[LM3560_LED0] = LM3560_TORCH_BRT_MAX;
+		pdata->max_flash_brt[LM3560_LED0] = LM3560_FLASH_BRT_MIN;
+		pdata->max_torch_brt[LM3560_LED0] = LM3560_TORCH_BRT_MIN;
 		/* led 2 */
-		pdata->max_flash_brt[LM3560_LED1] = LM3560_FLASH_BRT_MAX;
-		pdata->max_torch_brt[LM3560_LED1] = LM3560_TORCH_BRT_MAX;
+		pdata->max_flash_brt[LM3560_LED1] = LM3560_FLASH_BRT_MIN;
+		pdata->max_torch_brt[LM3560_LED1] = LM3560_TORCH_BRT_MIN;
 	}
 	flash->pdata = pdata;
 	flash->dev = &client->dev;
@@ -466,6 +472,8 @@ static int lm3560_remove(struct i2c_client *client)
 
 static const struct i2c_device_id lm3560_id_table[] = {
 	{LM3560_NAME, 0},
+	{"lm3559", 0},
+	{"ti,lm3559", 0},
 	{}
 };
 
