@@ -1,6 +1,6 @@
 /*
  * drivers/media/i2c/lm3560.c
- * General device driver for TI lm3560, FLASH LED Driver
+ * General device driver for TI lm3559, lm3560, FLASH LED Driver
  *
  * Copyright (C) 2013 Texas Instruments
  *
@@ -16,8 +16,6 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
  */
-
-// Probably compatible with lm3559, too.
 
 #include <linux/delay.h>
 #include <linux/module.h>
@@ -398,8 +396,6 @@ static int lm3560_init_device(struct lm3560_flash *flash)
 	/* reset faults */
 	rval = regmap_read(flash->regmap, REG_FLAG, &reg_val);
 
-	printk("lm3560: Device initialized\n");
-
 	flash->led_mode = V4L2_FLASH_LED_MODE_TORCH;
 	rval = lm3560_mode_ctrl(flash);
 	rval = lm3560_torch_brt_ctrl(flash, 0, LM3560_TORCH_BRT_MIN);
@@ -423,8 +419,6 @@ static int lm3560_probe(struct i2c_client *client,
 	struct lm3560_platform_data *pdata = dev_get_platdata(&client->dev);
 	int rval;
 
-	printk("3560: probe\n");
-
 	flash = devm_kzalloc(&client->dev, sizeof(*flash), GFP_KERNEL);
 	if (flash == NULL)
 		return -ENOMEM;
@@ -437,8 +431,6 @@ static int lm3560_probe(struct i2c_client *client,
 
 	/* if there is no platform data, use chip default value */
 	if (pdata == NULL) {
-		printk("3560: no pdata\n");
-		
 		pdata = devm_kzalloc(&client->dev, sizeof(*pdata), GFP_KERNEL);
 		if (pdata == NULL)
 			return -ENODEV;
@@ -487,9 +479,8 @@ static int lm3560_remove(struct i2c_client *client)
 }
 
 static const struct i2c_device_id lm3560_id_table[] = {
+	{LM3559_NAME, 0},
 	{LM3560_NAME, 0},
-	{"lm3559", 0},
-	{"ti,lm3559", 0},
 	{}
 };
 
