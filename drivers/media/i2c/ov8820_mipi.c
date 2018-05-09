@@ -28,10 +28,13 @@
 #include <linux/i2c.h>
 #include <linux/regulator/consumer.h>
 #include <linux/fsl_devices.h>
-#include <mach/mipi_csi2.h>
-#include <media/v4l2-chip-ident.h>
-#include <media/v4l2-int-device.h>
-#include "mxc_v4l2_capture.h"
+//#include <mach/mipi_csi2.h>
+//#include <media/v4l2-chip-ident.h>
+//#include <media/v4l2-int-device.h>
+//#include "mxc_v4l2_capture.h"
+
+#include <media/v4l2-ioctl.h>
+#include <media/v4l2-ctrls.h>
 
 #define OV8820_VOLTAGE_ANALOG               2800000
 #define OV8820_VOLTAGE_DIGITAL_CORE         1500000
@@ -267,6 +270,8 @@ static int ov8820_init_mode(enum ov8820_frame_rate frame_rate,
 		return -1;
 	}
 
+	printk("Not setting up other side of the link.\n");
+#if 0
 	mipi_csi2_info = mipi_csi2_get_info();
 
 	/* initial mipi dphy */
@@ -290,6 +295,7 @@ static int ov8820_init_mode(enum ov8820_frame_rate frame_rate,
 		printk(KERN_ERR "Fail to get mipi_csi2_info!\n");
 		return -1;
 	}
+#endif
 
 	pModeSetting = ov8820_mode_info_data[frame_rate][mode].init_data_ptr;
 	iModeSettingArySize =
@@ -326,6 +332,8 @@ static int ov8820_init_mode(enum ov8820_frame_rate frame_rate,
 			msleep(Delay_ms);
 	}
 
+	printk("More fixes needed\n");
+#if 0
 	if (mipi_csi2_info) {
 		unsigned int i;
 
@@ -359,12 +367,14 @@ static int ov8820_init_mode(enum ov8820_frame_rate frame_rate,
 			return -1;
 		}
 	}
+#endif
 err:
 	return retval;
 }
 
 /* --------------- IOCTL functions from v4l2_int_ioctl_desc --------------- */
 
+#if 0
 static int ioctl_g_ifparm(struct v4l2_int_device *s, struct v4l2_ifparm *p)
 {
 	if (s == NULL) {
@@ -737,7 +747,9 @@ static int ioctl_enum_fmt_cap(struct v4l2_int_device *s,
 
 	return 0;
 }
+#endif
 
+#if 0
 /*!
  * ioctl_dev_init - V4L2 sensor interface handler for vidioc_int_dev_init_num
  * @s: pointer to standard V4L2 device structure
@@ -791,6 +803,7 @@ static int ioctl_dev_init(struct v4l2_int_device *s)
 	return ret;
 }
 
+
 /*!
  * ioctl_dev_exit - V4L2 sensor interface handler for vidioc_int_dev_exit_num
  * @s: pointer to standard V4L2 device structure
@@ -810,7 +823,8 @@ static int ioctl_dev_exit(struct v4l2_int_device *s)
 
 	return 0;
 }
-
+#endif
+#if 0
 /*!
  * This structure defines all the ioctls for this module and links them to the
  * enumeration.
@@ -840,7 +854,9 @@ static struct v4l2_int_ioctl_desc ov8820_ioctl_desc[] = {
 	{vidioc_int_g_chip_ident_num,
 				(v4l2_int_ioctl_func *) ioctl_g_chip_ident},
 };
+#endif
 
+#if 0
 static struct v4l2_int_slave ov8820_slave = {
 	.ioctls = ov8820_ioctl_desc,
 	.num_ioctls = ARRAY_SIZE(ov8820_ioctl_desc),
@@ -854,6 +870,7 @@ static struct v4l2_int_device ov8820_int_device = {
 		.slave = &ov8820_slave,
 	},
 };
+#endif
 
 /*!
  * ov8820 I2C probe function
@@ -870,8 +887,11 @@ static int ov8820_probe(struct i2c_client *client,
 	/* Set initial values for the sensor struct. */
 	memset(&ov8820_data, 0, sizeof(ov8820_data));
 	ov8820_data.mclk = 24000000; /* 6 - 54 MHz, typical 24MHz */
+	printk("Fixme: need platform data\n");
+#if 0
 	ov8820_data.mclk = plat_data->mclk;
 	ov8820_data.csi = plat_data->csi;
+#endif
 
 	ov8820_data.i2c_client = client;
 	ov8820_data.pix.pixelformat = V4L2_PIX_FMT_SBGGR10;
@@ -883,6 +903,7 @@ static int ov8820_probe(struct i2c_client *client,
 	ov8820_data.streamcap.timeperframe.denominator = DEFAULT_FPS;
 	ov8820_data.streamcap.timeperframe.numerator = 1;
 
+#if 0
 	if (plat_data->io_regulator) {
 		io_regulator = regulator_get(&client->dev,
 					     plat_data->io_regulator);
@@ -937,18 +958,20 @@ static int ov8820_probe(struct i2c_client *client,
 		} else
 			analog_regulator = NULL;
 	}
-
 	if (plat_data->io_init)
 		plat_data->io_init();
 
 	if (plat_data->pwdn)
 		plat_data->pwdn(0);
+#endif
 
 	camera_plat = plat_data;
 
+	printf("FIXME: don't know how to register\n");
+#if 0	
 	ov8820_int_device.priv = &ov8820_data;
 	retval = v4l2_int_device_register(&ov8820_int_device);
-
+#endif
 	return retval;
 
 err3:
@@ -973,8 +996,9 @@ err1:
  */
 static int ov8820_remove(struct i2c_client *client)
 {
+#if 0
 	v4l2_int_device_unregister(&ov8820_int_device);
-
+#endif
 	if (gpo_regulator) {
 		regulator_disable(gpo_regulator);
 		regulator_put(gpo_regulator);
