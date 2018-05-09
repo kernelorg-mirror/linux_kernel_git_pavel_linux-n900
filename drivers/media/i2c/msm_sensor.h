@@ -21,11 +21,11 @@
 #include <linux/slab.h>
 #include <linux/types.h>
 #include <linux/uaccess.h>
-#include <mach/gpio.h>
-#include <media/msm_camera.h>
+//#include <mach/gpio.h>
+//#include <media/msm_camera.h>
 #include <media/v4l2-subdev.h>
-#include "msm_camera_i2c.h"
-#include "msm_camera_eeprom.h"
+//#include "msm_camera_i2c.h"
+//#include "msm_camera_eeprom.h"
 #define Q8  0x00000100
 #define Q10 0x00000400
 
