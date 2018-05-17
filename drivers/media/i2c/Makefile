@@ -104,4 +104,4 @@ obj-$(CONFIG_VIDEO_IMX274)	+= imx274.o
 obj-$(CONFIG_SDR_MAX2175) += max2175.o
 
 //obj-y += ov8820.o
-obj-y +=  ov8820_mipi.o
+obj-m +=  ov8820_mipi.o
