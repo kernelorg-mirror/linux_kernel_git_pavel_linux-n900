@@ -315,7 +315,6 @@ static int bq2415x_exec_command(struct bq2415x_device *bq,
 
 	switch (command) {
 	case BQ2415X_TIMER_RESET:
-		printk("bq2415x: command Timer reset\n");
 		return bq2415x_i2c_write_bit(bq, BQ2415X_REG_STATUS,
 				1, BQ2415X_BIT_TMR_RST);
 	case BQ2415X_OTG_STATUS:
