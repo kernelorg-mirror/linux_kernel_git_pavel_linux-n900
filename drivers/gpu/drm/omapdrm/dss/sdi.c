@@ -97,7 +97,7 @@ static int sdi_calc_clock_div(struct sdi_device *sdi, unsigned long pclk,
 		memset(&ctx, 0, sizeof(ctx));
 
 		ctx.sdi = sdi;
-		
+
 		if (pclk > 1000 * i * i * i)
 			ctx.pck_min = max(pclk - 1000 * i * i * i, 0lu);
 		else
