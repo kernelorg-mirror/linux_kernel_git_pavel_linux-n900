@@ -1417,9 +1417,8 @@ static int cpcap_incall_hw_params(struct snd_pcm_substream *substream,
 				 struct snd_soc_dai *dai)
 {
 	/* FIXME ?! -- maybe this is unused / can be deleted? */
-	struct snd_soc_codec *codec = dai->codec;
-	struct device *dev = codec->dev;
-	struct cpcap_audio *cpcap = snd_soc_codec_get_drvdata(codec);
+	struct snd_soc_component *component = dai->component;
+	struct cpcap_audio *cpcap = snd_soc_component_get_drvdata(component);
 	static const u16 reg_cdi = CPCAP_REG_CDI;
 	int rate = params_rate(params);
 	int channels = params_channels(params);
@@ -1427,7 +1426,7 @@ static int cpcap_incall_hw_params(struct snd_pcm_substream *substream,
 	u16 val, mask;
 	int err;
 
-	dev_dbg(dev, "Incall setup HW params: rate=%d, direction=%d, chan=%d",
+	printk( "Incall setup HW params: rate=%d, direction=%d, chan=%d",
 		rate, direction, channels);
 
 	/* codec, 1 in original code is CPCAP_REG_CC
