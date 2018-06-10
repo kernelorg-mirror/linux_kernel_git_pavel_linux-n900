@@ -1403,62 +1403,6 @@ static int cpcap_voice_hw_params(struct snd_pcm_substream *substream,
 	return 0;
 }
 
-#if 0
-static int cpcap_incall_hw_params(struct snd_pcm_substream *substream,
-				 struct snd_pcm_hw_params *params,
-				 struct snd_soc_dai *dai)
-{
-	/* FIXME ?! -- maybe this is unused / can be deleted? */
-	struct snd_soc_component *component = dai->component;
-	struct cpcap_audio *cpcap = snd_soc_component_get_drvdata(component);
-	static const u16 reg_cdi = CPCAP_REG_CDI;
-	int rate = params_rate(params);
-	int channels = params_channels(params);
-	int direction = substream->stream;
-	u16 val, mask;
-	int err;
-
-	printk( "Incall setup HW params: rate=%d, direction=%d, chan=%d",
-		rate, direction, channels);
-
-	/* codec, 1 in original code is CPCAP_REG_CC
-	   codec, 2 is CPCAP_REG_CDI
-	   codec, 5 is CPCAP_REG_TXI */
-
-	if (/* cpcap->codec_strm_cnt == */ 1) {
-		/*
-		if (pdata->voice_type != VOICE_TYPE_QC)
-			printk("FIXME: Only MDM6600 support is implemented here.\n");
-		*/
-
-		err = regmap_update_bits(cpcap->regmap, CPCAP_REG_CDI, 0xffff, 0xAE02);
-		if (err) printk("cpcap error %d\n", __LINE__);
-
-		err = regmap_update_bits(cpcap->regmap, CPCAP_REG_CC, 0xffff, 0x6120);
-		if (err) printk("cpcap error %d\n", __LINE__);
-
-		err = cpcap_set_samprate(cpcap, CPCAP_DAI_VOICE, rate);
-		printk("Configured stream\n");
-	}
-
-	/* (direction == SNDRV_PCM_STREAM_CAPTURE) ?? */
-	if (substream->stream) { /* up link */
-		unsigned int set =  CPCAP_BIT_AUDIHPF_1 | CPCAP_BIT_AUDIHPF_0;
-		err = regmap_update_bits(cpcap->regmap, CPCAP_REG_CC, set, set);
-		if (err) printk("cpcap error %d\n", __LINE__);
-
-		set = CPCAP_BIT_MB_ON1L | CPCAP_BIT_MB_ON1R;
-		err = regmap_update_bits(cpcap->regmap, CPCAP_REG_TXI, set, set);
-	} else { /* down link */
-		unsigned int set =  CPCAP_BIT_AUDOHPF_1 | CPCAP_BIT_AUDOHPF_0;
-		err = regmap_update_bits(cpcap->regmap, CPCAP_REG_CC, set, set);
-		if (err) printk("cpcap error %d\n", __LINE__);
-	}
-
-	return err;
-}
-#endif
-
 static int cpcap_voice_set_dai_sysclk(struct snd_soc_dai *codec_dai, int clk_id,
 				      unsigned int freq, int dir)
 {
@@ -1573,16 +1517,6 @@ static const struct snd_soc_dai_ops cpcap_dai_voice_ops = {
 	.digital_mute	= cpcap_voice_set_mute,
 };
 
-#if 0
-static const struct snd_soc_dai_ops cpcap_dai_incall_ops = {
-	/* FIXME: unused? */
-	.hw_params	= cpcap_incall_hw_params,
-	.set_sysclk	= cpcap_voice_set_dai_sysclk,
-	.set_fmt	= cpcap_voice_set_dai_fmt,
-	.digital_mute	= cpcap_voice_set_mute,
-};
-#endif
-
 static struct snd_soc_dai_driver cpcap_dai[] = {
 {
 	.id = 0,
@@ -1615,28 +1549,6 @@ static struct snd_soc_dai_driver cpcap_dai[] = {
 	},
 	.ops = &cpcap_dai_voice_ops,
 },
-#if 0
-{
-	.id = 2,
-	.name = "cpcap in-call",
-	.playback = {
-		.stream_name = "InCall DL",
-		.channels_min = 1,
-		.channels_max = 2,
-		.rates = SNDRV_PCM_RATE_8000 | SNDRV_PCM_RATE_16000,
-		.formats = SNDRV_PCM_FMTBIT_S16_LE,
-	},
-	.capture = {
-		.stream_name = "Capture",
-		.channels_min = 1,
-		.channels_max = 2,
-		.rates = SNDRV_PCM_RATE_8000 | SNDRV_PCM_RATE_16000,
-		.formats = SNDRV_PCM_FMTBIT_S16_LE,
-	},
-	.ops = &cpcap_dai_incall_ops,
-},
-/* FIXME: this misses bt-call, cpcap bt, BPvoice, FM */
-#endif
 };
 
 
