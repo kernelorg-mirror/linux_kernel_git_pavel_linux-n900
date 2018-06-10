@@ -9,13 +9,13 @@ config SND_SDMA_SOC
 	select SND_SOC_GENERIC_DMAENGINE_PCM
 
 config SND_OMAP_SOC_DMIC
-	tristate "dmic"
+	tristate
 
 config SND_OMAP_SOC_MCBSP
-	tristate "mcbsp"
+	tristate
 
 config SND_OMAP_SOC_MCPDM
-	tristate "mcpdm"
+	tristate
 
 config SND_OMAP_SOC_HDMI_AUDIO
 	tristate "HDMI audio support for OMAP4+ based SoCs"

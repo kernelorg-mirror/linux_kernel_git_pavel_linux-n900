@@ -1412,6 +1412,7 @@ static int cpcap_voice_hw_params(struct snd_pcm_substream *substream,
 	return 0;
 }
 
+#if 0
 static int cpcap_incall_hw_params(struct snd_pcm_substream *substream,
 				 struct snd_pcm_hw_params *params,
 				 struct snd_soc_dai *dai)
@@ -1465,6 +1466,7 @@ static int cpcap_incall_hw_params(struct snd_pcm_substream *substream,
 
 	return err;
 }
+#endif
 
 static int cpcap_voice_set_dai_sysclk(struct snd_soc_dai *codec_dai, int clk_id,
 				      unsigned int freq, int dir)
@@ -1580,6 +1582,7 @@ static const struct snd_soc_dai_ops cpcap_dai_voice_ops = {
 	.digital_mute	= cpcap_voice_set_mute,
 };
 
+#if 0
 static const struct snd_soc_dai_ops cpcap_dai_incall_ops = {
 	/* FIXME: unused? */
 	.hw_params	= cpcap_incall_hw_params,
@@ -1587,6 +1590,7 @@ static const struct snd_soc_dai_ops cpcap_dai_incall_ops = {
 	.set_fmt	= cpcap_voice_set_dai_fmt,
 	.digital_mute	= cpcap_voice_set_mute,
 };
+#endif
 
 static struct snd_soc_dai_driver cpcap_dai[] = {
 {
