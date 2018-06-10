@@ -463,49 +463,69 @@ static int cpcap_mode_get_enum(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
-static int enable_call(struct cpcap_audio *cpcap, int on)
+static void regmap_assert(struct cpcap_audio *cpcap, int reg, int val)
 {
+	int prev;
+	regmap_read(cpcap->regmap, reg, &prev);
+
+	if (prev != val) {
+		printk("assert: still need %lx %lx vs %lx\n", reg, prev, val);
+		if (regmap_update_bits(cpcap->regmap, reg, 0xffff, val) != 0)
+			printk("assert: update_bits failed\n");
+	}
+}
+
+/* FIXME */
+static int enable_call(struct cpcap_audio *cpcap, int on)
+/* Would like: struct snd_soc_dai *dai */
+{
+	/*
+	struct snd_soc_component *component = dai->component;
+	struct cpcap_audio *cpcap = snd_soc_component_get_drvdata(component);
+	*/
+	/* I can simply use cpcap_dai[1]; */
+	
 	int err;
 	unsigned long mask;
 	
-		err = regmap_update_bits(cpcap->regmap, CPCAP_REG_VAUDIOC,
-					 0xffff, 0x0025);	// OK
-		if (err)
-			goto out;
-		err = regmap_update_bits(cpcap->regmap, CPCAP_REG_CC,
-					 0xffff, 0x60cf);	// OK
-		if (err)
-			goto out;
-		err = regmap_update_bits(cpcap->regmap, CPCAP_REG_CDI,
-					 0xffff, 0xae0a);	// OK
-		if (err)
-			goto out;
-		err = regmap_update_bits(cpcap->regmap, CPCAP_REG_TXI,
-					 0xffff, 0x0cc0);
-		if (err)
-			goto out;
+	err = regmap_update_bits(cpcap->regmap, CPCAP_REG_VAUDIOC,
+				 0xffff, 0x0025);	// OK
+	if (err)
+		goto out;
+	err = regmap_update_bits(cpcap->regmap, CPCAP_REG_CC,
+				 0xffff, 0x60cf);	// OK
+	if (err)
+		goto out;
+	err = regmap_update_bits(cpcap->regmap, CPCAP_REG_CDI,
+				 0xffff, 0xae0a);	// OK
+	if (err)
+		goto out;
+	err = regmap_update_bits(cpcap->regmap, CPCAP_REG_TXI,
+				 0xffff, 0x0cc0);
+	if (err)
+		goto out;
 		
-		mask = 1 << CPCAP_BIT_PGA_CDC_EN | 0x200;
-		err = regmap_update_bits(cpcap->regmap, CPCAP_REG_RXCOA,
-				   mask, mask);
-		if (err)
-			printk("error #3\n");
+	mask = 1 << CPCAP_BIT_PGA_CDC_EN | 0x200;
+	err = regmap_update_bits(cpcap->regmap, CPCAP_REG_RXCOA,
+				 mask, mask);
+	if (err)
+		printk("error #3\n");
 
-		mask = 1 << CPCAP_BIT_A2_LDSP_L_EN | 1 << CPCAP_BIT_A2_LDSP_R_EN;
-		err = regmap_update_bits(cpcap->regmap, CPCAP_REG_RXOA,
-				   mask, mask);
-		if (err)
-			printk("error #2\n");
+	mask = 1 << CPCAP_BIT_A2_LDSP_L_EN | 1 << CPCAP_BIT_A2_LDSP_R_EN;
+	err = regmap_update_bits(cpcap->regmap, CPCAP_REG_RXOA,
+				 mask, mask);
+	if (err)
+		printk("error #2\n");
 		
-		err = regmap_update_bits(cpcap->regmap, 0x814,
-				   0x0400, 0x0400);
-		if (err)
-			printk("error #1\n");
+	err = regmap_update_bits(cpcap->regmap, 0x814,
+				 0x0400, 0x0400);
+	if (err)
+		printk("error #1\n");
 
-		return 0;
+	return 0;
 out:
-		printk("Error!\n");
-		return -EIO;
+	printk("Error!\n");
+	return -EIO;
 }
 
 static int cpcap_mode_put_enum(struct snd_kcontrol *kcontrol,
