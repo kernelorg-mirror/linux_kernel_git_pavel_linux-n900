@@ -185,7 +185,7 @@ static void phy_mdm6600_status(struct work_struct *work)
 	error = gpiod_get_array_value_cansleep(PHY_MDM6600_NR_CMD_LINES,
 					       ddata->status_gpios->desc,
 					       values);
-	if (error)
+	if (error) /* FIXME: dev_err here? */
 		return;
 
 	for (i = 0; i < PHY_MDM6600_NR_CMD_LINES; i++) {
