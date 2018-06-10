@@ -453,79 +453,68 @@ static int mode;
 static int cpcap_mode_get_enum(struct snd_kcontrol *kcontrol,
 				     struct snd_ctl_elem_value *ucontrol)
 {
-	struct snd_soc_component *component = snd_soc_dapm_kcontrol_component(kcontrol);
-	struct cpcap_audio *cpcap = snd_soc_component_get_drvdata(component);
-	struct soc_enum *e = (struct soc_enum *)kcontrol->private_value;
-	int err;
+	//struct snd_soc_component *component = snd_soc_dapm_kcontrol_component(kcontrol);
+	//struct cpcap_audio *cpcap = snd_soc_component_get_drvdata(component);
+	//struct soc_enum *e = (struct soc_enum *)kcontrol->private_value;
+	//int err;
 
 	ucontrol->value.enumerated.item[0] = mode;
 
 	return 0;
 }
 
-static void regmap_assert(struct cpcap_audio *cpcap, int reg, int val)
+static void regmap_assert(struct cpcap_audio *cpcap, int reg, int mask, int val)
 {
 	int prev;
 	regmap_read(cpcap->regmap, reg, &prev);
 
-	if (prev != val) {
-		printk("assert: still need %lx %lx vs %lx\n", reg, prev, val);
+	if ((prev & mask) != val) {
+		printk("assert: still need %x %x vs %x\n", reg, prev, val);
 		if (regmap_update_bits(cpcap->regmap, reg, 0xffff, val) != 0)
 			printk("assert: update_bits failed\n");
 	}
 }
 
 /* FIXME */
-static int enable_call(struct cpcap_audio *cpcap, int on)
+static int enable_call(struct snd_soc_component *component, int on)
 /* Would like: struct snd_soc_dai *dai */
 {
-	/*
-	struct snd_soc_component *component = dai->component;
 	struct cpcap_audio *cpcap = snd_soc_component_get_drvdata(component);
-	*/
-	/* I can simply use cpcap_dai[1]; */
 	
-	int err;
+	//int err;
 	unsigned long mask;
-	
-	err = regmap_update_bits(cpcap->regmap, CPCAP_REG_VAUDIOC,
-				 0xffff, 0x0025);	// OK
-	if (err)
-		goto out;
-	err = regmap_update_bits(cpcap->regmap, CPCAP_REG_CC,
-				 0xffff, 0x60cf);	// OK
-	if (err)
-		goto out;
-	err = regmap_update_bits(cpcap->regmap, CPCAP_REG_CDI,
-				 0xffff, 0xae0a);	// OK
-	if (err)
-		goto out;
-	err = regmap_update_bits(cpcap->regmap, CPCAP_REG_TXI,
-				 0xffff, 0x0cc0);
-	if (err)
-		goto out;
+
+	{
+		printk("num_dai: %d\n", component->num_dai);
+	}
+
+#if 0
+	{
+		struct snd_soc_dai_driver *dai = &cpcap_dai[1];
+		struct snd_pcm_substream substream = { 0, };
+		struct snd_pcm_hw_params params = { 0, };
+
+		dai->ops.hw_params(&substream, &params, dai);
+		//dai->ops.set_dai_sysclk();
+		dai->ops.set_dai_fmt(dai, 0); /* Sets CDI register */
+		dai->ops.set_mute(dai, 0);
+	}
+#endif
+
+	regmap_assert(cpcap, CPCAP_REG_VAUDIOC, 0xffff, 0x0025);	// OK
+	regmap_assert(cpcap, CPCAP_REG_CC, 0xffff, 0x60cf);	// OK
+	regmap_assert(cpcap, CPCAP_REG_CDI, 0xffff, 0xae0a);	// OK
+	regmap_assert(cpcap, CPCAP_REG_TXI, 0xffff, 0x0cc0);
 		
 	mask = 1 << CPCAP_BIT_PGA_CDC_EN | 0x200;
-	err = regmap_update_bits(cpcap->regmap, CPCAP_REG_RXCOA,
-				 mask, mask);
-	if (err)
-		printk("error #3\n");
+	regmap_assert(cpcap, CPCAP_REG_RXCOA, mask, mask);
 
 	mask = 1 << CPCAP_BIT_A2_LDSP_L_EN | 1 << CPCAP_BIT_A2_LDSP_R_EN;
-	err = regmap_update_bits(cpcap->regmap, CPCAP_REG_RXOA,
-				 mask, mask);
-	if (err)
-		printk("error #2\n");
+	regmap_assert(cpcap, CPCAP_REG_RXOA, mask, mask);
 		
-	err = regmap_update_bits(cpcap->regmap, 0x814,
-				 0x0400, 0x0400);
-	if (err)
-		printk("error #1\n");
+	regmap_assert(cpcap, 0x814, 0x0400, 0x0400);
 
 	return 0;
-out:
-	printk("Error!\n");
-	return -EIO;
 }
 
 static int cpcap_mode_put_enum(struct snd_kcontrol *kcontrol,
@@ -533,12 +522,11 @@ static int cpcap_mode_put_enum(struct snd_kcontrol *kcontrol,
 {
 	struct snd_soc_component *component = snd_soc_dapm_kcontrol_component(kcontrol);
 	struct cpcap_audio *cpcap = snd_soc_component_get_drvdata(component);
-	struct snd_soc_dapm_context *dapm =
-		snd_soc_dapm_kcontrol_dapm(kcontrol);
+	//struct snd_soc_dapm_context *dapm = snd_soc_dapm_kcontrol_dapm(kcontrol);
 	struct soc_enum *e = (struct soc_enum *)kcontrol->private_value;
 	unsigned int muxval = ucontrol->value.enumerated.item[0];
-	unsigned int mask = BIT(e->shift_l);
-	int err;
+	//unsigned int mask = BIT(e->shift_l);
+	//int err;
 
 	printk("Requested mode %d\n", muxval);
 
@@ -546,31 +534,16 @@ static int cpcap_mode_put_enum(struct snd_kcontrol *kcontrol,
 
 	switch (muxval) {
 	case 1:
-		enable_call(cpcap, 1);
+		enable_call(component, 1);
 		break;
 	case 2:
-		enable_call(cpcap, 1);
+		enable_call(component, 1);
 
-		err = regmap_update_bits(cpcap->regmap, CPCAP_REG_TXI,
-					 0xffff, 0x0cc6);
-		if (err)
-			goto out;
-
-		err = regmap_update_bits(cpcap->regmap, CPCAP_REG_TXMP,
-					 0xffff, 0x0673);
-		if (err)
-			goto out;
-
-
-		err = regmap_update_bits(cpcap->regmap, CPCAP_REG_RXOA,
-					 0xffff, 0x0001);
-		if (err)
-			goto out;
-		
-		err = regmap_update_bits(cpcap->regmap, CPCAP_REG_RXCOA,
-					 0xffff, 0x0601);
-		if (err)
-			goto out;
+		regmap_assert(cpcap, CPCAP_REG_TXI, 0xffff, 0x0cc6);
+		regmap_assert(cpcap, CPCAP_REG_TXMP, 0xffff, 0x0673);
+		regmap_assert(cpcap, CPCAP_REG_RXOA, 0xffff, 0x0001);
+		regmap_assert(cpcap, CPCAP_REG_RXCOA, 0xffff, 0x0601);
+		break;
 		
 	default:
 		break;
@@ -580,8 +553,6 @@ static int cpcap_mode_put_enum(struct snd_kcontrol *kcontrol,
 //	snd_soc_dapm_mux_update_power(dapm, kcontrol, muxval, e, NULL);
 
 	return 0;
-out: printk("Something failed\n");
-	return -EINVAL;
 }
 
 static int cpcap_input_right_mux_get_enum(struct snd_kcontrol *kcontrol,
@@ -1667,6 +1638,7 @@ static struct snd_soc_dai_driver cpcap_dai[] = {
 /* FIXME: this misses bt-call, cpcap bt, BPvoice, FM */
 #endif
 };
+
 
 static int cpcap_dai_mux(struct cpcap_audio *cpcap, bool swap_dai_configuration)
 {
