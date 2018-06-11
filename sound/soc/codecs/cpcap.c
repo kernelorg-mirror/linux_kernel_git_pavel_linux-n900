@@ -599,9 +599,9 @@ static int enable_call(struct snd_soc_component *component, int on)
 		printk("num_dai: %d, got runtime %lx\n", component->num_dai, rt);
 
 		if (rt) {
-		snd_soc_dapm_stream_event(rt, SNDRV_PCM_STREAM_PLAYBACK, SND_SOC_DAPM_STREAM_START);
-		snd_soc_dapm_stream_event(rt, SNDRV_PCM_STREAM_CAPTURE, SND_SOC_DAPM_STREAM_START);
-		}
+			snd_soc_dapm_stream_event(rt, SNDRV_PCM_STREAM_PLAYBACK, SND_SOC_DAPM_STREAM_START);
+			snd_soc_dapm_stream_event(rt, SNDRV_PCM_STREAM_CAPTURE, SND_SOC_DAPM_STREAM_START);
+		} else printk("enable_call: rt not found!!!!!!!!!!!!!!!!\n");
 
 		//cpcap_set_sysclk(cpcap, CPCAP_DAI_VOICE, 0, ???); 
 		cpcap_set_sysclk(cpcap, CPCAP_DAI_VOICE, 1, 19200000);
@@ -636,11 +636,12 @@ static int cpcap_mode_put_enum(struct snd_kcontrol *kcontrol,
 		break;
 	case 2:
 		enable_call(component, 1);
-
+#if 0
 		regmap_assert(cpcap, CPCAP_REG_TXI, 0xffff, 0x0cc6);
 		regmap_assert(cpcap, CPCAP_REG_TXMP, 0xffff, 0x0673);
 		regmap_assert(cpcap, CPCAP_REG_RXOA, 0xffff, 0x0001);
 		regmap_assert(cpcap, CPCAP_REG_RXCOA, 0xffff, 0x0601);
+#endif
 		break;
 		
 	default:

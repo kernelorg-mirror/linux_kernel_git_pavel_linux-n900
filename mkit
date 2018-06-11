@@ -4,7 +4,7 @@ eval ` eldk-switch.sh -r 5.4 armv7a`
 # PATH=$PATH:/opt/eldk-4.2-2008-11-24/usr/bin/
 D=`git describe`
 TFTP=/srv/tftp
-#CROSS_COMPILE="ccache $CROSS_COMPILE"
+CROSS_COMPILE="ccache $CROSS_COMPILE"
 # uImage LOADADDR=0x80008000
 ARCH=arm long make -j 5 zImage
 ARCH=arm make omap3-n950.dtb omap3-n9.dtb omap3-n900.dtb omap4-droid4-xt894.dtb
