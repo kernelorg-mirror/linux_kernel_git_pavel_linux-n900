@@ -463,43 +463,102 @@ static int cpcap_mode_get_enum(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
+/*
+
+cpcap_set_sysclk(cpcap, CPCAP_DAI_VOICE, 0, ??? ); -- cdc_sr0
+cpcap_set_sysclk(cpcap, CPCAP_DAI_VOICE, 1, 19200000 ); -- cdc_clkx -- 0x3
+cpcap_voice_set_dai_fmt(codec_dai !!!, SND_SOC_DAIFMT_DSP_A | SND_SOC_DAIFMT_NB_NF);
+
+want "0xae0a" -- CPCAP_BIT_MIC1_RX_TIMESLOT0 | CPCAP_BIT_CLK_INV 
+ CPCAP_BIT_CDC_CLK_EN CPCAP_BIT_CDC_DIG_AUD_FS1 CPCAP_BIT_CDC_DIG_AUD_FS0
+CPCAP_BIT_CDC_PLL_SEL CPCAP_BIT_CLK_IN_SEL
+
+switch to speaker
+[  148.214324] assert: still need 804==513 have 9000 want 60cf
+CPCAP_REG_CC: CPCAP_BIT_CDC_CLKX, CPCAP_BIT_AUD?HPF_?, ...
+-> cpcap_set_sysclk, "Highpass Filter RX", "Highpass Filter TX"
+ 0xe000 -- CDC_CLKX
+ 0x1e00 -- CDC_SR0
+[  148.220825] assert: still need 808==514 have 820a want ae0a
+CPCAP_BIT_CDC_DIG_AUD_FS0
+-> cpcap_voice_set_dai_fmt
+[  148.226562] assert: still need 814==517 have 84 want cc0
+!CPCAP_BIT_MIC1_MUX, CPCAP_BIT_MIC2_MUX, CPCAP_BIT_MIC2_PGA_EN, CPCAP_BIT_MB_ON1L, CPCAP_BIT_MB_ON1R
+-> "MIC1L Bias","MIC1R Bias","Microphone 2 PGA", cpcap_input_left_mux_put_enum()
+[  148.232635] assert: still need 824==521 have 200 want 600
+CPCAP_BIT_PGA_CDC_EN
+-> "Voice PGA"
+[  148.238189] assert: still need 81c==519 have 0 want 6
+CPCAP_BIT_A2_LDSP_L_EN, CPCAP_BIT_A2_LDSP_R_EN
+-> "Speaker Right PGA", "Speaker Left PGA"
+
+switch to call mode
+[  148.911254] assert: still need 814==517 have cc0 want cc6
+CPCAP_REG_TXI
+  CPCAP_BIT_MIC1_MUX
+  CPCAP_BIT_MIC1_PGA_EN
+[  148.916809] assert: still need 818==518 have 7f9 want 673
+  MIC GAIN... not interesting?
+[  148.922973] assert: still need 81c==519 have 6 want 1
+  CPCAP_REG_RXOA
+  want "CPCAP_BIT_A1_EAR_EN" have "CPCAP_BIT_A2_LDSP_L_EN, CPCAP_BIT_A2_LDSP_R_EN"
+[  148.928161] assert: still need 824==521 have 600 want 601
+  CPCAP_REG_RXCOA
+  want CPCAP_BIT_A1_EAR_CDC_SW
+
+call mode, #2.
+
+[ 1676.074493] assert: still need 804==513 have 7000 want 60cf
+cpcap_set_sysclk
+[ 1676.080291] assert: still need 808==514 have a20a want ae0a
+cpcap_voice_set_dai_fmt
+[ 1676.086029] assert: still need 814==517 have 84 want cc0
+[ 1676.091644] assert: still need 824==521 have 201 want 600
+[ 1676.097167] assert: still need 81c==519 have 0 want 6
+[ 1676.102661] assert: still need 814==517 have cc0 want cc6
+[ 1676.108245] assert: still need 81c==519 have 6 want 1
+[ 1676.113494] assert: still need 824==521 have 600 want 601
+
+[  326.651733] assert: still need 804==513 have 7000 want 60cf
+-> cpcap_set_sysclk
+[  326.657379] assert: still need 808==514 have a60a want ae0a
+"CDC_CLK_EN -- "Voice DAI clock"
+-> cpcap_voice_set_dai_fmt
+[  326.663177] assert: still need 814==517 have 80 want cc0
+[  326.668579] assert: still need 824==521 have 201 want 600
+[  326.674163] assert: still need 81c==519 have 0 want 6
+[  326.679321] assert: still need 814==517 have 80 want 400
+[  326.684814] assert: still need 814==517 have 80 want cc6
+[  326.690216] assert: still need 818==518 have 660 want 673
+[  326.695770] assert: still need 81c==519 have 0 want 1
+[  326.700897] assert: still need 824==521 have 201 want 601
+
+*/
+
 static void regmap_assert(struct cpcap_audio *cpcap, int reg, int mask, int val)
 {
 	int prev;
 	regmap_read(cpcap->regmap, reg, &prev);
 
 	if ((prev & mask) != val) {
-		printk("assert: still need %x %x vs %x\n", reg, prev, val);
+		printk("assert: still need %x==%d have %x want %x\n", reg, reg/4, prev, val);
+#if 1
 		if (regmap_update_bits(cpcap->regmap, reg, 0xffff, val) != 0)
 			printk("assert: update_bits failed\n");
+#endif
 	}
 }
 
-/* FIXME */
-static int enable_call(struct snd_soc_component *component, int on)
-/* Would like: struct snd_soc_dai *dai */
+static struct snd_soc_dai *voice_codec_dai_hack;
+
+static int cpcap_voice_set_dai_fmt(struct snd_soc_dai *codec_dai,
+				   unsigned int fmt);
+static int cpcap_set_sysclk(struct cpcap_audio *cpcap, enum cpcap_dai dai,
+			    int clk_id, int freq);
+
+static void enable_call_hard(struct cpcap_audio *cpcap)
 {
-	struct cpcap_audio *cpcap = snd_soc_component_get_drvdata(component);
-	
-	//int err;
 	unsigned long mask;
-
-	{
-		printk("num_dai: %d\n", component->num_dai);
-	}
-
-#if 0
-	{
-		struct snd_soc_dai_driver *dai = &cpcap_dai[1];
-		struct snd_pcm_substream substream = { 0, };
-		struct snd_pcm_hw_params params = { 0, };
-
-		dai->ops.hw_params(&substream, &params, dai);
-		//dai->ops.set_dai_sysclk();
-		dai->ops.set_dai_fmt(dai, 0); /* Sets CDI register */
-		dai->ops.set_mute(dai, 0);
-	}
-#endif
 
 	regmap_assert(cpcap, CPCAP_REG_VAUDIOC, 0xffff, 0x0025);	// OK
 	regmap_assert(cpcap, CPCAP_REG_CC, 0xffff, 0x60cf);	// OK
@@ -513,7 +572,36 @@ static int enable_call(struct snd_soc_component *component, int on)
 	regmap_assert(cpcap, CPCAP_REG_RXOA, mask, mask);
 		
 	regmap_assert(cpcap, 0x814, 0x0400, 0x0400);
+}
 
+/* FIXME */
+static int enable_call(struct snd_soc_component *component, int on)
+/* Would like: struct snd_soc_dai *dai */
+{
+	struct cpcap_audio *cpcap = snd_soc_component_get_drvdata(component);
+	
+	//enable_call_hard(cpcap);
+
+	if (!voice_codec_dai_hack) {
+		printk("Don't have pointer to voice codec dai :-(\n");
+	} else {
+		printk("num_dai: %d\n", component->num_dai);
+
+#if 0
+		struct snd_soc_pcm_runtime *rt = snd_soc_get_pcm_runtime(struct snd_soc_card *card,
+								    const char *dai_link);
+
+		snd_soc_dapm_stream_event(rt, SNDRV_PCM_STREAM_PLAYBACK, SND_SOC_DAPM_STREAM_START);
+		snd_soc_dapm_stream_event(rt, SNDRV_PCM_STREAM_CAPTURE, SND_SOC_DAPM_STREAM_START);
+#endif
+
+		//cpcap_set_sysclk(cpcap, CPCAP_DAI_VOICE, 0, ???); 
+		cpcap_set_sysclk(cpcap, CPCAP_DAI_VOICE, 1, 19200000);
+		cpcap_voice_set_dai_fmt(voice_codec_dai_hack,
+					SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_NB_NF | SND_SOC_DAIFMT_CBM_CFM );
+	}
+
+	enable_call_hard(cpcap);
 	return 0;
 }
 
@@ -523,7 +611,7 @@ static int cpcap_mode_put_enum(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *component = snd_soc_dapm_kcontrol_component(kcontrol);
 	struct cpcap_audio *cpcap = snd_soc_component_get_drvdata(component);
 	//struct snd_soc_dapm_context *dapm = snd_soc_dapm_kcontrol_dapm(kcontrol);
-	struct soc_enum *e = (struct soc_enum *)kcontrol->private_value;
+	//struct soc_enum *e = (struct soc_enum *)kcontrol->private_value;
 	unsigned int muxval = ucontrol->value.enumerated.item[0];
 	//unsigned int mask = BIT(e->shift_l);
 	//int err;
@@ -1427,6 +1515,7 @@ static int cpcap_voice_set_dai_fmt(struct snd_soc_dai *codec_dai,
 	u16 val = 0x0000;
 	int err;
 
+	voice_codec_dai_hack = codec_dai;
 	dev_dbg(component->dev, "Voice setup dai format (%08x)", fmt);
 
 	/*
@@ -1466,10 +1555,7 @@ static int cpcap_voice_set_dai_fmt(struct snd_soc_dai *codec_dai,
 		break;
 	}
 
-	if (val & BIT(CPCAP_BIT_CLK_INV))
-		val &= ~BIT(CPCAP_BIT_CLK_INV);
-	else
-		val |= BIT(CPCAP_BIT_CLK_INV);
+	val ^= BIT(CPCAP_BIT_CLK_INV);
 
 	switch (fmt & SND_SOC_DAIFMT_FORMAT_MASK) {
 	case SND_SOC_DAIFMT_I2S:
