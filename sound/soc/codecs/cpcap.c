@@ -533,6 +533,12 @@ cpcap_voice_set_dai_fmt
 [  326.695770] assert: still need 81c==519 have 0 want 1
 [  326.700897] assert: still need 824==521 have 201 want 601
 
+[  172.431335] assert: still need 804==513 have 70cf want 60cf
+[  172.437072] assert: still need 814==517 have 8c0 want cc0
+[  172.448150] assert: still need 814==517 have cc0 want cc6
+[  172.453948] assert: still need 818==518 have 660 want 673
+
+
 */
 
 static void regmap_assert(struct cpcap_audio *cpcap, int reg, int mask, int val)
@@ -542,7 +548,7 @@ static void regmap_assert(struct cpcap_audio *cpcap, int reg, int mask, int val)
 
 	if ((prev & mask) != val) {
 		printk("assert: still need %x==%d have %x want %x\n", reg, reg/4, prev, val);
-#if 1
+#if 0
 		if (regmap_update_bits(cpcap->regmap, reg, 0xffff, val) != 0)
 			printk("assert: update_bits failed\n");
 #endif
@@ -555,6 +561,8 @@ static int cpcap_voice_set_dai_fmt(struct snd_soc_dai *codec_dai,
 				   unsigned int fmt);
 static int cpcap_set_sysclk(struct cpcap_audio *cpcap, enum cpcap_dai dai,
 			    int clk_id, int freq);
+static int cpcap_set_samprate(struct cpcap_audio *cpcap, enum cpcap_dai dai,
+			      int samplerate);
 
 static void enable_call_hard(struct cpcap_audio *cpcap)
 {
@@ -587,10 +595,6 @@ static int enable_call(struct snd_soc_component *component, int on)
 	} else {
 		struct snd_soc_pcm_runtime *rt;
 
-		rt = snd_soc_get_pcm_runtime(component->card, "cpcap-voice");
-		printk("num_dai: %d, got runtime %lx\n", component->num_dai, rt);
-		rt = snd_soc_get_pcm_runtime(component->card, "cpcap-voice-1");
-		printk("num_dai: %d, got runtime %lx\n", component->num_dai, rt);
 		rt = snd_soc_get_pcm_runtime(component->card, "40126000.mcbsp-cpcap-voice");
 		printk("num_dai: %d, got runtime %lx\n", component->num_dai, rt);
 
@@ -601,6 +605,8 @@ static int enable_call(struct snd_soc_component *component, int on)
 
 		//cpcap_set_sysclk(cpcap, CPCAP_DAI_VOICE, 0, ???); 
 		cpcap_set_sysclk(cpcap, CPCAP_DAI_VOICE, 1, 19200000);
+		cpcap_set_samprate(cpcap, CPCAP_DAI_VOICE, 8000);
+		
 		cpcap_voice_set_dai_fmt(voice_codec_dai_hack,
 					SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_NB_NF | SND_SOC_DAIFMT_CBM_CFM );
 	}
