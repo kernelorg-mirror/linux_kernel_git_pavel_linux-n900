@@ -585,15 +585,19 @@ static int enable_call(struct snd_soc_component *component, int on)
 	if (!voice_codec_dai_hack) {
 		printk("Don't have pointer to voice codec dai :-(\n");
 	} else {
-		printk("num_dai: %d\n", component->num_dai);
+		struct snd_soc_pcm_runtime *rt;
 
-#if 0
-		struct snd_soc_pcm_runtime *rt = snd_soc_get_pcm_runtime(struct snd_soc_card *card,
-								    const char *dai_link);
+		rt = snd_soc_get_pcm_runtime(component->card, "cpcap-voice");
+		printk("num_dai: %d, got runtime %lx\n", component->num_dai, rt);
+		rt = snd_soc_get_pcm_runtime(component->card, "cpcap-voice-1");
+		printk("num_dai: %d, got runtime %lx\n", component->num_dai, rt);
+		rt = snd_soc_get_pcm_runtime(component->card, "40126000.mcbsp-cpcap-voice");
+		printk("num_dai: %d, got runtime %lx\n", component->num_dai, rt);
 
+		if (rt) {
 		snd_soc_dapm_stream_event(rt, SNDRV_PCM_STREAM_PLAYBACK, SND_SOC_DAPM_STREAM_START);
 		snd_soc_dapm_stream_event(rt, SNDRV_PCM_STREAM_CAPTURE, SND_SOC_DAPM_STREAM_START);
-#endif
+		}
 
 		//cpcap_set_sysclk(cpcap, CPCAP_DAI_VOICE, 0, ???); 
 		cpcap_set_sysclk(cpcap, CPCAP_DAI_VOICE, 1, 19200000);
