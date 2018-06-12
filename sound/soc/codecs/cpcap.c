@@ -316,6 +316,11 @@ static const struct snd_kcontrol_new cpcap_snd_controls[] = {
 		CPCAP_REG_RXSDOA, CPCAP_BIT_MONO_DAC0, 1, 0),
 	SOC_SINGLE("Ext Left Phase Invert Switch",
 		CPCAP_REG_RXEPOA, CPCAP_BIT_MONO_EXT0, 1, 0),
+
+#ifdef NEW
+	SOC_DAPM_PIN_SWITCH("GSM Line Out"),
+	SOC_DAPM_PIN_SWITCH("GSM Line In"),
+#endif
 };
 
 static const char * const cpcap_out_mux_texts[] = {
@@ -1024,6 +1029,12 @@ static const struct snd_soc_dapm_widget cpcap_dapm_widgets[] = {
 	SND_SOC_DAPM_OUTPUT("HSL"),
 	SND_SOC_DAPM_OUTPUT("EMUR"),
 	SND_SOC_DAPM_OUTPUT("EMUL"),
+
+#define NEW
+#ifdef NEW
+	SND_SOC_DAPM_LINE("GSM Line Out", NULL),
+	SND_SOC_DAPM_LINE("GSM Line In", NULL),
+#endif
 };
 
 static const struct snd_soc_dapm_route intercon[] = {
@@ -1166,6 +1177,11 @@ static const struct snd_soc_dapm_route intercon[] = {
 	/* Mic Bias */
 	{"MICL", NULL, "MIC1L Bias"},
 	{"MICR", NULL, "MIC1R Bias"},
+
+#ifdef NEW	
+	{"GSM Line Out", NULL, "Voice TX"},
+	{"Voice RX", NULL, "GSM Line In"},
+#endif
 };
 
 static int cpcap_set_sysclk(struct cpcap_audio *cpcap, enum cpcap_dai dai,
