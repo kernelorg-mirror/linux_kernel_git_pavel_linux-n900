@@ -7,7 +7,7 @@ Documentation/devicetree/bindings/graph.txt .
 Basically, Audio Graph Card property is same as Simple Card.
 see Documentation/devicetree/bindings/sound/simple-card.txt .
 
-Elemens below are same as in Simple-Card.
+Elemens below are same as in Simple Card.
 
 - label
 - widgets
