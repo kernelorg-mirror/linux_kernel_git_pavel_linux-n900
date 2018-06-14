@@ -218,6 +218,7 @@ static struct snd_soc_dai_link speyside_dai[] = {
 		.params = &dsp_codec_params,
 		.ignore_suspend = 1,
 	},
+	/* Inspiration? */
 	{
 		.name = "Baseband",
 		.stream_name = "Baseband",

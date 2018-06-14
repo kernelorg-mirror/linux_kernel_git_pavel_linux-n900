@@ -317,6 +317,9 @@ static const struct snd_kcontrol_new cpcap_snd_controls[] = {
 	SOC_SINGLE("Ext Left Phase Invert Switch",
 		CPCAP_REG_RXEPOA, CPCAP_BIT_MONO_EXT0, 1, 0),
 
+//	SOC_DAPM_PIN_SWITCH("Voice Playback"),
+//	SOC_DAPM_PIN_SWITCH("Voice Capture"),
+	
 #ifdef NEW
 	SOC_DAPM_PIN_SWITCH("GSM Line Out"),
 	SOC_DAPM_PIN_SWITCH("GSM Line In"),
