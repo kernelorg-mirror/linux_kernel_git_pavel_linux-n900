@@ -247,6 +247,8 @@ static int ohci_platform_remove(struct platform_device *dev)
 	struct ohci_platform_priv *priv = hcd_to_ohci_priv(hcd);
 	int clk;
 
+	printk(KERN_CRIT "ohci_platform_remove\n");
+	
 	pm_runtime_get_sync(&dev->dev);
 	usb_remove_hcd(hcd);
 
