@@ -533,7 +533,8 @@ static void cpcap_usb_detect(struct work_struct *work)
 		if (m_voltage > ddata->limit_voltage)
 			m_voltage = ddata->limit_voltage;
 
-		printk("Charging, %d uV, %d uA\n", m_voltage, m_current);
+		if (printk_ratelimit())
+			printk("Charging, %d uV, %d uA\n", m_voltage, m_current);
 		
 		reg_voltage = voltage_to_register(m_voltage);
 		if (reg_voltage < 0) {
