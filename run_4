@@ -1,0 +1,7 @@
+#!/bin/bash
+DD=~/g/ddroid/
+cp arch/arm/boot/zImage $DD/system/etc/kexec/kernel
+cp arch/arm/boot/dts/omap4-droid4-xt894.dtb $DD/system/etc/kexec/devtree
+cd $DD
+make push
+# scp `find . -name "*.ko"` user@usb:/my
