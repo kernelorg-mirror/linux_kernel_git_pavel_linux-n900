@@ -1,6 +1,6 @@
 #
 # Automatically generated file; DO NOT EDIT.
-# Linux/arm 4.18.0-rc2 Kernel Configuration
+# Linux/arm 4.18.0-rc4 Kernel Configuration
 #
 
 #
@@ -2934,7 +2934,7 @@ CONFIG_SND_SDMA_SOC=y
 CONFIG_SND_OMAP_SOC_DMIC=y
 CONFIG_SND_OMAP_SOC_MCBSP=y
 CONFIG_SND_OMAP_SOC_MCPDM=y
-CONFIG_SND_OMAP_SOC_HDMI_AUDIO=y
+# CONFIG_SND_OMAP_SOC_HDMI_AUDIO is not set
 CONFIG_SND_OMAP_SOC_RX51=y
 # CONFIG_SND_OMAP_SOC_N9 is not set
 CONFIG_SND_OMAP_SOC_OMAP_TWL4030=y
