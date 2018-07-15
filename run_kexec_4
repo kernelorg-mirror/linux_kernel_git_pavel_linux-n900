@@ -1,0 +1,3 @@
+#!/bin/bash
+scp arch/arm/boot/zImage-d4 user@usb:/tmp
+ssh user@usb 'sudo kexec -l /tmp/zImage-d4 && echo p1 && sudo kexec -e'
