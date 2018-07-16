@@ -209,8 +209,8 @@ static int pm_dbg_show_counters(struct seq_file *s, void *unused)
 {
 	pwrdm_for_each(pwrdm_dbg_show_counter, s);
 	clkdm_for_each(clkdm_dbg_show_counter, s);
-	cm_per_dump(s);
-	cm_core_dump(s);
+	//cm_per_dump(s);
+	//cm_core_dump(s);
 
 	return 0;
 }
