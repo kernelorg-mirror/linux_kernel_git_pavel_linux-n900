@@ -24,6 +24,8 @@
 #include <linux/mutex.h>
 #include <linux/regmap.h>
 #include <linux/videodev2.h>
+#include <linux/leds.h>
+
 #include <media/i2c/lm3560.h>
 #include <media/v4l2-ctrls.h>
 #include <media/v4l2-device.h>
@@ -412,6 +414,41 @@ static int lm3560_init_device(struct lm3560_flash *flash)
 	return rval;
 }
 
+static struct lm3560_flash *this_flash;
+
+static int lm3560_led_set(struct led_classdev *cdev,
+		      enum led_brightness brightness)
+{
+	int rval;
+
+	struct lm3560_flash *flash = this_flash;
+	
+	if (brightness) {
+		flash->led_mode = V4L2_FLASH_LED_MODE_TORCH;
+	rval = lm3560_mode_ctrl(flash);
+	rval = lm3560_torch_brt_ctrl(flash, 0, LM3560_TORCH_BRT_MIN);
+	rval = lm3560_torch_brt_ctrl(flash, 1, LM3560_TORCH_BRT_MIN);		
+	} else {
+	rval = lm3560_torch_brt_ctrl(flash, 0, 0);
+	rval = lm3560_torch_brt_ctrl(flash, 1, 0);		
+	
+	flash->led_mode = V4L2_FLASH_LED_MODE_NONE;
+	rval = lm3560_mode_ctrl(flash);
+	}
+	return 0;
+}
+
+static enum led_brightness lm3560_led_get(struct led_classdev *cdev)
+{
+	return 123;
+}
+
+static struct led_classdev lm3560_uled = {
+	.name = "lm3560",
+	.brightness_set = lm3560_led_set,
+	.brightness_get = lm3560_led_get,
+};
+
 static int lm3560_probe(struct i2c_client *client,
 			const struct i2c_device_id *devid)
 {
@@ -460,6 +497,9 @@ static int lm3560_probe(struct i2c_client *client,
 		return rval;
 
 	i2c_set_clientdata(client, flash);
+
+	this_flash = flash;
+	printk("LED registered: %d\n", led_classdev_register(NULL, &lm3560_uled));
 
 	return 0;
 }
