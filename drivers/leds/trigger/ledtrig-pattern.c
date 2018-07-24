@@ -136,7 +136,7 @@ static void reset_pattern(struct pattern_trig_data *data,
 	if (led_cdev->pattern_set && led_cdev->pattern_set(led_cdev, data->steps, data->nsteps)) {
 		return;
 	}
-		
+
 	if (!is_sane(data, &brightness)) {
 		led_set_brightness(led_cdev, brightness);
 		return;
