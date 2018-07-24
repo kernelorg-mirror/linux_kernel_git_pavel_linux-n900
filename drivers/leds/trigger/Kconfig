@@ -125,6 +125,16 @@ config LEDS_TRIGGER_CAMERA
 	  This enables direct flash/torch on/off by the driver, kernel space.
 	  If unsure, say Y.
 
+config LEDS_TRIGGER_PATTERN
+	tristate "LED Pattern Trigger"
+	depends on LEDS_TRIGGERS
+	help
+	  This allows LEDs blinking with an arbitrary pattern. Can be useful
+	  on embedded systems with no screen to give out a status code to
+	  a human.
+
+	  If unsure, say N
+
 config LEDS_TRIGGER_PANIC
 	bool "LED Panic Trigger"
 	depends on LEDS_TRIGGERS

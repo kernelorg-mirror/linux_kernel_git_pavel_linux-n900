@@ -51,6 +51,8 @@ static void led_timer_function(struct timer_list *t)
 	unsigned long brightness;
 	unsigned long delay;
 
+	/* FIXME spin_lock(led_cdev->lock); protecting led_cdev->flags? */
+
 	if (!led_cdev->blink_delay_on || !led_cdev->blink_delay_off) {
 		led_set_brightness_nosleep(led_cdev, LED_OFF);
 		clear_bit(LED_BLINK_SW, &led_cdev->work_flags);
