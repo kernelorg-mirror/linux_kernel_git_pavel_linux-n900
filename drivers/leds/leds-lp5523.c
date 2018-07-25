@@ -185,7 +185,7 @@ static void lp5523_load_engine(struct lp55xx_chip *chip)
 	lp5523_wait_opmode_done();
 }
 
-static void lp5523_load_engine_and_select_page(struct lp55xx_chip *chip)
+void lp5523_load_engine_and_select_page(struct lp55xx_chip *chip)
 {
 	enum lp55xx_engine_index idx = chip->engine_idx;
 	static const u8 page_sel[] = {
@@ -380,6 +380,7 @@ static void lp5523_firmware_loaded(struct lp55xx_chip *chip)
 {
 	const struct firmware *fw = chip->fw;
 
+	/* FIXME: is this correct? fw->size is for ascii-encoded firmware... */
 	if (fw->size > LP5523_PROGRAM_LENGTH) {
 		dev_err(&chip->cl->dev, "firmware data size overflow: %zu\n",
 			fw->size);

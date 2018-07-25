@@ -196,25 +196,44 @@ int compile_pattern(struct led_pattern *steps, int len, int repeats, char *res)
 	return res - res_;
 }
 
-static int lp55xx_pattern_set(struct led_classdev *ldev,
+#define LP5523_PROGRAM_LENGTH           32      /* bytes */
+extern void lp5523_load_engine_and_select_page(struct lp55xx_chip *chip);
+#define LP5523_REG_PROG_MEM		0x50
+
+static int lp55xx_pattern_set(struct led_classdev *cdev,
 			      struct led_pattern *pattern,
 			      int len)
 {
-	struct lp55xx_led *led;
-	struct lp55xx_chip *chip;
+	struct lp55xx_led *led = cdev_to_lp55xx_led(cdev);
+	struct lp55xx_chip *chip = led->chip;
+	int i, ret;
 
+	char prog[LP5523_PROGRAM_LENGTH * 4];
+	struct firmware fw;
+	chip->engine_idx = 1;
 
+	fw.size = compile_pattern(pattern, len, 1, prog);
+
+	lp5523_load_engine_and_select_page(chip);
+	for (i = 0; i < LP5523_PROGRAM_LENGTH; i++) {
+		ret = lp55xx_write(chip, LP5523_REG_PROG_MEM + i, prog[i]);
+		if (ret)
+			return -EINVAL;
+	}
+
+	return 0;
 }
 
-static struct led_pattern *lp55xx_pattern_get(struct led_classdev *ldev,
+static struct led_pattern *lp55xx_pattern_get(struct led_classdev *cdev,
 					      int *len)
 {
 	return NULL;
 }
 
-static int lp55xx_pattern_clear(struct led_classdev *ldev)
+static int lp55xx_pattern_clear(struct led_classdev *cdev)
 {
-	struct lp55xx_chip *chip;
+	struct lp55xx_led *led = cdev_to_lp55xx_led(cdev);
+	struct lp55xx_chip *chip = led->chip; /* FIXME */
 
 	if (chip->cfg->run_engine)
 		chip->cfg->run_engine(chip, false);
