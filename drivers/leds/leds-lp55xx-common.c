@@ -158,6 +158,70 @@ static int lp55xx_set_brightness(struct led_classdev *cdev,
 	return cfg->brightness_fn(led);
 }
 
+int compile_pattern(struct led_pattern *steps, int len, int repeats, char *res)
+{
+	int i;
+	int br = 0;
+	char *res_ = res;
+
+	*res++ = 0x9d; // start
+	*res++ = 0x80;
+
+#if 1
+	for (i = 0; i < len; i++) {
+		int n;
+		int b = steps[i].brightness;
+		int t = steps[i].delta_t;
+
+		n = 0x40;
+		if (b < br) {
+			n |= 0x01;
+			b = br - b;
+		} else b = b - br;
+		n |= (0x1f & (t / 40)) << 1;
+    
+		*res++ = n;
+		*res++ = b;
+    
+		br = b;
+	}
+#else
+	*res++ = 0x41;
+	*res++ = 0x00;
+#endif
+#if 0
+	*res++ = 0x0a;
+	*res++ = 0x01;
+#endif
+	return res - res_;
+}
+
+static int lp55xx_pattern_set(struct led_classdev *ldev,
+			      struct led_pattern *pattern,
+			      int len)
+{
+	struct lp55xx_led *led;
+	struct lp55xx_chip *chip;
+
+
+}
+
+static struct led_pattern *lp55xx_pattern_get(struct led_classdev *ldev,
+					      int *len)
+{
+	return NULL;
+}
+
+static int lp55xx_pattern_clear(struct led_classdev *ldev)
+{
+	struct lp55xx_chip *chip;
+
+	if (chip->cfg->run_engine)
+		chip->cfg->run_engine(chip, false);
+
+	return 0;
+}
+
 static int lp55xx_init_led(struct lp55xx_led *led,
 			struct lp55xx_chip *chip, int chan)
 {
@@ -189,6 +253,10 @@ static int lp55xx_init_led(struct lp55xx_led *led,
 
 	led->cdev.brightness_set_blocking = lp55xx_set_brightness;
 	led->cdev.groups = lp55xx_led_groups;
+
+	led->cdev.pattern_set = lp55xx_pattern_set;
+	led->cdev.pattern_get = lp55xx_pattern_get;
+	led->cdev.pattern_clear = lp55xx_pattern_clear;
 
 	printk("Led %d name %s\n", chan, pdata->led_config[chan].name);
 
