@@ -291,6 +291,12 @@ void cpus_read_lock(void)
 }
 EXPORT_SYMBOL_GPL(cpus_read_lock);
 
+int cpus_read_trylock(void)
+{
+	return percpu_down_read_trylock(&cpu_hotplug_lock);
+}
+EXPORT_SYMBOL_GPL(cpus_read_trylock);
+
 void cpus_read_unlock(void)
 {
 	percpu_up_read(&cpu_hotplug_lock);
@@ -2272,6 +2278,8 @@ void __init boot_cpu_init(void)
  */
 void __init boot_cpu_hotplug_init(void)
 {
+#ifdef CONFIG_SMP
 	this_cpu_write(cpuhp_state.booted_once, true);
+#endif
 	this_cpu_write(cpuhp_state.state, CPUHP_ONLINE);
 }
