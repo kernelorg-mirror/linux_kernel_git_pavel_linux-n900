@@ -4,10 +4,6 @@ config PGTABLE_LEVELS
 	range 3 4 if !IA64_PAGE_SIZE_64KB
 	default 3
 
-source "init/Kconfig"
-
-source "kernel/Kconfig.freezer"
-
 menu "Processor type and features"
 
 config IA64
@@ -32,6 +28,7 @@ config IA64
 	select HAVE_ARCH_TRACEHOOK
 	select HAVE_MEMBLOCK
 	select HAVE_MEMBLOCK_NODE_MAP
+	select NO_BOOTMEM
 	select HAVE_VIRT_CPU_ACCOUNTING
 	select ARCH_HAS_DMA_MARK_CLEAN
 	select ARCH_HAS_SG_CHAIN
@@ -369,10 +366,6 @@ config FORCE_CPEI_RETARGET
 	This option it useful to enable this feature on older BIOS's as well.
 	You can also enable this by using boot command line option force_cpei=1.
 
-source "kernel/Kconfig.preempt"
-
-source "mm/Kconfig"
-
 config ARCH_SELECT_MEMORY_MODEL
 	def_bool y
 
@@ -533,8 +526,6 @@ config CRASH_DUMP
 
 source "drivers/firmware/Kconfig"
 
-source "fs/Kconfig.binfmt"
-
 endmenu
 
 menu "Power management and ACPI options"
@@ -575,10 +566,6 @@ endmenu
 
 endif
 
-source "net/Kconfig"
-
-source "drivers/Kconfig"
-
 source "arch/ia64/hp/sim/Kconfig"
 
 config MSPEC
@@ -589,13 +576,3 @@ config MSPEC
 	  If you have an ia64 and you want to enable memory special
 	  operations support (formerly known as fetchop), say Y here,
 	  otherwise say N.
-
-source "fs/Kconfig"
-
-source "arch/ia64/Kconfig.debug"
-
-source "security/Kconfig"
-
-source "crypto/Kconfig"
-
-source "lib/Kconfig"
