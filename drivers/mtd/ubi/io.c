@@ -116,7 +116,7 @@ static int self_check_write(struct ubi_device *ubi, const void *buf, int pnum,
  * o %0 if all the requested data were successfully read;
  * o %UBI_IO_BITFLIPS if all the requested data were successfully read, but
  *   correctable bit-flips were detected; this is harmless but may indicate
- *   that this eraseblock may become bad soon (but do not have to);
+ *   that this eraseblock may become bad soon (but does not have to);
  * o %-EBADMSG if the MTD subsystem reported about data integrity problems, for
  *   example it can be an ECC error in case of NAND; this most probably means
  *   that the data is corrupted;
