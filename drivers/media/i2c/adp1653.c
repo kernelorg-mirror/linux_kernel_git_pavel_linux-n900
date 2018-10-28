@@ -26,6 +26,9 @@
  *
  */
 
+/* FIXME: This should be converted to LEDs class, see for example
+   leds-max77693.c , so that we gain sysfs interface */
+
 #include <linux/delay.h>
 #include <linux/module.h>
 #include <linux/i2c.h>
@@ -34,6 +37,8 @@
 #include <linux/gpio/consumer.h>
 #include <media/i2c/adp1653.h>
 #include <media/v4l2-device.h>
+
+#error Foo.
 
 #define TIMEOUT_MAX		820000
 #define TIMEOUT_STEP		54600
