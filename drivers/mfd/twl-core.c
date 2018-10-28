@@ -1,3 +1,4 @@
+
 /*
  * twl_core.c - driver for TWL4030/TWL5030/TWL60X0/TPS659x0 PM
  * and audio CODEC devices
@@ -90,6 +91,7 @@
 #define TWL4030_BASEADD_KEYPAD		0x00D2
 
 #define TWL5031_BASEADD_ACCESSORY	0x0074 /* Replaces Main Charge */
+#define TWL5031_BASEADD_BCC             0x00AA /* Changed from TWL4030 */
 #define TWL5031_BASEADD_INTERRUPTS	0x00B9 /* Different than TWL4030's
 						  one */
 
@@ -203,6 +205,7 @@ static struct twl_mapping twl4030_map[] = {
 	{ 3, TWL4030_BASEADD_INT },
 
 	{ 2, TWL5031_BASEADD_ACCESSORY },
+	{ 2, TWL5031_BASEADD_BCC },
 	{ 2, TWL5031_BASEADD_INTERRUPTS },
 };
 
@@ -957,6 +960,24 @@ add_children(struct twl4030_platform_data *pdata, unsigned irq_base,
 				/* irq0 = CHG_PRES, irq1 = BCI */
 				irq_base + BCI_PRES_INTR_OFFSET,
 				irq_base + BCI_INTR_OFFSET);
+		if (IS_ERR(child))
+			return PTR_ERR(child);
+	}
+
+	if (IS_ENABLED(CONFIG_CHARGER_TWL5031) && (features & TWL5031)) {
+		child = add_child(TWL5031_MODULE_BCC, "twl5031_bcc",
+				NULL, 0, false,
+				/* irq0 = CHG_PRES, irq1 = BCI */
+				irq_base + BCI_PRES_INTR_OFFSET,
+				irq_base + BCI_INTR_OFFSET);
+		if (IS_ERR(child))
+			return PTR_ERR(child);
+	}
+
+	if (IS_ENABLED(CONFIG_TWL5031_ACI) && (features & TWL5031)) {
+		child = add_child(TWL5031_MODULE_ACCESSORY, "twl5031_aci",
+				pdata->aci, 0, false,
+				irq_base + ACI_INTR_OFFSET, 0);
 		if (IS_ERR(child))
 			return PTR_ERR(child);
 	}
