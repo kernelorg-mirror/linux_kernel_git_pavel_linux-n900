@@ -1,0 +1,50 @@
+Rob:
+
+bluetooth chips have a binding location: bindings/net/bluetooth.
+
+And we already have a WL1273 binding. Plus there's the one for the Nokia
+BT which I think can be TI chips with a different firmware and protocol.
+Is this related?
+
+#
+# See: Rob Herring            Re: [PATCH] dt-bindings: Nokia N9 audio sup
+#
+
+Texas Instruments - wl1273 radio/bluetooth module
+
+Required properties:
+
+- compatible: "ti,wl1273-core"
+- reg: I2C slave address
+- interrupts: The interrupt output from the device.
+- interrupt-parent: The parent interrupt controller.
+- power-gpio: gpio pin to power the device.
+
+Mandatory subnode:
+
+- wl1273radio child: compatible = "ti,wl1273-fm-radio";
+
+Optional subnode:
+
+- wl1273codec child:compatible = "ti,wl1273-codec";
+
+Example:
+
+wl1273core: wl1273core@22 {
+		compatible = "ti,wl1273-core";
+		reg = <0x22>;
+
+		pinctrl-names = "default";
+		pinctrl-0 = <&wl1273_gpio>;
+
+		interrupt-parent = <&gpio2>;
+		interrupts = <11 2>; /* gpio_43, IRQF_TRIGGER_FALLING */
+
+		wl1273radio: wl1273radio {
+			compatible = "ti,wl1273-fm-radio";
+		};
+
+		wl1273codec: wl1273codec {
+			compatible = "ti,wl1273-codec";
+		};
+	};
