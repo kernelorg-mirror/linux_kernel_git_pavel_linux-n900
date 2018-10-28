@@ -8,6 +8,8 @@ OSRAM SFH7770
 Data sheet:
 Not freely available
 
+http://www.rohm.com/products/databook/sensor/pdf/bh1780gli-e.pdf ?
+
 Author:
 Samu Onkalo <samu.p.onkalo@nokia.com>
 
@@ -43,6 +45,8 @@ so that measurement produces about the expected lux value.
 
 SYSFS
 -----
+
+WARNING: Do _NOT_ rely on this API. We'll need to fix it.
 
 chip_id
 	RO - shows detected chip type and version
