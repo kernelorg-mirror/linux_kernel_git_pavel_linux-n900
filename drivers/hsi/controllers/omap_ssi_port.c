@@ -646,6 +646,11 @@ static int ssi_stop_tx(struct hsi_client *cl)
 	dev_dbg(&port->device, "Wake out low %d\n", omap_port->wk_refcount);
 
 	spin_lock_bh(&omap_port->wk_lock);
+	if (!omap_port->wk_refcount) {
+		WARN_ON(1);
+		spin_unlock_bh(&omap_port->wk_lock);
+		return 0;
+	}
 	BUG_ON(!omap_port->wk_refcount);
 	if (--omap_port->wk_refcount) {
 		spin_unlock_bh(&omap_port->wk_lock);
