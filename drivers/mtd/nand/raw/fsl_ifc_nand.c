@@ -699,6 +699,17 @@ static int fsl_ifc_read_page(struct nand_chip *chip, uint8_t *buf,
 	if (ctrl->nand_stat != IFC_NAND_EVTER_STAT_OPC)
 		mtd->ecc_stats.failed++;
 
+	if (ctrl->nand_stat & IFC_NAND_EVTER_STAT_ECCER) {
+		int res;
+
+		if (!oob_required)
+			fsl_ifc_read_buf(mtd, chip->oob_poi, mtd->oobsize);
+
+		res = check_erased_page(chip, buf);
+		return res;
+	}
+
+
 	return nctrl->max_bitflips;
 }
 
