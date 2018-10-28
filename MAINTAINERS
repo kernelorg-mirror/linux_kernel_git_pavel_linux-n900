@@ -136,6 +136,12 @@ Maintainers List (try to look for most precise areas first)
 
 		-----------------------------------
 
+ARM SOC
+M:	Olof Johansson <olof@lixom.net>
+M:	Arnd Bergmann <arnd@arndb.de>
+L:	arm@kernel.org
+S:	Maintained
+
 3C59X NETWORK DRIVER
 M:	Steffen Klassert <klassert@kernel.org>
 L:	netdev@vger.kernel.org
