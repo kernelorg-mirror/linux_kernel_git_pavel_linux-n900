@@ -1,0 +1,41 @@
+Avago APDS990X light sensor
+
+https://docs.broadcom.com/docs/AV02-2867EN
+
+Required properties:
+- compatible: "avago,apds990x"
+- reg: address on the I2C bus
+- interrupts: external interrupt line number
+- vdd-supply: power supply for VDD
+- vled-supply: power supply for LEDA
+- avago,glass-coef: Glass attenuation coefficient. Fixed point, 4096 == 1.00.
+- avago,cf1: Clear channel factor 1. Fixed point, 4096 == 1.00.
+- avago,irf1: IR channel factor 1. Fixed point, 4096 == 1.00.
+- avago,cf2: Clear channel factor 2. Fixed point, 4096 == 1.00.
+- avago,irf2: IR channel factor 2. Fixed point, 4096 == 1.00.
+- avago,df: Device factor. Fixed point, 4096 == 1.00.
+- avago,pdrive: IR current, one of APDS_IRLED_CURR_XXXmA values
+- avago,ppcount: Proximity pulse count
+
+Example (Nokia N9):
+
+	light-sensor@39 {
+		compatible = "avago,apds990x";
+		reg = <0x39>;
+
+		interrupt-parent = <&gpio3>;
+		interrupts = <19 (IRQ_TYPE_EDGE_FALLING | IRQ_TYPE_LEVEL_LOW)>; /* gpio_83 */
+
+		vdd-supply = <&vaux1>;
+		vled-supply = <&vbat>;
+
+		avago,ga	= <168834>;
+		avago,cf1	= <4096>;
+		avago,irf1	= <7824>;
+		avago,cf2	= <877>;
+		avago,irf2	= <1575>;
+		avago,df	= <52>;
+
+		avago,pdrive	= <0x2>; /* APDS_IRLED_CURR_25mA */
+		avago,ppcount	= <5>;
+	};
