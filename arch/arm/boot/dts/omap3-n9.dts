@@ -18,6 +18,32 @@
 	compatible = "nokia,omap3-n9", "ti,omap36xx", "ti,omap3";
 };
 
+&omap3_pmx_core {
+	dsi_pins: pinmux_dsi_pins {
+		pinctrl-single,pins = <
+			OMAP3_CORE1_IOPAD(0x20dc, PIN_OUTPUT | MUX_MODE1) /* dsi_dx0 - data0+ */
+			OMAP3_CORE1_IOPAD(0x20de, PIN_OUTPUT | MUX_MODE1) /* dsi_dy0 - data0- */
+			OMAP3_CORE1_IOPAD(0x20e0, PIN_OUTPUT | MUX_MODE1) /* dsi_dx1 - clk+   */
+			OMAP3_CORE1_IOPAD(0x20e2, PIN_OUTPUT | MUX_MODE1) /* dsi_dy1 - clk-   */
+			OMAP3_CORE1_IOPAD(0x20e4, PIN_OUTPUT | MUX_MODE1) /* dsi_dx2 - data1+ */
+			OMAP3_CORE1_IOPAD(0x20e6, PIN_OUTPUT | MUX_MODE1) /* dsi_dy2 - data1- */
+		>;
+	};
+
+	display_pins: pinmux_display_pins {
+		pinctrl-single,pins = <
+			OMAP3_CORE1_IOPAD(0x20ca, PIN_INPUT | MUX_MODE4) /* gpio 62 - display te */
+			OMAP3_CORE1_IOPAD(0x20fe, PIN_OUTPUT | MUX_MODE4) /* gpio 87 - display reset */
+		>;
+	};
+
+	vibra_gpio: pinmux_vibra_gpio {
+		pinctrl-single,pins = <
+			OMAP3_CORE1_IOPAD(0x21de, PIN_OUTPUT | MUX_MODE4)	/* mcspi2_cs1 -> gpio_182 */
+		>;
+	};
+};
+
 &i2c2 {
 	smia_1: camera@10 {
 		compatible = "nokia,smia";
@@ -36,6 +62,51 @@
 				remote-endpoint = <&csi2a_ep>;
 			};
 		};
+	};
+#if 1
+       apds990x@39 {
+               compatible = "avago,apds990x";
+               reg = <0x39>;
+
+               interrupt-parent = <&gpio3>;
+               interrupts = <19 10>; /* gpio_83, IRQF_TRIGGER_FALLING | IRQF_TRIGGER_LOW */
+
+               Vdd-supply = <&vaux1>;
+               Vled-supply = <&vbat>;
+
+               ga      = <168834>;
+               cf1     = <4096>;
+               irf1    = <7824>;
+               cf2     = <877>;
+               irf2    = <1575>;
+               df      = <52>;
+
+	       pdrive  = /bits/ 8 <2>; /* APDS_IRLED_CURR_25mA */
+	       ppcount  = /bits/ 8 <5>;
+	};
+#endif
+
+	led@32 {
+		compatible = "national,lp5521";
+		reg = <0x32>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&led_pins>;
+		label = "lp5521";
+		clock-mode = /bits/ 8 <2>; /* LP55XX_CLOCK_EXT */
+		enable-gpio = <&gpio2 9 GPIO_ACTIVE_HIGH>; /* 41 */
+
+		chan0 {
+			led-cur = /bits/ 8 <0x32>;
+			max-cur = /bits/ 8 <0x82>;
+			linux,default-trigger = "heartbeat";
+		};
+	};
+};
+
+&i2c3 {
+	ak8975@0f {
+		compatible = "asahi-kasei,ak8975";
+		reg = <0x0f>;
 	};
 };
 
@@ -81,8 +152,91 @@
 	st,max-limit-z = <46>;
 };
 
+&dss {
+	status = "ok";
+
+	vdda_video-supply = <&vdac>;
+};
+
+&twl {
+	twl_audio: audio {
+		compatible = "ti,twl4030-audio";
+		ti,enable-vibra = <1>;
+	};
+};
+
 &twl_keypad {
 	linux,keymap = < MATRIX_KEY(6, 8, KEY_VOLUMEUP)
 			 MATRIX_KEY(7, 8, KEY_VOLUMEDOWN)
 			 >;
+};
+
+&dsi {
+	status = "ok";
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&dsi_pins>;
+
+	vdd-supply = <&vpll2>;
+
+	port {
+		dsi_out_ep: endpoint {
+			remote-endpoint = <&lcd0_in>;
+			lanes = <2 3 4 5 0 1>;
+		};
+	};
+
+	lcd0: display {
+		compatible = "nokia,pyrenees", "panel-dsi-cm";
+		label = "lcd0";
+
+		pinctrl-names = "default";
+		pinctrl-0 = <&display_pins>;
+
+		vpnl-supply = <&vmmc2>;
+		vddi-supply = <&vio>;
+
+		reset-gpios = <&gpio3 23 GPIO_ACTIVE_HIGH>;	/* 87 */
+		te-gpios = <&gpio2 30 GPIO_ACTIVE_HIGH>;	/* 62 */
+
+		width-mm = <48>; /* 48.240 mm */
+		height-mm = <87>; /* 86.832 mm */
+
+		panel-timing {
+			clock-frequency = <0>;          /* Calculated by dsi */
+
+			hback-porch = <2>;
+			hactive = <480>;
+			hfront-porch = <0>;
+			hsync-len = <2>;
+
+			vback-porch = <1>;
+			vactive = <864>;
+			vfront-porch = <0>;
+			vsync-len = <1>;
+
+			hsync-active = <0>;
+			vsync-active = <0>;
+			de-active = <1>;
+			pixelclk-active = <1>;
+
+		};
+
+		port {
+			lcd0_in: endpoint {
+				remote-endpoint = <&dsi_out_ep>;
+			};
+		};
+	};
+};
+
+&mcspi2 {
+	vibra@0 {
+		compatible = "nokia,vibra-spi";
+		spi-max-frequency = <750000>;
+		reg = <0>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&vibra_gpio>;
+		enable-gpio = <&gpio6 22 GPIO_ACTIVE_HIGH>; /* gpio_182 */
+	};
 };
