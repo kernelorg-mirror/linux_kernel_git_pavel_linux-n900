@@ -11,10 +11,10 @@ Optional properties:
 - upisemi,dark-ths: array of 8 elements containing 16-bit thresholds (adc
                     counts) corresponding to every scale.
 
-- upisemi,upper-dark-gain: 8-bit dark gain compensation factor(4 int and 4
+- upisemi,upper-dark-gain: 8-bit dark gain compensation factor (4 int and 4
                            fractional bits - Q4.4) applied when light > threshold
 
-- upisemi,lower-dark-gain: 8-bit dark gain compensation factor(4 int and 4
+- upisemi,lower-dark-gain: 8-bit dark gain compensation factor (4 int and 4
                            fractional bits - Q4.4) applied when light < threshold
 
 - upisemi,continuous: This chip has two power modes: one-shot (chip takes one
