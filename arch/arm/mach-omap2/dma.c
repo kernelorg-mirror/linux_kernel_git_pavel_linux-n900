@@ -118,6 +118,10 @@ static void omap2_show_dma_caps(void)
 	u8 revision = dma_read(REVISION, 0) & 0xff;
 	printk(KERN_INFO "OMAP DMA hardware revision %d.%d\n",
 				revision >> 4, revision & 0xf);
+       {
+              extern void iam_alive(void);
+	      //iam_alive();
+      }
 }
 
 static unsigned configure_dma_errata(void)
