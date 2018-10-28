@@ -51,6 +51,18 @@ config SND_OMAP_SOC_RX51
 	  Say Y if you want to add support for SoC audio on Nokia N900
 	  cellphone.
 
+config SND_OMAP_SOC_N9
+	tristate "SoC Audio support for Nokia N9/N950"
+	depends on SND_OMAP_SOC && ARM && I2C
+	select SND_OMAP_SOC_MCBSP
+	select SND_SOC_TWL4030
+	select SND_SOC_TLV320DAC33
+	select SND_SOC_TPA6130A2
+	select SND_SOC_WL1273 if MFD_WL1273_CORE
+	depends on GPIOLIB
+	help
+	  Say Y if you want to add support for SoC audio on Nokia N9/N950.
+
 config SND_OMAP_SOC_AMS_DELTA
 	tristate "SoC Audio support for Amstrad E3 (Delta) videophone"
 	depends on SND_SDMA_SOC && MACH_AMS_DELTA && TTY
