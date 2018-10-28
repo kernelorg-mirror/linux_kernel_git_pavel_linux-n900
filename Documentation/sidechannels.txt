@@ -1,0 +1,29 @@
+
+Pandora's box has been opened.
+
+Around 1995, CPU manufacturers starting implementing black magic into their CPUs. It makes our computers faster, but at a cost. Observers on same computer can now determine what other programs on same computer are doing. (*)
+
+Your code no longer looks like
+
+     if (this)
+     	that();
+
+It now is
+
+   magic();
+   if (this) {
+      magic();
+      that();
+   }
+
+Observers on the same system may be able to tell which magic()
+commands your program is executing -- so they can probably tell if
+this is 0 or not. (**)
+
+
+
+
+
+(*) We call this side-channels. Usually level 1 cache is usable side-channel, but there's no other cache levels could not be used. Main memory has row activation "feature" which can acts as a side-channel, too. For systems with hyperthreading (running more than one thread on physical CPU core), observer running on same physical cpu can theoretically time which cpu units are used.
+
+(**) This has been observed on Android; separate application can tell if user is typing regular letter or space / enter / backspace, without using any bugs in the operating system.
