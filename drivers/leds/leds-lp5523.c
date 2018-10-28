@@ -185,7 +185,7 @@ static void lp5523_load_engine(struct lp55xx_chip *chip)
 	lp5523_wait_opmode_done();
 }
 
-static void lp5523_load_engine_and_select_page(struct lp55xx_chip *chip)
+void lp5523_load_engine_and_select_page(struct lp55xx_chip *chip)
 {
 	enum lp55xx_engine_index idx = chip->engine_idx;
 	static const u8 page_sel[] = {
@@ -380,6 +380,7 @@ static void lp5523_firmware_loaded(struct lp55xx_chip *chip)
 {
 	const struct firmware *fw = chip->fw;
 
+	/* FIXME: is this correct? fw->size is for ascii-encoded firmware... */
 	if (fw->size > LP5523_PROGRAM_LENGTH) {
 		dev_err(&chip->cl->dev, "firmware data size overflow: %zu\n",
 			fw->size);
@@ -800,6 +801,26 @@ static ssize_t store_master_fader_leds(struct device *dev,
 leave:
 	mutex_unlock(&chip->lock);
 	return ret;
+}
+
+int lp5523_rgb_brightness(struct lp55xx_led *led, struct led_rgb r)
+{
+	struct lp55xx_chip *chip = led->chip;
+	int ret;
+
+	mutex_lock(&chip->lock);
+	r.red >>= 24;
+	r.green >>= 24;
+	r.blue >>= 24;	
+	//printk("RGB brightness %d %d %d\n", r.red, r.green, r.blue);
+	ret = lp55xx_write(chip, LP5523_REG_LED_PWM_BASE + led->chan_nr, r.red);
+	if (!ret)
+		lp55xx_write(chip, LP5523_REG_LED_PWM_BASE + led->chan_nr - 1, r.green);
+	if (!ret)
+		lp55xx_write(chip, LP5523_REG_LED_PWM_BASE + led->chan_nr - 2, r.blue);
+	mutex_unlock(&chip->lock);
+	return ret;
+
 }
 
 static int lp5523_led_brightness(struct lp55xx_led *led)
