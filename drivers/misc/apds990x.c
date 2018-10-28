@@ -33,6 +33,8 @@
 #include <linux/wait.h>
 #include <linux/slab.h>
 #include <linux/platform_data/apds990x.h>
+#include <linux/gpio.h>
+#include <linux/of_gpio.h>
 
 /* Register map */
 #define APDS990X_ENABLE	 0x00 /* Enable of states and interrupts */
@@ -1065,11 +1067,79 @@ static const struct attribute_group apds990x_attribute_group[] = {
 	{.attrs = sysfs_attrs_ctrl },
 };
 
+#ifdef CONFIG_OF
+static const int apds990x_parse_dt(struct device *dev,
+				struct apds990x_platform_data *pdata)
+{
+	struct device_node *np = dev->of_node;
+	int res;
+
+	if (!np)
+		return -EINVAL;
+
+	res = of_property_read_s32(np, "ga", &pdata->cf.ga);
+	if (res < 0) {
+		dev_err(dev, "Failed to retrieve ga from device tree\n");
+		return -EINVAL;
+	}
+
+	res = of_property_read_s32(np, "cf1", &pdata->cf.cf1);
+	if (res < 0) {
+		dev_err(dev, "Failed to retrieve cf1 from device tree\n");
+		return -EINVAL;
+	}
+
+	res = of_property_read_s32(np, "irf1", &pdata->cf.irf1);
+	if (res < 0) {
+		dev_err(dev, "Failed to retrieve irf1 from device tree\n");
+		return -EINVAL;
+	}
+
+	res = of_property_read_s32(np, "cf2", &pdata->cf.cf2);
+	if (res < 0) {
+		dev_err(dev, "Failed to retrieve cf2 from device tree\n");
+		return -EINVAL;
+	}
+
+	res = of_property_read_s32(np, "irf2", &pdata->cf.irf2);
+	if (res < 0) {
+		dev_err(dev, "Failed to retrieve irf2 from device tree\n");
+		return -EINVAL;
+	}
+
+	res = of_property_read_s32(np, "df", &pdata->cf.df);
+	if (res < 0) {
+		dev_err(dev, "Failed to retrieve irf1 from device tree\n");
+		return -EINVAL;
+	}
+
+	res = of_property_read_u8(np, "pdrive", &pdata->pdrive);
+	if (res < 0) {
+		dev_err(dev, "Failed to retrieve pdrive from device tree\n");
+		return -EINVAL;
+	}
+
+	res = of_property_read_u8(np, "ppcount", &pdata->ppcount);
+	if (res < 0) {
+		dev_err(dev, "Failed to retrieve ppcount from device tree\n");
+		return -EINVAL;
+	}
+
+	return 0;
+}
+#else
+static const int apds990x_parse_dt(struct device *dev,
+				struct apds990x_platform_data *pdata)
+{
+	return -EINVAL;
+}
+#endif
+
 static int apds990x_probe(struct i2c_client *client,
 				const struct i2c_device_id *id)
 {
 	struct apds990x_chip *chip;
-	int err;
+	int err = 0;
 
 	chip = kzalloc(sizeof *chip, GFP_KERNEL);
 	if (!chip)
@@ -1081,6 +1151,16 @@ static int apds990x_probe(struct i2c_client *client,
 	init_waitqueue_head(&chip->wait);
 	mutex_init(&chip->mutex);
 	chip->pdata	= client->dev.platform_data;
+
+	if (chip->pdata == NULL) {
+		chip->pdata = devm_kzalloc(&client->dev, sizeof(*chip->pdata),
+									GFP_KERNEL);
+		if (!chip->pdata)
+			return -ENOMEM;
+		err = apds990x_parse_dt(&client->dev, chip->pdata);
+	}
+	if (err < 0)
+		return err;
 
 	if (chip->pdata == NULL) {
 		dev_err(&client->dev, "platform data is mandatory\n");
@@ -1183,6 +1263,7 @@ static int apds990x_probe(struct i2c_client *client,
 			client->irq);
 		goto fail5;
 	}
+
 	return err;
 fail5:
 	sysfs_remove_group(&chip->client->dev.kobj,
@@ -1282,10 +1363,21 @@ static const struct dev_pm_ops apds990x_pm_ops = {
 			NULL)
 };
 
+#ifdef CONFIG_OF
+static const struct of_device_id apds990x_of_match[] = {
+	{.compatible = "avago,apds990x" },
+	{}
+};
+MODULE_DEVICE_TABLE(of, apds990x_of_match);
+#endif
+
 static struct i2c_driver apds990x_driver = {
 	.driver	 = {
 		.name	= "apds990x",
 		.pm	= &apds990x_pm_ops,
+#ifdef CONFIG_OF
+		.of_match_table	= of_match_ptr(apds990x_of_match),
+#endif
 	},
 	.probe	  = apds990x_probe,
 	.remove	  = apds990x_remove,
