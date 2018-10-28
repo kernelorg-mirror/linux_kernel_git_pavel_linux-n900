@@ -8,6 +8,9 @@
  *
  * This file is part of the Inventra Controller Driver for Linux.
  */
+
+#define DEBUG
+
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/sched.h>
@@ -95,10 +98,12 @@ static void omap2430_musb_set_vbus(struct musb *musb, int is_on)
 	}
 	musb_writeb(musb->mregs, MUSB_DEVCTL, devctl);
 
+#if 0
 	dev_dbg(musb->controller, "VBUS %s, devctl %02x "
 		/* otg %3x conf %08x prcm %08x */ "\n",
 		usb_otg_state_string(musb->xceiv->otg->state),
 		musb_readb(musb->mregs, MUSB_DEVCTL));
+#endif
 }
 
 static inline void omap2430_low_level_exit(struct musb *musb)
@@ -162,7 +167,7 @@ static void omap_musb_set_mailbox(struct omap2430_glue *glue)
 		break;
 
 	case MUSB_VBUS_VALID:
-		dev_dbg(musb->controller, "VBUS Connect\n");
+		//dev_dbg(musb->controller, "VBUS Connect\n");
 
 		musb->xceiv->otg->state = OTG_STATE_B_IDLE;
 		musb->xceiv->last_event = USB_EVENT_VBUS;
@@ -171,7 +176,7 @@ static void omap_musb_set_mailbox(struct omap2430_glue *glue)
 
 	case MUSB_ID_FLOAT:
 	case MUSB_VBUS_OFF:
-		dev_dbg(musb->controller, "VBUS Disconnect\n");
+		//dev_dbg(musb->controller, "VBUS Disconnect\n");
 
 		musb->xceiv->last_event = USB_EVENT_NONE;
 		if (musb->gadget_driver)
