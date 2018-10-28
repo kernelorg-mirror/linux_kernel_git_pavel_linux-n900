@@ -1,0 +1,32 @@
+* Nokia N9/N950 audio setup
+
+Required properties:
+- compatible: "nokia,n9-audio"
+
+- nokia,twl4030-cpu-dai: phandle for the McBSP node connected to TWL4030
+- nokia,tlv320dac33-cpu-dai: phandle for the McBSP node connected to TLV320DAC33
+- nokia,wl1273-cpu-dai: phandle for the McBSP node connected to WL1273
+
+- nokia,twl4030-codec: phandle for the TWL4030 codec
+- nokia,tlv320dac33-codec: phandle for the TLV320DAC33 codec
+- nokia,wl1273-codec: phandle for the WL1273 codec
+- nokia,headphone-amplifier: phandle for the TPA6130A2 node
+
+- nokia,speaker-amplifier-gpios: GPIO for speaker amplifier
+
+Example:
+
+sound: n9-audio {
+	compatible = "nokia,n9-audio";
+
+	nokia,twl4030-cpu-dai = <&mcbsp3>;
+	nokia,tlv320dac33-cpu-dai = <&mcbsp2>;
+	nokia,wl1273-cpu-dai = <&mcbsp4>;
+
+	nokia,twl4030-codec = <&twl4030_audio>;
+	nokia,tlv320dac33-codec = <&tlv320dac33>;
+	nokia,wl1273-codec = <&wl1273codec>;
+	nokia,headphone-amplifier = <&tpa6140a2>;
+
+	nokia,speaker-amplifier-gpios = <&twl_gpio 7 GPIO_ACTIVE_HIGH>;
+};
