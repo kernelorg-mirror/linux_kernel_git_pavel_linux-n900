@@ -26,13 +26,18 @@
  */
 static u64 intel_perfmon_event_map[PERF_COUNT_HW_MAX] __read_mostly =
 {
+	/*                                          __XX event num
+						    XX__ umask value ?
+          See http://www.intel.com/content/dam/www/public/us/en/documents/manuals/64-ia-32-architectures-software-developer-system-programming-manual-325384.pdf
+	*/
 	[PERF_COUNT_HW_CPU_CYCLES]		= 0x003c,
 	[PERF_COUNT_HW_INSTRUCTIONS]		= 0x00c0,
 	[PERF_COUNT_HW_CACHE_REFERENCES]	= 0x4f2e,
 	[PERF_COUNT_HW_CACHE_MISSES]		= 0x412e,
 	[PERF_COUNT_HW_BRANCH_INSTRUCTIONS]	= 0x00c4,
 	[PERF_COUNT_HW_BRANCH_MISSES]		= 0x00c5,
-	[PERF_COUNT_HW_BUS_CYCLES]		= 0x013c,
+	[PERF_COUNT_HW_BUS_CYCLES]		= 0xc06f, /* Non halted bus cycles: 0x013c */
+	/* Hmm. manual says event 0x70, mask 0xc0? */
 	[PERF_COUNT_HW_REF_CPU_CYCLES]		= 0x0300, /* pseudo-encoding */
 };
 
