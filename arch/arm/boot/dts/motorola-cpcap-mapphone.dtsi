@@ -121,6 +121,8 @@
 			compatible = "motorola,cpcap-led-red";
 			vdd-supply = <&sw5>;
 			label = "status-led:red";
+
+			linux,default-trigger = "heartbeat";
 		};
 
 		led_green: led-green {
@@ -145,6 +147,8 @@
 			compatible = "motorola,cpcap-led-cp";
 			vdd-supply = <&sw5>;
 			label = "shift-key-light";
+
+			linux,default-trigger = "heartbeat";
 		};
 	};
 };
