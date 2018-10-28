@@ -16,6 +16,8 @@
  *   PWM driver / controller, using the OMAP's dual-mode timers.
  */
 
+#define DEBUG
+
 #include <linux/clk.h>
 #include <linux/err.h>
 #include <linux/kernel.h>
@@ -251,9 +253,13 @@ static int pwm_omap_dmtimer_probe(struct platform_device *pdev)
 	u32 v;
 	int ret = 0;
 
+	printk("dmtimer_probe\n");
+
 	timer = of_parse_phandle(np, "ti,timers", 0);
 	if (!timer)
 		return -ENODEV;
+
+	printk("dmtimer_probe: have timer\n");
 
 	timer_pdev = of_find_device_by_node(timer);
 	if (!timer_pdev) {
@@ -295,8 +301,11 @@ static int pwm_omap_dmtimer_probe(struct platform_device *pdev)
 		goto put;
 	}
 
+	printk("dmtimer: have timer-pwm\n");
+
 	dm_timer = pdata->request_by_node(timer);
 	if (!dm_timer) {
+		printk("dmtimer: deffering -- no timer\n");		
 		ret = -EPROBE_DEFER;
 		goto put;
 	}
@@ -306,6 +315,7 @@ put:
 	if (ret < 0)
 		return ret;
 
+	printk("dmtimer: allocating\n");
 	omap = devm_kzalloc(&pdev->dev, sizeof(*omap), GFP_KERNEL);
 	if (!omap) {
 		pdata->free(dm_timer);
@@ -339,6 +349,8 @@ put:
 
 	mutex_init(&omap->mutex);
 
+	printk("dmtimer: registering pwm\n");
+
 	ret = pwmchip_add(&omap->chip);
 	if (ret < 0) {
 		dev_err(&pdev->dev, "failed to register PWM\n");
@@ -347,6 +359,7 @@ put:
 	}
 
 	platform_set_drvdata(pdev, omap);
+	printk("dmtimer: all good\n");
 
 	return 0;
 }
