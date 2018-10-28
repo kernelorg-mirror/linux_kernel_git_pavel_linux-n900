@@ -237,6 +237,7 @@ ENTRY(secondary_startup_64)
 	 */
 	pushq	$.Lafter_lret	# put return address on stack for unwinder
 	xorl	%ebp, %ebp	# clear frame pointer
+		# write to low 32 bits clears high 32 bits, too
 	movq	initial_code(%rip), %rax
 	pushq	$__KERNEL_CS	# set correct cs
 	pushq	%rax		# target address in negative space

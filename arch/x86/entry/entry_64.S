@@ -42,6 +42,11 @@
 
 #include "calling.h"
 
+/*
+ * Write to low 32 bits clears high 32 bits, too, and is faster on
+ * some CPUs.
+ */
+
 .code64
 .section .entry.text, "ax"
 
