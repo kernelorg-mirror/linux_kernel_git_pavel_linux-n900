@@ -39,6 +39,14 @@
 		enable-active-high;
 	};
 
+	vbat: fixedregulator1 {
+    		      compatible = "regulator-fixed";
+		      regulator-name = "VBAT";
+		      regulator-min-microvolt = <3700000>;
+		      regulator-max-microvolt = <3700000>; 
+		       regulator-boot-on; 
+	};
+
 	vwlan_fixed: fixedregulator2 {
 		compatible = "regulator-fixed";
 		regulator-name = "VWLAN";
@@ -53,9 +61,8 @@
 		heartbeat {
 			label = "debug::sleep";
 			gpios = <&gpio3 28 GPIO_ACTIVE_HIGH>;  /* gpio92 */
-			linux,default-trigger = "default-on";
 			pinctrl-names = "default";
-			pinctrl-0 = <&debug_leds>;
+			pinctrl-0 = <&led_pins>;
 		};
 	};
 
@@ -64,6 +71,69 @@
 		compatible = "fixed-clock";
 		#clock-cells = <0>;
 		clock-frequency = <38400000>;
+	};
+
+	eci: eci {
+		compatible = "nokia,eci";
+	};
+
+	sound2: n9-audio {
+		compatible = "simple-audio-card";
+		simple-audio-card,name = "N9 Audio";
+
+		simple-audio-card,dai-link@0 {
+			cpu {
+	                          sound-dai = <&mcbsp2>;
+			};
+			codec {
+	          	         sound-dai = <&tlv320dac33>;
+		        };
+  	        };
+
+		simple-audio-card,dai-link@1 {
+			cpu {
+	                          sound-dai = <&mcbsp3>;
+			};
+			codec {
+	          	         sound-dai = <&twl4030_audio>;
+		        };
+  	        };
+		simple-audio-card,dai-link@2 {
+			cpu {
+	                          sound-dai = <&mcbsp4>;
+			};
+			codec {
+	          	         sound-dai = <&wl1273codec>;
+		        };
+  	        };
+
+	/* Need to port:
+		pinctrl-names="default";
+		pinctrl-0 = <&wl1273_fm_en_gpio>;
+
+		nokia,headphone-amplifier = <&tpa6140a2>;
+		wl1273-power-gpios = <&gpio6 18 GPIO_ACTIVE_HIGH>;
+		speaker-amplifier-gpios = <&twl_gpio 7 GPIO_ACTIVE_HIGH>;
+	*/	
+	};
+
+	sound: n9-audio {
+		compatible = "nokia,n9-audio";
+
+		pinctrl-names="default";
+		pinctrl-0 = <&wl1273_fm_en_gpio>;
+
+		nokia,twl4030-cpu-dai = <&mcbsp3>;
+		nokia,tlv320dac33-cpu-dai = <&mcbsp2>;
+		nokia,wl1273-cpu-dai = <&mcbsp4>;
+
+		nokia,twl4030-codec = <&twl4030_audio>;
+		nokia,tlv320dac33-codec = <&tlv320dac33>;
+		nokia,wl1273-codec = <&wl1273codec>;
+		nokia,headphone-amplifier = <&tpa6140a2>;
+
+		wl1273-power-gpios = <&gpio6 18 GPIO_ACTIVE_HIGH>;
+		speaker-amplifier-gpios = <&twl_gpio 7 GPIO_ACTIVE_HIGH>;
 	};
 };
 
@@ -75,9 +145,10 @@
 		>;
 	};
 
-	debug_leds: pinmux_debug_led_pins {
+	led_pins: pinmux_led_pins {
 		pinctrl-single,pins = <
 			OMAP3_CORE1_IOPAD(0x2108, PIN_OUTPUT | MUX_MODE4)       /* dss_data22.gpio_92 */
+			OMAP3_CORE1_IOPAD(0x2088, PIN_OUTPUT | MUX_MODE4)       /* gpmc_a8.gpio_41 -> RGB_EN */
 		>;
 	};
 
@@ -141,12 +212,53 @@
 			OMAP3_CORE1_IOPAD(0x217a, PIN_INPUT | MUX_MODE0)		/* uart2_rx */
 		>;
 	};
+
+	als_ps_gpio: pinmux_als_ps_gpio {
+		     pinctrl-single,pins = <
+		     			   OMAP3_CORE1_IOPAD(0x20f6, PIN_INPUT | MUX_MODE4)	/* dss_data13.gpio_83 -> APDS990X/BHSFH IRQ */
+		     >;
+	};
+
+
+	audio_gpio: pinmux_audio_gpio {
+		pinctrl-single,pins = <
+			OMAP3_CORE1_IOPAD(0x20b2, PIN_INPUT  | MUX_MODE4)	/* gpmc_ncs2.gpio_53 -> DAC33_INT */
+			OMAP3_CORE1_IOPAD(0x20c6, PIN_OUTPUT | MUX_MODE4)	/* gpmc_nbe0_cle.gpio_60 -> CODEC_RST */
+		>;
+	};
+
+	wl1273_fm_en_gpio: pinmux_wl1273_fm_en_gpio {
+		pinctrl-single,pins = <
+			OMAP3_CORE1_IOPAD(0x21d6, PIN_OUTPUT | MUX_MODE4)	/* mcspi2_clk.gpio_178 -> FM_EN */
+		>;
+	};
+
+	wl1273_gpio: pinmux_wl1273_gpio {
+		pinctrl-single,pins = <
+			OMAP3_CORE1_IOPAD(0x208c, PIN_INPUT  | MUX_MODE4)	/* gpmc_a10.gpio_43 -> FM_INTX */
+		>;
+	};
+
+	tvout_en_gpio: pinmux_tvout_en_gpio {
+		pinctrl-single,pins = <
+			OMAP3_CORE1_IOPAD(0x2086, PIN_INPUT  | MUX_MODE4)	/* gpmc_a7.gpio_40 -> TVOUT_EN */
+		>;
+	};
 };
+
+
 
 &omap3_pmx_core2 {
 	modem_pins2: pinmux_modem_core2_pins {
 		pinctrl-single,pins = <
 			OMAP3630_CORE2_IOPAD(0x25ec, PIN_OUTPUT | MUX_MODE4)         /* gpio_23 (cmt_en) */
+		>;
+	};
+
+	ts_pins: pinmux_ts_pins {
+		pinctrl-single,pins = <
+			OMAP3_CORE1_IOPAD(0x20c8, PIN_INPUT  | MUX_MODE4)	/* gpmc_nbe1.gpio_61 -> TINTX */
+			OMAP3_CORE1_IOPAD(0x20f2, PIN_OUTPUT | MUX_MODE4)	/* dss_data11.gpio_81 -> TRESX */
 		>;
 	};
 };
@@ -163,12 +275,40 @@
 
 /include/ "twl4030.dtsi"
 
+&charger {
+	compatible =  "ti,twl5031-bcc";
+};
+
 &twl {
 	compatible = "ti,twl5031";
 
 	twl_power: power {
 		compatible = "ti,twl4030-power";
 		ti,use_poweroff;
+	};
+
+	twl4030_audio: audio {
+		compatible = "ti,twl4030-audio";
+		codec {
+			ti,ramp_delay_value = <2>;
+			ti,offset_cncl_path = <0x20>; //TWL4030_OFFSET_CNCL_SEL_ARX2
+		};
+	};
+	
+	twl5031_aci: aci {
+		compatible = "ti,twl5031-aci";
+
+		pinctrl-names="default";
+		pinctrl-0 = <&tvout_en_gpio>;
+
+		v28-supply = <&vaux1>;
+
+		interrupts = <6>;
+
+		tvout_en_gpio = <&gpio2 8 GPIO_ACTIVE_HIGH>; /* gpio_43 */
+		jack_gpio = <&twl_gpio 0 GPIO_ACTIVE_HIGH>;
+
+		avplugdet_plugged = <1>; /* AVPLUGDET_WHEN_PLUGGED_HIGH */
 	};
 };
 
@@ -266,6 +406,28 @@
 &i2c2 {
 	clock-frequency = <400000>;
 
+	tlv320dac33: audio-codec@19 {
+		compatible = "ti,tlv320dac33";
+		reg = <0x19>;
+
+		pinctrl-names = "default";
+		pinctrl-0 = <&audio_gpio>;
+
+		interrupt-parent = <&gpio2>;
+		interrupts = <21 0>; /* gpio_53, IRQF_TRIGGER_RISING */
+		reset-gpios = <&gpio2 28 0>; /* gpio_60 */
+
+		ti,keep-bclk;
+		ti,burst-bclkdiv = <3>;
+	};
+
+	tpa6140a2: tpa6140a2@60 {
+		compatible = "ti,tpa6140a2";
+		reg = <0x60>;
+
+		AVdd-supply = <&vbat>;
+	};
+
 	as3645a@30 {
 		#address-cells = <1>;
 		#size-cells = <0>;
@@ -283,6 +445,39 @@
 			led-max-microamp = <10000>;
 		};
 	};
+
+	bq27521: bq27521@55 {
+		compatible = "ti,bq27521";
+		reg = <0x55>;
+	};
+
+
+	bq24153@6b {
+		compatible = "ti,bq24153";
+		reg = <0x6b>;
+
+               ti,current-limit = <100>;
+		ti,weak-battery-voltage = <3400>;
+		ti,battery-regulation-voltage = <4000>; /* FIXME: 4200 */
+		ti,charge-current = <500>; /* FIXME: 650 */
+		ti,termination-current = <100>;
+
+		ti,resistor-sense = <68>;
+		ti,usb-charger-detection = <&usb_otg_hs>; /* Hmm, probably wrong? */
+	};
+
+	touchscreen@4b {
+		compatible = "atmel,maxtouch";
+		reg = <0x4b>;
+		interrupt-parent = <&gpio2>;
+		interrupts = <29 2>; /* gpio_61, IRQF_TRIGGER_FALLING */
+		reset-gpios = <&gpio3 17 0>; /* gpio 81 */
+		vdd-supply = <&vio>; /* unused, fixme: needs to be on for operation, and driver does not support it */
+		avdd-supply = <&vaux1>; /* unused */
+		atmel,suspend-mode = <2>; /* MXT_SUSPEND_REGULATOR */ /* unused */
+		atmel,cfg_name = "RM-696_Pyrenees_SMD_V1_6.raw"; /* unused */
+		// atmel,cfg_name = "RM-680_Himalaya_AUO_V1_1.raw";
+	};
 };
 
 &i2c3 {
@@ -298,7 +493,7 @@
 		pinctrl-names = "default";
 		pinctrl-0 = <&accelerator_pins>;
 
-                interrupts-extended = <&gpio6 20 IRQ_TYPE_EDGE_FALLING>, <&gpio6 21 IRQ_TYPE_EDGE_FALLING>; /* 180, 181 */
+               interrupts-extended = <&gpio6 20 IRQ_TYPE_EDGE_FALLING>, <&gpio6 21 IRQ_TYPE_EDGE_FALLING>; /* 180, 181 */
 
 		/* click flags */
 		st,click-single-x;
@@ -334,6 +529,37 @@
 		st,wu-duration-1 = <8>;
 		st,wu-duration-2 = <8>;
 	};
+
+	wl1273core: wl1273core@22 {
+		compatible = "ti,wl1273-core";
+		reg = <0x22>;
+
+		pinctrl-names = "default";
+		pinctrl-0 = <&wl1273_gpio>;
+
+		interrupt-parent = <&gpio2>;
+		interrupts = <11 2>; /* gpio_43, IRQF_TRIGGER_FALLING */
+
+		wl1273radio: wl1273radio {
+			compatible = "ti,wl1273-fm-radio";
+		};
+
+		wl1273codec: wl1273codec {
+			compatible = "ti,wl1273-codec";
+		};
+	};
+};
+
+&mcbsp2 {
+	status = "ok";
+};
+
+&mcbsp3 {
+	status = "ok";
+};
+
+&mcbsp4 {
+	status = "ok";
 };
 
 &mmc1 {
