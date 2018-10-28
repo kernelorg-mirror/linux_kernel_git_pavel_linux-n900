@@ -170,6 +170,28 @@ static int wl1273_fm_set_volume(struct wl1273_core *core, unsigned int volume)
 	return 0;
 }
 
+static struct wl1273_fm_platform_data *
+wl1273_core_of_probe(struct device *dev)
+{
+	struct device_node *np = dev->of_node;
+	struct wl1273_fm_platform_data *pdata;
+	struct device_node *child;
+
+
+	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
+	if (!pdata)
+		return ERR_PTR(-ENOMEM);
+
+	for_each_child_of_node(np, child) {
+		if (of_device_is_compatible(child, "ti,wl1273-fm-radio"))
+			pdata->children |= WL1273_RADIO_CHILD;
+		if (of_device_is_compatible(child, "ti,wl1273-codec"))
+			pdata->children |= WL1273_CODEC_CHILD;
+	}
+
+	return pdata;
+}
+
 static int wl1273_core_probe(struct i2c_client *client,
 				       const struct i2c_device_id *id)
 {
@@ -182,8 +204,11 @@ static int wl1273_core_probe(struct i2c_client *client,
 	dev_dbg(&client->dev, "%s\n", __func__);
 
 	if (!pdata) {
-		dev_err(&client->dev, "No platform data.\n");
-		return -EINVAL;
+		pdata = wl1273_core_of_probe(&client->dev);
+		if (IS_ERR(pdata)) {
+			dev_err(&client->dev, "No platform data or DT found\n");
+			return PTR_ERR(pdata);
+		}
 	}
 
 	if (!(pdata->children & WL1273_RADIO_CHILD)) {
@@ -205,6 +230,7 @@ static int wl1273_core_probe(struct i2c_client *client,
 
 	cell = &core->cells[children];
 	cell->name = "wl1273_fm_radio";
+	cell->of_compatible = "ti,wl1273-fm-radio";
 	cell->platform_data = &core;
 	cell->pdata_size = sizeof(core);
 	children++;
@@ -220,6 +246,7 @@ static int wl1273_core_probe(struct i2c_client *client,
 
 		dev_dbg(&client->dev, "%s: Have codec.\n", __func__);
 		cell->name = "wl1273-codec";
+		cell->of_compatible = "ti,wl1273-codec";
 		cell->platform_data = &core;
 		cell->pdata_size = sizeof(core);
 		children++;
@@ -243,9 +270,18 @@ err:
 	return r;
 }
 
+static const struct of_device_id wl1273_core_match[] = {
+	{ .compatible = "ti,wl1273-core", },
+	{}
+};
+
+MODULE_DEVICE_TABLE(i2c, wl1273_core_match);
+
+
 static struct i2c_driver wl1273_core_driver = {
 	.driver = {
 		.name = WL1273_FM_DRIVER_NAME,
+		.of_match_table = of_match_ptr(wl1273_core_match),
 	},
 	.probe = wl1273_core_probe,
 	.id_table = wl1273_driver_id_table,
