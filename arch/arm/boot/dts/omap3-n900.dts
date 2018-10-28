@@ -72,6 +72,19 @@
 			linux,can-disable;
 		};
 
+		/*
+			/data/l/maemo/kernel-power/kernel-power-2.6.28/drivers/misc/nokia-av.c
+			sound/soc/omap/rx51.c
+			*/
+#if 0
+		eci_switch {
+			label = "Headset button";
+			gpios = <&gpio6 22 GPIO_ACTIVE_HIGH>; /* 182 */
+			linux,code = <KEY_PHONE>;
+			linux,can-disable;
+ 		};
+#endif
+#if 0
 		camera_focus {
 			label = "Camera Focus";
 			gpios = <&gpio3 4 GPIO_ACTIVE_LOW>; /* 68 */
@@ -85,6 +98,7 @@
 			linux,code = <KEY_CAMERA>;
 			linux,can-disable;
 		};
+#endif
 
 		lock_button {
 			label = "Lock Button";
@@ -135,8 +149,8 @@
 		nokia,headphone-amplifier = <&tpa6130a2>;
 
 		tvout-selection-gpios = <&gpio2 8 GPIO_ACTIVE_HIGH>; /* 40 */
-		jack-detection-gpios = <&gpio6 17 GPIO_ACTIVE_HIGH>; /* 177 */
 		eci-switch-gpios = <&gpio6 22 GPIO_ACTIVE_HIGH>; /* 182 */
+		jack-detection-gpios = <&gpio6 17 GPIO_ACTIVE_HIGH>; /* 177 */
 		speaker-amplifier-gpios = <&twl_gpio 7 GPIO_ACTIVE_HIGH>;
 	};
 
@@ -595,16 +609,21 @@
 	};
 
 	adp1653: led-controller@30 {
+		#address-cells = <1>;
+		#size-cells = <0>;
+	
 		compatible = "adi,adp1653";
 		reg = <0x30>;
 		enable-gpios = <&gpio3 24 GPIO_ACTIVE_HIGH>; /* 88 */
 
-		flash {
+		adp_flash: flash@0 {
+		        reg = <0x0>;
 			flash-timeout-us = <500000>;
 			flash-max-microamp = <320000>;
 			led-max-microamp = <50000>;
 		};
-		indicator {
+		adp_indicator: indicator@1 {
+		        reg = <0x1>;
 			led-max-microamp = <17500>;
 		};
 	};
@@ -807,6 +826,7 @@
 };
 
 &mmc1 {
+	slot-name = "external";
 	pinctrl-names = "default";
 	pinctrl-0 = <&mmc1_pins>;
 	vmmc-supply = <&vmmc1>;
@@ -814,11 +834,12 @@
 	/* For debugging, it is often good idea to remove this GPIO.
 	   It means you can remove back cover (to reboot by removing
 	   battery) and still use the MMC card. */
-	cd-gpios = <&gpio6 0 GPIO_ACTIVE_HIGH>; /* 160 */
+//	cd-gpios = <&gpio6 0 GPIO_ACTIVE_HIGH>; /* 160 */
 };
 
 /* most boards use vaux3, only some old versions use vmmc2 instead */
 &mmc2 {
+	slot-name = "internal";
 	pinctrl-names = "default";
 	pinctrl-0 = <&mmc2_pins>;
 	vmmc-supply = <&vaux3>;
@@ -958,13 +979,15 @@
 		vio-supply = <&vio>;
 
 		reset-gpios = <&gpio4 8 GPIO_ACTIVE_HIGH>; /* 104 */
+			    /* FIXME: Tony says we should make the reset GPIO
+			       PIN_INPUT_PULLUP | MUX_MODE7. */
 		interrupts-extended = <&gpio4 4 IRQ_TYPE_EDGE_RISING>; /* 100 */
 
 		touchscreen-fuzz-x = <4>;
 		touchscreen-fuzz-y = <7>;
 		touchscreen-fuzz-pressure = <2>;
-		touchscreen-size-x = <4096>;
-		touchscreen-size-y = <4096>;
+		touchscreen-max-x = <4096>;
+		touchscreen-max-y = <4096>;
 		touchscreen-max-pressure = <2048>;
 
 		ti,x-plate-ohms = <280>;
