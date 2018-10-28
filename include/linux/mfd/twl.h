@@ -70,6 +70,7 @@ enum twl4030_module_ids {
 	TWL4030_MODULE_INT,
 
 	TWL5031_MODULE_ACCESSORY,
+	TWL5031_MODULE_BCC,
 	TWL5031_MODULE_INTERRUPTS,
 
 	TWL4030_MODULE_LAST,
@@ -95,6 +96,7 @@ enum twl6030_module_ids {
 #define MADC_INTR_OFFSET	3
 #define USB_INTR_OFFSET		4
 #define CHARGERFAULT_INTR_OFFSET 5
+#define ACI_INTR_OFFSET		6
 #define BCI_PRES_INTR_OFFSET	9
 #define USB_PRES_INTR_OFFSET	10
 #define RTC_INTR_OFFSET		11
@@ -704,6 +706,15 @@ struct twl4030_audio_data {
 	unsigned int irq_base;
 };
 
+struct twl5031_aci_data {
+	int	tvout_gpio;
+	int	jack_gpio;
+
+#define AVPLUGDET_WHEN_PLUGGED_LOW 0
+#define AVPLUGDET_WHEN_PLUGGED_HIGH 1
+	int	avplugdet_plugged;
+};
+
 struct twl4030_platform_data {
 	struct twl4030_clock_init_data		*clock;
 	struct twl4030_bci_platform_data	*bci;
@@ -713,7 +724,8 @@ struct twl4030_platform_data {
 	struct twl4030_usb_data			*usb;
 	struct twl4030_power_data		*power;
 	struct twl4030_audio_data		*audio;
-
+	struct twl5031_aci_data			*aci;
+	
 	/* Common LDO regulators for TWL4030/TWL6030 */
 	struct regulator_init_data		*vdac;
 	struct regulator_init_data		*vaux1;
