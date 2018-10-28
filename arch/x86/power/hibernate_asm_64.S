@@ -12,7 +12,7 @@
  *
  * Its rewriting one kernel image with another. What is stack in "old"
  * image could very well be data page in "new" image, and overwriting
- * your own stack under you is bad idea.
+ * your own stack under you is a bad idea.
  */
 
 	.text
@@ -137,7 +137,7 @@ ENTRY(restore_registers)
 	/* Saved in save_processor_state. */
 	lgdt	saved_context_gdt_desc(%rax)
 
-	xorl	%eax, %eax
+	xorl	%eax, %eax /* write to low 32 bits clears high 32 bits, too */
 
 	/* tell the hibernation core that we've just restored the memory */
 	movq	%rax, in_suspend(%rip)

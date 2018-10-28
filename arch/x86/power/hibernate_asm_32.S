@@ -1,10 +1,18 @@
 /* SPDX-License-Identifier: GPL-2.0 */
 /*
+ * Hibernation support for i386
+ *
+ * Distribute under GPLv2.
+ *
+ * Copyright 2007 Rafael J. Wysocki <rjw@sisk.pl>
+ * Copyright 2005 Andi Kleen <ak@suse.de>
+ * Copyright 2004, 2015 Pavel Machek <pavel@ucw.cz>
+ *
  * This may not use any stack, nor any variable that is not "NoSave":
  *
  * Its rewriting one kernel image with another. What is stack in "old"
  * image could very well be data page in "new" image, and overwriting
- * your own stack under you is bad idea.
+ * your own stack under you is a bad idea.
  */
 
 #include <linux/linkage.h>
