@@ -423,16 +423,37 @@ ohci_shutdown (struct usb_hcd *hcd)
 {
 	struct ohci_hcd *ohci;
 
+	printk(KERN_CRIT "ohci_shutdown...\n");
+
+	if (!hcd)
+		return;
+
 	ohci = hcd_to_ohci (hcd);
+
+	if (!ohci)
+		return;
+	
+	printk(KERN_CRIT "ohci_shutdown... have pointers %lx, %lx\n", hcd, ohci);
+	ohci_readl(ohci, &ohci->regs->cmdstatus);	/* flush the writes */
+
 	ohci_writel(ohci, (u32) ~0, &ohci->regs->intrdisable);
+	printk(KERN_CRIT "ohci_shutdown... disable done\n");
+	udelay(1000);
+	printk(KERN_CRIT "ohci_shutdown... disable done\n");
 
 	/* Software reset, after which the controller goes into SUSPEND */
 	ohci_writel(ohci, OHCI_HCR, &ohci->regs->cmdstatus);
+	printk(KERN_CRIT "ohci_shutdown... writel done\n");
 	ohci_readl(ohci, &ohci->regs->cmdstatus);	/* flush the writes */
+	/* It oopses here */
+	printk(KERN_CRIT "ohci_shutdown... readl done\n");
 	udelay(10);
 
+	printk(KERN_CRIT "ohci_shutdown... reset done\n");	
 	ohci_writel(ohci, ohci->fminterval, &ohci->regs->fminterval);
 	ohci->rh_state = OHCI_RH_HALTED;
+
+	printk(KERN_CRIT "ohci_shutdown... all ok?\n");	
 }
 
 /*-------------------------------------------------------------------------*
