@@ -2055,12 +2055,15 @@ static int wl1273_fm_radio_probe(struct platform_device *pdev)
 	radio->stereo = true;
 	radio->bus_type = "I2C";
 
-	if (radio->core->pdata->request_resources) {
-		r = radio->core->pdata->request_resources(radio->core->client);
-		if (r) {
-			dev_err(radio->dev, WL1273_FM_DRIVER_NAME
-				": Cannot get platform data\n");
-			goto pdata_err;
+	if ((radio->core->pdata->request_resources)
+		|| (radio->core->client->irq)) {
+		if (radio->core->pdata->request_resources) {
+			r = radio->core->pdata->request_resources(radio->core->client);
+			if (r) {
+				dev_err(radio->dev, WL1273_FM_DRIVER_NAME
+					": Cannot get platform data\n");
+				goto pdata_err;
+			}
 		}
 
 		dev_dbg(radio->dev, "irq: %d\n", radio->core->client->irq);
@@ -2104,7 +2107,12 @@ static int wl1273_fm_radio_probe(struct platform_device *pdev)
 
 	radio->videodev.v4l2_dev = &radio->v4l2dev;
 
-	v4l2_ctrl_handler_init(&radio->ctrl_handler, 6);
+	r = v4l2_ctrl_handler_init(&radio->ctrl_handler, 5);
+	if (r < 0) {
+		dev_err(&pdev->dev, "Can't init ctrl handler\n");
+		v4l2_ctrl_handler_free(&radio->ctrl_handler);
+		return -EBUSY;
+	}
 
 	/* add in ascending ID order */
 	v4l2_ctrl_new_std(&radio->ctrl_handler, &wl1273_ctrl_ops,
@@ -2116,7 +2124,7 @@ static int wl1273_fm_radio_probe(struct platform_device *pdev)
 
 	v4l2_ctrl_new_std_menu(&radio->ctrl_handler, &wl1273_ctrl_ops,
 			       V4L2_CID_TUNE_PREEMPHASIS,
-			       V4L2_PREEMPHASIS_75_uS, 0x03,
+			       V4L2_PREEMPHASIS_75_uS, 0,
 			       V4L2_PREEMPHASIS_50_uS);
 
 	v4l2_ctrl_new_std(&radio->ctrl_handler, &wl1273_ctrl_ops,
@@ -2153,7 +2161,8 @@ handler_init_err:
 write_buf_err:
 	free_irq(radio->core->client->irq, radio);
 err_request_irq:
-	radio->core->pdata->free_resources();
+	if (radio->core->pdata->free_resources)
+		radio->core->pdata->free_resources();
 pdata_err:
 	return r;
 }
