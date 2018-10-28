@@ -607,7 +607,7 @@ static int uvc_ioctl_enum_fmt(struct uvc_streaming *stream,
 	enum v4l2_buf_type type = fmt->type;
 	u32 index = fmt->index;
 
-	if (fmt->type != stream->type || fmt->index >= stream->nformats)
+	if (type != stream->type || index >= stream->nformats)
 		return -EINVAL;
 
 	memset(fmt, 0, sizeof(*fmt));
