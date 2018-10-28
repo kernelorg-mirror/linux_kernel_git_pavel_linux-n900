@@ -145,12 +145,13 @@ static inline struct bkey *bkey_idx(const struct bkey *k, unsigned int nr_keys)
 #define BCACHE_SB_VERSION_BDEV		1
 #define BCACHE_SB_VERSION_CDEV_WITH_UUID 3
 #define BCACHE_SB_VERSION_BDEV_WITH_OFFSET 4
-#define BCACHE_SB_MAX_VERSION		4
+#define BCACHE_SB_VERSION_BDEV_EXT4_LITE	5
+#define BCACHE_SB_MAX_VERSION		5
 
-#define SB_SECTOR			8
+#define SB_SECTOR			0
 #define SB_SIZE				4096
 #define SB_LABEL_SIZE			32
-#define SB_JOURNAL_BUCKETS		256U
+#define SB_JOURNAL_BUCKETS		64U
 /* SB_JOURNAL_BUCKETS must be divisible by BITS_PER_LONG */
 #define MAX_CACHES_PER_SET		8
 

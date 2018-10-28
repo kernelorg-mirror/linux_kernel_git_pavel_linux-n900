@@ -7,6 +7,7 @@
  * Copyright 2012 Google, Inc.
  */
 
+#define DEBUG
 #include "bcache.h"
 #include "btree.h"
 #include "debug.h"
@@ -62,7 +63,7 @@ static const char *read_super(struct cache_sb *sb, struct block_device *bdev,
 {
 	const char *err;
 	struct cache_sb *s;
-	struct buffer_head *bh = __bread(bdev, 1, SB_SIZE);
+	struct buffer_head *bh = __bread(bdev, SB_SECTOR/8, SB_SIZE);
 	unsigned int i;
 
 	if (!bh)
@@ -90,10 +91,11 @@ static const char *read_super(struct cache_sb *sb, struct block_device *bdev,
 	pr_debug("read sb version %llu, flags %llu, seq %llu, journal size %u",
 		 sb->version, sb->flags, sb->seq, sb->keys);
 
-	err = "Not a bcache superblock";
+	err = "Not a bcache superblock: offset";
 	if (sb->offset != SB_SECTOR)
 		goto err;
 
+	err = "Not a bcache superblock: magic";	
 	if (memcmp(sb->magic, bcache_magic, 16))
 		goto err;
 
@@ -119,7 +121,7 @@ static const char *read_super(struct cache_sb *sb, struct block_device *bdev,
 	case BCACHE_SB_VERSION_BDEV:
 		sb->data_offset	= BDEV_DATA_START_DEFAULT;
 		break;
-	case BCACHE_SB_VERSION_BDEV_WITH_OFFSET:
+//	case BCACHE_SB_VERSION_BDEV_WITH_OFFSET:
 		sb->data_offset	= le64_to_cpu(s->data_offset);
 
 		err = "Bad data offset";
@@ -127,6 +129,15 @@ static const char *read_super(struct cache_sb *sb, struct block_device *bdev,
 			goto err;
 
 		break;
+	case BCACHE_SB_VERSION_BDEV_WITH_OFFSET:
+	case BCACHE_SB_VERSION_BDEV_EXT4_LITE:
+		sb->data_offset	= le64_to_cpu(s->data_offset);
+		printk("Size of sb is %d\n", sizeof(*sb));
+		WARN_ON(sizeof(*sb) > 1024);
+		if (sizeof(*sb) > 1024)
+			goto err;
+		break;
+
 	case BCACHE_SB_VERSION_CDEV:
 	case BCACHE_SB_VERSION_CDEV_WITH_UUID:
 		sb->nbuckets	= le64_to_cpu(s->nbuckets);
@@ -2438,6 +2449,7 @@ static int __init bcache_init(void)
 
 	bcache_major = register_blkdev(0, "bcache");
 	if (bcache_major < 0) {
+		mutex_destroy(&bch_register_lock);
 		unregister_reboot_notifier(&reboot);
 		mutex_destroy(&bch_register_lock);
 		return bcache_major;
