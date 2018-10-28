@@ -94,9 +94,9 @@ scheduler.
 To address the second complaint (of nice levels not being consistent),
 the new scheduler makes nice(1) have the same CPU utilization effect on
 tasks, regardless of their absolute nice levels. So on the new
-scheduler, running a nice +10 and a nice 11 task has the same CPU
+scheduler, running a nice +10 and a nice +11 task has the same CPU
 utilization "split" between them as running a nice -5 and a nice -4
-task. (one will get 55% of the CPU, the other 45%.) That is why nice
+task. (One will get 55% of the CPU, the other 45%.) That is why nice
 levels were changed to be "multiplicative" (or exponential) - that way
 it does not matter which nice level you start out from, the 'relative
 result' will always be the same.
