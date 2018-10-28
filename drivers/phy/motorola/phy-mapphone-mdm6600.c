@@ -184,7 +184,7 @@ static void phy_mdm6600_status(struct work_struct *work)
 					       ddata->status_gpios->desc,
 					       ddata->status_gpios->info,
 					       values);
-	if (error)
+	if (error) /* FIXME: dev_err here? */
 		return;
 
 	for (i = 0; i < PHY_MDM6600_NR_STATUS_LINES; i++) {
