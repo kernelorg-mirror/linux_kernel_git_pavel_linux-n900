@@ -1577,6 +1577,23 @@ config MFD_TWL4030_AUDIO
 	select MFD_CORE
 	default n
 
+config TWL5031_ACI
+	tristate "TWL5031 ACI (Accessory Control Interface) Driver"
+	depends on TWL4030_CORE
+	select SND_JACK
+	select SND_OMAP_SOC_N9
+	help
+	The TWL5031 Accessory Control Interface functionality
+
+	TWL5031 ACI provides the following features:
+	- NAV (Nokia Audio/Video) periferals identification
+	- AV-connector resource handling
+	- DBI interface for battery identification
+
+	Say 'y' here to statically link this module into the kernel or 'm'
+	to build it as a dynamically loadable module. The module will be
+	called twl5031-aci.ko
+
 config TWL6040_CORE
 	bool "TI TWL6040 audio codec"
 	depends on I2C=y
