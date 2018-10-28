@@ -22,6 +22,11 @@
  * Stingray sensor mode settings for Scooby
  */
 
+/* https://github.com/maemo-foss/omap3camera-firmware/blob/master/makemodes-et8ek8.pl
+
+   /data/l/maemo/kernel-power/kernel-power-2.6.28/drivers/media/video/et8ek8-modes.h
+*/
+
 /* Mode1_poweron_Mode2_16VGA_2592x1968_12.07fps */
 static struct et8ek8_reglist mode1_poweron_mode2_16vga_2592x1968_12_07fps = {
 /* (without the +1)
@@ -39,18 +44,20 @@ static struct et8ek8_reglist mode1_poweron_mode2_16vga_2592x1968_12_07fps = {
  */
 	.type = ET8EK8_REGLIST_POWERON,
 	.mode = {
-		.sensor_width = 2592,
-		.sensor_height = 1968,
+	.name = "mode1_poweron_mode2_16vga_2592x1968_12_07fps",
+		
+		.sensor_width = 259,
+		.sensor_height = 196,
 		.sensor_window_origin_x = 0,
 		.sensor_window_origin_y = 0,
-		.sensor_window_width = 2592,
-		.sensor_window_height = 1968,
-		.width = 3288,
-		.height = 2016,
+		.sensor_window_width = 259,
+		.sensor_window_height = 196,
+		.width = 328,
+		.height = 201,
 		.window_origin_x = 0,
 		.window_origin_y = 0,
-		.window_width = 2592,
-		.window_height = 1968,
+		.window_width = 259,
+		.window_height = 196,
 		.pixel_clock = 80000000,
 		.ext_clock = 9600000,
 		.timeperframe = {
@@ -108,6 +115,7 @@ static struct et8ek8_reglist mode1_poweron_mode2_16vga_2592x1968_12_07fps = {
 		{ ET8EK8_REG_8BIT, 0x1648, 0x00 },
 		{ ET8EK8_REG_8BIT, 0x113E, 0x01 },
 		{ ET8EK8_REG_8BIT, 0x113F, 0x22 },
+		/* Settings from here on seem to for the 2592x1968 mode. */
 		{ ET8EK8_REG_8BIT, 0x1239, 0x64 },
 		{ ET8EK8_REG_8BIT, 0x1238, 0x02 },
 		{ ET8EK8_REG_8BIT, 0x123B, 0x70 },
@@ -122,6 +130,65 @@ static struct et8ek8_reglist mode1_poweron_mode2_16vga_2592x1968_12_07fps = {
 		{ ET8EK8_REG_TERM, 0, 0}
 	}
 };
+
+static struct et8ek8_reglist mode2_16vga_2592x1968_12_07fps = {
+/* (without the +1)
+ * SPCK       = 80 MHz
+ * CCP2       = 640 MHz
+ * VCO        = 640 MHz
+ * VCOUNT     = 84 (2016)
+ * HCOUNT     = 137 (3288)
+ * CKREF_DIV  = 2
+ * CKVAR_DIV  = 200
+ * VCO_DIV    = 0
+ * SPCK_DIV   = 7
+ * MRCK_DIV   = 7
+ * LVDSCK_DIV = 0
+ */
+	.type = ET8EK8_REGLIST_MODE,
+	.mode = {
+	.name = "mode2_16vga_2592x1968_12_07fps",
+		
+		.sensor_width = 2592,
+		.sensor_height = 1968,
+		.sensor_window_origin_x = 0,
+		.sensor_window_origin_y = 0,
+		.sensor_window_width = 2592,
+		.sensor_window_height = 1968,
+		.width = 3288,
+		.height = 2016,
+		.window_origin_x = 0,
+		.window_origin_y = 0,
+		.window_width = 2592,
+		.window_height = 1968,
+		.pixel_clock = 80000000,
+		.ext_clock = 9600000,
+		.timeperframe = {
+			.numerator = 100,
+			.denominator = 1207
+		},
+		.max_exp = 2012,
+		/* .max_gain = 0, */
+		.bus_format = MEDIA_BUS_FMT_SGRBG10_1X10,
+		.sensitivity = 65536
+	},
+	.regs = {
+		/* Settings from here on seem to for the 2592x1968 mode. */
+		{ ET8EK8_REG_8BIT, 0x1239, 0x64 },
+		{ ET8EK8_REG_8BIT, 0x1238, 0x02 },
+		{ ET8EK8_REG_8BIT, 0x123B, 0x70 },
+		{ ET8EK8_REG_8BIT, 0x123A, 0x07 },
+		{ ET8EK8_REG_8BIT, 0x121B, 0x64 },
+		{ ET8EK8_REG_8BIT, 0x121D, 0x64 },
+		{ ET8EK8_REG_8BIT, 0x1221, 0x00 },
+		{ ET8EK8_REG_8BIT, 0x1220, 0x89 },
+		{ ET8EK8_REG_8BIT, 0x1223, 0x00 },
+		{ ET8EK8_REG_8BIT, 0x1222, 0x54 },
+		{ ET8EK8_REG_8BIT, 0x125D, 0x88 }, /* CCP_LVDS_MODE/  */
+		{ ET8EK8_REG_TERM, 0, 0}
+	}
+};
+
 
 /* Mode1_16VGA_2592x1968_13.12fps_DPCM10-8 */
 static struct et8ek8_reglist mode1_16vga_2592x1968_13_12fps_dpcm10_8 = {
@@ -140,6 +207,7 @@ static struct et8ek8_reglist mode1_16vga_2592x1968_13_12fps_dpcm10_8 = {
  */
 	.type = ET8EK8_REGLIST_MODE,
 	.mode = {
+	.name = "mode1_16vga_2592x1968_13_12fps_dpcm10_8",
 		.sensor_width = 2592,
 		.sensor_height = 1968,
 		.sensor_window_origin_x = 0,
@@ -196,6 +264,7 @@ static struct et8ek8_reglist mode3_4vga_1296x984_29_99fps_dpcm10_8 = {
  */
 	.type = ET8EK8_REGLIST_MODE,
 	.mode = {
+	.name = "mode3_4vga_1296x984_29_99fps_dpcm10_8",
 		.sensor_width = 2592,
 		.sensor_height = 1968,
 		.sensor_window_origin_x = 0,
@@ -252,6 +321,7 @@ static struct et8ek8_reglist mode4_svga_864x656_29_88fps = {
  */
 	.type = ET8EK8_REGLIST_MODE,
 	.mode = {
+	.name = "mode4_svga_864x656_29_88fps",
 		.sensor_width = 2592,
 		.sensor_height = 1968,
 		.sensor_window_origin_x = 0,
@@ -308,6 +378,7 @@ static struct et8ek8_reglist mode5_vga_648x492_29_93fps = {
  */
 	.type = ET8EK8_REGLIST_MODE,
 	.mode = {
+	.name = "mode5_vga_648x492_29_93fps",
 		.sensor_width = 2592,
 		.sensor_height = 1968,
 		.sensor_window_origin_x = 0,
@@ -364,6 +435,7 @@ static struct et8ek8_reglist mode2_16vga_2592x1968_3_99fps = {
  */
 	.type = ET8EK8_REGLIST_MODE,
 	.mode = {
+	.name = "mode2_16vga_2592x1968_3_99fps",
 		.sensor_width = 2592,
 		.sensor_height = 1968,
 		.sensor_window_origin_x = 0,
@@ -398,6 +470,7 @@ static struct et8ek8_reglist mode2_16vga_2592x1968_3_99fps = {
 		{ ET8EK8_REG_8BIT, 0x1220, 0x89 },
 		{ ET8EK8_REG_8BIT, 0x1223, 0x00 },
 		{ ET8EK8_REG_8BIT, 0x1222, 0xFE },
+		{ ET8EK8_REG_8BIT, 0x125D, 0x88 }, /* CCP_LVDS_MODE/  */
 		{ ET8EK8_REG_TERM, 0, 0}
 	}
 };
@@ -419,6 +492,7 @@ static struct et8ek8_reglist mode_648x492_5fps = {
  */
 	.type = ET8EK8_REGLIST_MODE,
 	.mode = {
+	.name = "mode_648x492_5fps",
 		.sensor_width = 2592,
 		.sensor_height = 1968,
 		.sensor_window_origin_x = 0,
@@ -475,6 +549,7 @@ static struct et8ek8_reglist mode3_4vga_1296x984_5fps = {
  */
 	.type = ET8EK8_REGLIST_MODE,
 	.mode = {
+	.name = "mode3_4vga_1296x984_5fps",
 		.sensor_width = 2592,
 		.sensor_height = 1968,
 		.sensor_window_origin_x = 0,
@@ -531,6 +606,7 @@ static struct et8ek8_reglist mode_4vga_1296x984_25fps_dpcm10_8 = {
  */
 	.type = ET8EK8_REGLIST_MODE,
 	.mode = {
+	.name = "mode_4vga_1296x984_25fps_dpcm10_8",
 		.sensor_width = 2592,
 		.sensor_height = 1968,
 		.sensor_window_origin_x = 0,
@@ -573,15 +649,23 @@ static struct et8ek8_reglist mode_4vga_1296x984_25fps_dpcm10_8 = {
 struct et8ek8_meta_reglist meta_reglist = {
 	.version = "V14 03-June-2008",
 	.reglist = {
+		/* power on mode; strange & special */
 		{ .ptr = &mode1_poweron_mode2_16vga_2592x1968_12_07fps },
-		{ .ptr = &mode1_16vga_2592x1968_13_12fps_dpcm10_8 },
-		{ .ptr = &mode3_4vga_1296x984_29_99fps_dpcm10_8 },
-		{ .ptr = &mode4_svga_864x656_29_88fps },
-		{ .ptr = &mode5_vga_648x492_29_93fps },
-		{ .ptr = &mode2_16vga_2592x1968_3_99fps },
-		{ .ptr = &mode_648x492_5fps },
-		{ .ptr = &mode3_4vga_1296x984_5fps },
+		/* dpcm10/8 modes */
+#if 0
+		{ .ptr = &mode1_16vga_2592x1968_13_12fps_dpcm10_8 }, /* No luck */
+		{ .ptr = &mode3_4vga_1296x984_29_99fps_dpcm10_8 }, /* No luck */
 		{ .ptr = &mode_4vga_1296x984_25fps_dpcm10_8 },
+#endif
+		/* "normal" modes */
+#if 1
+//		{ .ptr = &mode2_16vga_2592x1968_12_07fps }, /* My hacks. */
+		{ .ptr = &mode4_svga_864x656_29_88fps }, /* Works, AFAICT */
+		{ .ptr = &mode5_vga_648x492_29_93fps }, /* Seems to work with camera.py 640 */
+		{ .ptr = &mode2_16vga_2592x1968_3_99fps }, /* Does not seem to work: scrolling */
+//		{ .ptr = &mode_648x492_5fps }, /* Seems to work with /my/v4l-utils/camera.py 640 ; can't get it to work in raw mode */
+		{ .ptr = &mode3_4vga_1296x984_5fps }, /* Works, AFAICT */
+#endif
 		{ .ptr = NULL }
 	}
 };
