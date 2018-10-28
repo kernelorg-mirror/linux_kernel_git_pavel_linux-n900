@@ -134,6 +134,8 @@ static struct attribute *lp55xx_led_attrs[] = {
 };
 ATTRIBUTE_GROUPS(lp55xx_led);
 
+extern int lp5523_rgb_brightness(struct lp55xx_led *led, struct led_rgb r);
+
 static int lp55xx_set_brightness(struct led_classdev *cdev,
 			     enum led_brightness brightness)
 {
@@ -141,7 +143,96 @@ static int lp55xx_set_brightness(struct led_classdev *cdev,
 	struct lp55xx_device_config *cfg = led->chip->cfg;
 
 	led->brightness = (u8)brightness;
+
+	if (led->chan_nr == 6) {
+		struct led_rgb r;
+		struct led_hsv hsv;
+
+		//printk("RGB set request: %d %d %d\n", cdev->brightness, cdev->hue >> 24, cdev->saturation >> 24);
+		hsv.value = brightness << 24;
+		hsv.hue = cdev->hue;
+		hsv.saturation = cdev->saturation;
+		r = led_hsv_to_rgb(hsv);
+		return lp5523_rgb_brightness(led, r);
+	}
 	return cfg->brightness_fn(led);
+}
+
+int compile_pattern(struct led_pattern *steps, int len, int repeats, char *res)
+{
+	int i;
+	int br = 0;
+	char *res_ = res;
+
+	*res++ = 0x9d; // start
+	*res++ = 0x80;
+
+#if 1
+	for (i = 0; i < len; i++) {
+		int n;
+		int b = steps[i].brightness;
+		int t = steps[i].delta_t;
+
+		n = 0x40;
+		if (b < br) {
+			n |= 0x01;
+			b = br - b;
+		} else b = b - br;
+		n |= (0x1f & (t / 40)) << 1;
+    
+		*res++ = n;
+		*res++ = b;
+    
+		br = b;
+	}
+#else
+	*res++ = 0x41;
+	*res++ = 0x00;
+#endif
+#if 0
+	*res++ = 0x0a;
+	*res++ = 0x01;
+#endif
+	return res - res_;
+}
+
+#define LP5523_PROGRAM_LENGTH           32      /* bytes */
+extern void lp5523_load_engine_and_select_page(struct lp55xx_chip *chip);
+#define LP5523_REG_PROG_MEM		0x50
+
+static int lp55xx_pattern_set(struct led_classdev *cdev,
+			      struct led_pattern *pattern,
+			      int len, int repeat)
+{
+	struct lp55xx_led *led = cdev_to_lp55xx_led(cdev);
+	struct lp55xx_chip *chip = led->chip;
+	int i, ret;
+
+	char prog[LP5523_PROGRAM_LENGTH * 4];
+	struct firmware fw;
+	chip->engine_idx = 1;
+
+	fw.size = compile_pattern(pattern, len, 1, prog);
+
+	lp5523_load_engine_and_select_page(chip);
+	for (i = 0; i < LP5523_PROGRAM_LENGTH; i++) {
+		ret = lp55xx_write(chip, LP5523_REG_PROG_MEM + i, prog[i]);
+		if (ret)
+			return -EINVAL;
+	}
+
+	return 0;
+}
+
+static int lp55xx_pattern_clear(struct led_classdev *cdev)
+{
+	struct lp55xx_led *led = cdev_to_lp55xx_led(cdev);
+	struct lp55xx_chip *chip = led->chip; /* FIXME */
+
+	if (chip->cfg->run_engine)
+		chip->cfg->run_engine(chip, false);
+
+	return 0;
 }
 
 static int lp55xx_init_led(struct lp55xx_led *led,
@@ -175,6 +266,11 @@ static int lp55xx_init_led(struct lp55xx_led *led,
 
 	led->cdev.brightness_set_blocking = lp55xx_set_brightness;
 	led->cdev.groups = lp55xx_led_groups;
+
+	led->cdev.pattern_set = lp55xx_pattern_set;
+	led->cdev.pattern_clear = lp55xx_pattern_clear;
+
+	printk("Led %d name %s\n", chan, pdata->led_config[chan].name);
 
 	if (pdata->led_config[chan].name) {
 		led->cdev.name = pdata->led_config[chan].name;
@@ -413,7 +509,7 @@ int lp55xx_init_device(struct lp55xx_chip *chip)
 		usleep_range(1000, 2000); /* 500us abs min. */
 	}
 
-	lp55xx_reset_device(chip);
+	//lp55xx_reset_device(chip); FIXME: breaks n950
 
 	/*
 	 * Exact value is not available. 10 - 20ms
