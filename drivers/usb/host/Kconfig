@@ -468,16 +468,13 @@ config USB_OHCI_HCD_AT91
           Atmel chips.
 
 config USB_OHCI_HCD_OMAP3
-	tristate "OHCI support for OMAP3 and later chips"
+	tristate "dummy option for backwards compatibility"
 	depends on (ARCH_OMAP3 || ARCH_OMAP4 || SOC_OMAP5)
 	select USB_OHCI_HCD_PLATFORM
 	default y
 	help
 	  This option is deprecated now and the driver was removed, use
 	  USB_OHCI_HCD_PLATFORM instead.
-
-	  Enables support for the on-chip OHCI controller on
-	  OMAP3 and later chips.
 
 config USB_OHCI_HCD_DAVINCI
 	tristate "OHCI support for TI DaVinci DA8xx"
