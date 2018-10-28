@@ -19,6 +19,14 @@ config LEDS_CLASS
 	  This option enables the led sysfs class in /sys/class/leds.  You'll
 	  need this to do anything useful with LEDs.  If unsure, say N.
 
+config LEDS_CLASS_RGB
+	bool "LED RGB Class Support"
+	depends on LEDS_CLASS
+	help
+	  This option enables support for RGB LED devices.
+	  Sysfs attribute brightness is interpreted as a HSV color value.
+	  For details see Documentation/leds/leds-class.txt.
+
 config LEDS_CLASS_FLASH
 	tristate "LED Flash Class Support"
 	depends on LEDS_CLASS
@@ -37,6 +45,10 @@ config LEDS_BRIGHTNESS_HW_CHANGED
 	  for led sysfs class devices under /sys/class/leds.
 
 	  See Documentation/ABI/testing/sysfs-class-led for details.
+
+if LEDS_CLASS_RGB
+comment "RGB LED drivers"
+endif # LEDS_CLASS_RGB
 
 comment "LED drivers"
 
