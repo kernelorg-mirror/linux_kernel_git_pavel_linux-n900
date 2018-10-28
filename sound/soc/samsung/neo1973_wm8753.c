@@ -112,7 +112,7 @@ static int neo1973_hifi_hw_free(struct snd_pcm_substream *substream)
 }
 
 /*
- * Neo1973 WM8753 HiFi DAI opserations.
+ * Neo1973 WM8753 HiFi DAI operations.
  */
 static struct snd_soc_ops neo1973_hifi_ops = {
 	.hw_params = neo1973_hifi_hw_params,
@@ -272,7 +272,7 @@ static int neo1973_wm8753_init(struct snd_soc_pcm_runtime *rtd)
 }
 
 static struct snd_soc_dai_link neo1973_dai[] = {
-{ /* Hifi Playback - for similatious use with voice below */
+{ /* Hifi Playback - for simultaneous use with voice below */
 	.name = "WM8753",
 	.stream_name = "WM8753 HiFi",
 	.platform_name = "s3c24xx-iis",
