@@ -1,13 +1,13 @@
 Audio Graph Card:
 
-Audio Graph Card specifies audio DAI connections of SoC <-> codec.
-It is based on common bindings for device graphs.
-see ${LINUX}/Documentation/devicetree/bindings/graph.txt
+Audio Graph Card specifies audio DAI connections of SoC <-> codec.  It
+is based on common bindings for device graphs, see
+Documentation/devicetree/bindings/graph.txt .
 
 Basically, Audio Graph Card property is same as Simple Card.
-see ${LINUX}/Documentation/devicetree/bindings/sound/simple-card.txt
+see Documentation/devicetree/bindings/sound/simple-card.txt .
 
-Below are same as Simple-Card.
+Elemens below are same as in Simple Card.
 
 - label
 - widgets
@@ -26,8 +26,8 @@ Below are same as Simple-Card.
 
 Required properties:
 
-- compatible				: "audio-graph-card";
-- dais					: list of CPU DAI port{s}
+- compatible	: "audio-graph-card";
+- dais		: list of CPU DAI port{s}
 
 Optional properties:
 - pa-gpios: GPIO used to control external amplifier.
