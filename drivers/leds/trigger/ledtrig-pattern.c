@@ -239,9 +239,16 @@ static ssize_t pattern_trig_store_patterns(struct led_classdev *led_cdev,
 
 	while (offset < count - 1 && data->npatterns < MAX_PATTERNS) {
 		cr = 0;
-		ccount = sscanf(buf + offset, "%d %u %n",
+		ccount = sscanf(buf + offset, "%u %u %n",
 				&data->patterns[data->npatterns].brightness,
 				&data->patterns[data->npatterns].delta_t, &cr);
+
+		if (data->patterns[data->npatterns].brightness > data->led_cdev->max_brightness) {
+			data->npatterns = 0;
+			err = -EINVAL;
+			goto out;
+		}
+			 
 		if (ccount != 2) {
 			data->npatterns = 0;
 			err = -EINVAL;
