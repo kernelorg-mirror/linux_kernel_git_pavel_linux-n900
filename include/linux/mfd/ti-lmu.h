@@ -84,5 +84,8 @@ struct ti_lmu {
 	struct regmap *regmap;
 	struct gpio_desc *en_gpio;
 	struct blocking_notifier_head notifier;
+
+	int backlight_initialized;
+	int id;
 };
 #endif
