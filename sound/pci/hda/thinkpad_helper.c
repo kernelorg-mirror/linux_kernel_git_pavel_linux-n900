@@ -23,6 +23,8 @@ static void update_tpacpi_mute_led(void *private_data, int enabled)
 	if (old_vmaster_hook)
 		old_vmaster_hook(private_data, enabled);
 
+	printk("mute led... %d\n", !enabled);
+
 	if (led_set_func)
 		led_set_func(TPACPI_LED_MUTE, !enabled);
 }

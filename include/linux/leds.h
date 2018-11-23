@@ -494,6 +494,14 @@ static inline void ledtrig_cpu(enum cpu_led_event evt)
 }
 #endif
 
+#ifdef CONFIG_LEDS_TRIGGERS
+extern void ledtrig_mic_muted(bool m);
+#else
+static inline void ledtrig_mic_muted(bool m) {}
+#endif
+
+
+
 #ifdef CONFIG_LEDS_BRIGHTNESS_HW_CHANGED
 extern void led_classdev_notify_brightness_hw_changed(
 	struct led_classdev *led_cdev, enum led_brightness brightness);

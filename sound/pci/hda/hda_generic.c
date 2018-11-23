@@ -29,6 +29,7 @@
 #include <linux/string.h>
 #include <linux/bitops.h>
 #include <linux/module.h>
+#include <linux/leds.h>
 #include <sound/core.h>
 #include <sound/jack.h>
 #include <sound/tlv.h>
@@ -3929,6 +3930,7 @@ static void call_micmute_led_update(struct hda_codec *codec)
 		val = !spec->micmute_led.capture;
 		break;
 	}
+	ledtrig_mic_muted(!spec->micmute_led.capture);
 
 	if (val == spec->micmute_led.led_value)
 		return;
